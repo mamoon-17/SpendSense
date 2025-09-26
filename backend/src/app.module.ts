@@ -4,6 +4,11 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
+import { UsersProfilesModule } from './users_profiles/users_profiles.module';
+import { UserProfilesController } from './user_profiles/user_profiles.controller';
+import { UsersProfileController } from './users_profile/users_profile.controller';
+import { UserProfielsModule } from './user_profiles/user_profiles.module';
+import { MessageHistoryModule } from './message-history/message-history.module';
 
 @Module({
   imports: [
@@ -27,8 +32,11 @@ import { UsersModule } from './users/users.module';
       inject: [ConfigService],
     }),
     UsersModule,
+    UsersProfilesModule,
+    UserProfielsModule,
+    MessageHistoryModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, UserProfilesController, UsersProfileController],
   providers: [AppService],
 })
 export class AppModule {}
