@@ -7,27 +7,21 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: '.env',
+      envFilePath: ['.env', 'backend/.env'],
+      isGlobal: true,
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get<string>('DATABASE_HOST', { infer: true }),
-        port: configService.get<number>('DATABASE_PORT', { infer: true }),
-        username: configService.get<string>('DATABASE_USERNAME', {
-          infer: true,
-        }),
-        password: configService.get<string>('DATABASE_PASSWORD', {
-          infer: true,
-        }),
-        database: configService.get<string>('DATABASE_NAME', {
-          infer: true,
-        }),
+        url: configService.get<string>('DATABASE_URL'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: true,
         autoLoadEntities: true,
         logging: false,
+        // Force SSL for Supabase and accept self-signed/intercepted certs
+        ssl: { rejectUnauthorized: false },
+        extra: { ssl: { rejectUnauthorized: false } },
       }),
       inject: [ConfigService],
     }),
