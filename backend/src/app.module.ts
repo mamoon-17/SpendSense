@@ -4,6 +4,13 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
+import { BudgetsModule } from './budgets/budgets.module';
+import { CategoriesModule } from './categories/categories.module';
+import { BudgetParticipantsModule } from './budget_participants/budget_participants.module';
+import { BillsModule } from './bills/bills.module';
+import { BillParticipantsModule } from './bill_participants/bill_participants.module';
+import { MessageHistoryModule } from './message-history/message-history.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -27,6 +34,13 @@ import { UsersModule } from './users/users.module';
       inject: [ConfigService],
     }),
     UsersModule,
+    BudgetsModule,
+    CategoriesModule,
+    BudgetParticipantsModule,
+    BillsModule,
+    BillParticipantsModule,
+    MessageHistoryModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
