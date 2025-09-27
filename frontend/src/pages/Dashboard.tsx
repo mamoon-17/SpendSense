@@ -195,7 +195,34 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Budget Overview */}
+        {/* Recent Transactions */}
+        <Card className="card-financial">
+          <CardHeader>
+            <CardTitle>Recent Transactions</CardTitle>
+            <CardDescription>Your latest expenses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RecentTransactions expenses={expenses?.slice(0, 5)} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Savings Goals and Budget Overview - Interchanged positions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Savings Goals - Now in first position */}
+        <Card className="card-financial">
+          <CardHeader>
+            <CardTitle>Savings Goals</CardTitle>
+            <CardDescription>
+              Track your progress toward your goals
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SavingsGoals goals={savingsGoals} />
+          </CardContent>
+        </Card>
+
+        {/* Budget Overview - Now in second position */}
         <Card className="card-financial">
           <CardHeader>
             <CardTitle>Budget Overview</CardTitle>
@@ -205,35 +232,6 @@ export const Dashboard: React.FC = () => {
             <BudgetOverview budgets={budgets} />
           </CardContent>
         </Card>
-      </div>
-
-      {/* Recent Transactions and Savings Goals */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
-        {/* Recent Transactions */}
-        <div className="lg:col-span-2">
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription>Your latest expenses and income</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RecentTransactions expenses={expenses?.slice(0, 5)} />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Savings Goals */}
-        <div>
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle>Savings Goals</CardTitle>
-              <CardDescription>Track your progress</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SavingsGoals goals={savingsGoals} />
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );

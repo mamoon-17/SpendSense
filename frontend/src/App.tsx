@@ -12,14 +12,13 @@ import { Register } from "@/pages/auth/Register";
 import { VerifyEmail } from "@/pages/auth/VerifyEmail";
 import { Dashboard } from "@/pages/Dashboard";
 import { Budgets } from "@/pages/Budgets";
-
 import { Expenses } from "@/pages/Expenses";
 import { SavingsGoals } from "@/pages/SavingsGoals";
 import { Reports } from "@/pages/Reports";
 import { Connections } from "@/pages/Connections";
 import { Bills } from "@/pages/Bills";
-import { Notifications } from "@/pages/Notifications";
 import { Settings } from "@/pages/Settings";
+import { Notifications } from "@/pages/Notifications";
 import NotFound from "./pages/NotFound";
 import { Messages } from "./pages/Messages";
 
@@ -60,15 +59,14 @@ const App = () => (
           >
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="budgets" element={<Budgets />} />
-
             <Route path="expenses" element={<Expenses />} />
             <Route path="savings" element={<SavingsGoals />} />
             <Route path="messages" element={<Messages />} />
             <Route path="bills" element={<Bills />} />
             <Route path="reports" element={<Reports />} />
             <Route path="connections" element={<Connections />} />
-            <Route path="notifications" element={<Notifications />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="notifications" element={<Notifications />} />
           </Route>
 
           {/* Catch-all route */}

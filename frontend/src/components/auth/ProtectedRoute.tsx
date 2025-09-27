@@ -1,12 +1,12 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuthStore } from "@/stores/authStore";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
   requireEmailVerification?: boolean;
-  requiredRoles?: Array<'admin' | 'user'>;
+  requiredRoles?: Array<"admin" | "user">;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
@@ -20,7 +20,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check authentication
   if (requireAuth && !isAuthenticated) {
-    return <Navigate to="/demo" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Check email verification

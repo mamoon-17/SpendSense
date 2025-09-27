@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { 
-  Send, 
-  Search, 
-  MoreVertical, 
-  Users, 
+import React, { useState } from "react";
+import {
+  Send,
+  Search,
+  MoreVertical,
+  Users,
   MessageSquare,
   Phone,
   Video,
@@ -13,33 +13,33 @@ import {
   CheckCheck,
   Clock,
   Plus,
-  Bot
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AIAssistant } from '@/components/ai/AIAssistant';
-import { format, isToday, isYesterday } from 'date-fns';
-import { cn } from '@/lib/utils';
+  Bot,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AIAssistant } from "@/components/ai/AIAssistant";
+import { format, isToday, isYesterday } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
   content: string;
   senderId: string;
   timestamp: Date;
-  status: 'sent' | 'delivered' | 'read';
-  type: 'text' | 'file' | 'budget-share' | 'expense-alert';
+  status: "sent" | "delivered" | "read";
+  type: "text" | "file" | "budget-share" | "expense-alert";
   metadata?: any;
 }
 
 interface Conversation {
   id: string;
   name: string;
-  type: 'direct' | 'group';
+  type: "direct" | "group";
   participants: string[];
   lastMessage?: Message;
   unreadCount: number;
@@ -57,135 +57,143 @@ interface User {
 
 // Mock data
 const mockUsers: User[] = [
-  { id: '1', name: 'You', avatar: '', isOnline: true },
-  { id: '2', name: 'Sarah Johnson', avatar: '', isOnline: true },
-  { id: '3', name: 'Mike Chen', avatar: '', isOnline: false },
-  { id: '4', name: 'Emma Davis', avatar: '', isOnline: true },
-  { id: '5', name: 'AI Assistant', avatar: '', isOnline: true }
+  { id: "1", name: "You", avatar: "", isOnline: true },
+  { id: "2", name: "Sarah Johnson", avatar: "", isOnline: true },
+  { id: "3", name: "Mike Chen", avatar: "", isOnline: false },
+  { id: "4", name: "Emma Davis", avatar: "", isOnline: true },
+  { id: "5", name: "AI Assistant", avatar: "", isOnline: true },
 ];
 
 const mockMessages: Message[] = [
   {
-    id: '1',
-    content: 'Hey! I noticed we\'re over budget on dining this month. Should we adjust our restaurant spending?',
-    senderId: '2',
+    id: "1",
+    content:
+      "Hey! I noticed we're over budget on dining this month. Should we adjust our restaurant spending?",
+    senderId: "2",
     timestamp: new Date(Date.now() - 3600000),
-    status: 'read',
-    type: 'text'
+    status: "read",
+    type: "text",
   },
   {
-    id: '2', 
-    content: 'Good catch! I think we can cut back on takeout and cook more at home.',
-    senderId: '1',
+    id: "2",
+    content:
+      "Good catch! I think we can cut back on takeout and cook more at home.",
+    senderId: "1",
     timestamp: new Date(Date.now() - 3300000),
-    status: 'read',
-    type: 'text'
+    status: "read",
+    type: "text",
   },
   {
-    id: '3',
-    content: 'I\'ve shared our updated grocery budget with you. Check it out!',
-    senderId: '2',
+    id: "3",
+    content: "I've shared our updated grocery budget with you. Check it out!",
+    senderId: "2",
     timestamp: new Date(Date.now() - 1800000),
-    status: 'read',
-    type: 'budget-share',
-    metadata: { budgetName: 'Monthly Groceries', amount: 800 }
+    status: "read",
+    type: "budget-share",
+    metadata: { budgetName: "Monthly Groceries", amount: 800 },
   },
   {
-    id: '4',
-    content: 'Looks great! I approved the changes.',
-    senderId: '1',
+    id: "4",
+    content: "Looks great! I approved the changes.",
+    senderId: "1",
     timestamp: new Date(Date.now() - 900000),
-    status: 'read',
-    type: 'text'
+    status: "read",
+    type: "text",
   },
   {
-    id: '5',
-    content: 'Based on your spending patterns, I recommend setting aside an extra $200 for dining next month.',
-    senderId: '5',
+    id: "5",
+    content:
+      "Based on your spending patterns, I recommend setting aside an extra $200 for dining next month.",
+    senderId: "5",
     timestamp: new Date(Date.now() - 600000),
-    status: 'read',
-    type: 'text'
-  }
+    status: "read",
+    type: "text",
+  },
 ];
 
 const mockConversations: Conversation[] = [
   {
-    id: '1',
-    name: 'Sarah Johnson',
-    type: 'direct',
-    participants: ['1', '2'],
+    id: "1",
+    name: "Sarah Johnson",
+    type: "direct",
+    participants: ["1", "2"],
     lastMessage: mockMessages[4],
     unreadCount: 0,
     isOnline: true,
-    budgetId: 'family-budget'
+    budgetId: "family-budget",
   },
   {
-    id: '2',
-    name: 'Family Budget Group',
-    type: 'group', 
-    participants: ['1', '2', '3'],
+    id: "2",
+    name: "Family Budget Group",
+    type: "group",
+    participants: ["1", "2", "3"],
     lastMessage: {
-      id: '6',
-      content: 'Mike added a new expense: Gas bill - $120',
-      senderId: '3',
+      id: "6",
+      content: "Mike added a new expense: Gas bill - $120",
+      senderId: "3",
       timestamp: new Date(Date.now() - 7200000),
-      status: 'delivered',
-      type: 'expense-alert'
+      status: "delivered",
+      type: "expense-alert",
     },
     unreadCount: 2,
-    budgetId: 'family-budget'
+    budgetId: "family-budget",
   },
   {
-    id: '3',
-    name: 'AI Financial Advisor',
-    type: 'direct',
-    participants: ['1', '5'],
+    id: "3",
+    name: "AI Financial Advisor",
+    type: "direct",
+    participants: ["1", "5"],
     lastMessage: {
-      id: '7',
-      content: 'Your savings goal progress looks great! You\'re ahead of schedule on your emergency fund.',
-      senderId: '5',
+      id: "7",
+      content:
+        "Your savings goal progress looks great! You're ahead of schedule on your emergency fund.",
+      senderId: "5",
       timestamp: new Date(Date.now() - 10800000),
-      status: 'read',
-      type: 'text'
+      status: "read",
+      type: "text",
     },
     unreadCount: 0,
-    isOnline: true
-  }
+    isOnline: true,
+  },
 ];
 
 export const Messages: React.FC = () => {
-  const [selectedConversation, setSelectedConversation] = useState<string>(mockConversations[0].id);
-  const [messageText, setMessageText] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedConversation, setSelectedConversation] = useState<string>(
+    mockConversations[0].id
+  );
+  const [messageText, setMessageText] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const currentConversation = mockConversations.find(c => c.id === selectedConversation);
-  const currentUser = mockUsers.find(u => u.id === '1');
+  const currentConversation = mockConversations.find(
+    (c) => c.id === selectedConversation
+  );
+  const currentUser = mockUsers.find((u) => u.id === "1");
 
-  const filteredConversations = mockConversations.filter(conversation =>
+  const filteredConversations = mockConversations.filter((conversation) =>
     conversation.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatMessageTime = (date: Date) => {
     if (isToday(date)) {
-      return format(date, 'HH:mm');
+      return format(date, "HH:mm");
     } else if (isYesterday(date)) {
-      return 'Yesterday';
+      return "Yesterday";
     } else {
-      return format(date, 'MMM dd');
+      return format(date, "MMM dd");
     }
   };
 
   const handleSendMessage = () => {
     if (!messageText.trim()) return;
-    
+
     // Add message logic here
-    setMessageText('');
+    setMessageText("");
   };
 
   const renderMessage = (message: Message) => {
-    const sender = mockUsers.find(u => u.id === message.senderId);
-    const isOwnMessage = message.senderId === '1';
-    const isAI = message.senderId === '5';
+    const sender = mockUsers.find((u) => u.id === message.senderId);
+    const isOwnMessage = message.senderId === "1";
+    const isAI = message.senderId === "5";
 
     return (
       <div
@@ -202,18 +210,20 @@ export const Messages: React.FC = () => {
             </AvatarFallback>
           </Avatar>
         )}
-        
-        <div className={cn(
-          "max-w-[70%] space-y-1",
-          isOwnMessage ? "items-end" : "items-start"
-        )}>
-          {message.type === 'budget-share' ? (
-            <div className={cn(
-              "p-3 rounded-lg border",
-              isOwnMessage 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-muted"
-            )}>
+
+        <div
+          className={cn(
+            "max-w-[30%] space-y-1",
+            isOwnMessage ? "items-end" : "items-start"
+          )}
+        >
+          {message.type === "budget-share" ? (
+            <div
+              className={cn(
+                "p-3 rounded-lg border",
+                isOwnMessage ? "bg-primary text-primary-foreground" : "bg-muted"
+              )}
+            >
               <div className="flex items-center space-x-2 mb-2">
                 <Users className="w-4 h-4" />
                 <span className="font-medium">Budget Shared</span>
@@ -221,35 +231,47 @@ export const Messages: React.FC = () => {
               <p className="text-sm">{message.metadata?.budgetName}</p>
               <p className="text-sm opacity-80">${message.metadata?.amount}</p>
             </div>
-          ) : message.type === 'expense-alert' ? (
-            <div className={cn(
-              "p-3 rounded-lg border border-warning/20 bg-warning/10"
-            )}>
-              <p className="text-sm text-warning-foreground">{message.content}</p>
+          ) : message.type === "expense-alert" ? (
+            <div
+              className={cn(
+                "p-3 rounded-lg border border-warning/20 bg-warning/10"
+              )}
+            >
+              <p className="text-sm text-warning-foreground">
+                {message.content}
+              </p>
             </div>
           ) : (
-            <div className={cn(
-              "p-3 rounded-lg",
-              isOwnMessage 
-                ? "bg-primary text-primary-foreground" 
-                : isAI 
+            <div
+              className={cn(
+                "p-3 rounded-lg",
+                isOwnMessage
+                  ? "bg-primary text-primary-foreground"
+                  : isAI
                   ? "bg-primary/10 border border-primary/20"
                   : "bg-muted"
-            )}>
+              )}
+            >
               <p className="text-sm">{message.content}</p>
             </div>
           )}
-          
-          <div className={cn(
-            "flex items-center space-x-1 text-xs text-muted-foreground",
-            isOwnMessage ? "flex-row-reverse space-x-reverse" : ""
-          )}>
+
+          <div
+            className={cn(
+              "flex items-center space-x-1 text-xs text-muted-foreground",
+              isOwnMessage ? "flex-row-reverse space-x-reverse" : ""
+            )}
+          >
             <span>{formatMessageTime(message.timestamp)}</span>
             {isOwnMessage && (
               <div className="flex items-center">
-                {message.status === 'sent' && <Clock className="w-3 h-3" />}
-                {message.status === 'delivered' && <Check className="w-3 h-3" />}
-                {message.status === 'read' && <CheckCheck className="w-3 h-3 text-primary" />}
+                {message.status === "sent" && <Clock className="w-3 h-3" />}
+                {message.status === "delivered" && (
+                  <Check className="w-3 h-3" />
+                )}
+                {message.status === "read" && (
+                  <CheckCheck className="w-3 h-3 text-primary" />
+                )}
               </div>
             )}
           </div>
@@ -259,7 +281,7 @@ export const Messages: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col">
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div>
@@ -280,14 +302,16 @@ export const Messages: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-6 min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
         {/* Conversations List */}
-        <div className="lg:col-span-2">
+        <div className="lg:w-80 lg:flex-shrink-0">
           <Card className="card-financial h-full">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Conversations</CardTitle>
-                <Badge variant="secondary">{filteredConversations.length}</Badge>
+                <Badge variant="secondary">
+                  {filteredConversations.length}
+                </Badge>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -300,52 +324,67 @@ export const Messages: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-[500px]">
-                <div className="space-y-1 p-4">
+              <ScrollArea className="h-[calc(100vh-28rem)] max-h-[600px]">
+                <div className="space-y-2 p-4">
                   {filteredConversations.map((conversation) => (
                     <div
                       key={conversation.id}
                       onClick={() => setSelectedConversation(conversation.id)}
                       className={cn(
-                        "p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/50",
-                        selectedConversation === conversation.id && "bg-primary/10 border border-primary/20"
+                        "p-4 rounded-lg cursor-pointer transition-colors hover:bg-muted/50",
+                        selectedConversation === conversation.id &&
+                          "bg-primary/10 border border-primary/20"
                       )}
                     >
-                      <div className="flex items-start space-x-3">
+                      <div className="flex items-start space-x-3 w-full">
                         <div className="relative">
                           <Avatar className="w-10 h-10">
                             <AvatarFallback>
-                              {conversation.type === 'group' ? (
+                              {conversation.type === "group" ? (
                                 <Users className="w-5 h-5" />
-                              ) : conversation.name === 'AI Financial Advisor' ? (
+                              ) : conversation.name ===
+                                "AI Financial Advisor" ? (
                                 <Bot className="w-5 h-5" />
                               ) : (
                                 conversation.name.charAt(0)
                               )}
                             </AvatarFallback>
                           </Avatar>
-                          {conversation.isOnline && conversation.type === 'direct' && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-background" />
-                          )}
+                          {conversation.isOnline &&
+                            conversation.type === "direct" && (
+                              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-background" />
+                            )}
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <h4 className="font-medium text-sm leading-tight">{conversation.name}</h4>
+                            <h4 className="font-medium text-sm leading-tight truncate flex-1 mr-2">
+                              {conversation.name}
+                            </h4>
                             {conversation.unreadCount > 0 && (
                               <Badge className="bg-primary text-white text-xs flex-shrink-0">
                                 {conversation.unreadCount}
                               </Badge>
                             )}
                           </div>
-                          
+
                           {conversation.lastMessage && (
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs text-muted-foreground truncate flex-1 mr-2">
-                                {conversation.lastMessage.content}
-                              </p>
-                              <span className="text-xs text-muted-foreground flex-shrink-0">
-                                {formatMessageTime(conversation.lastMessage.timestamp)}
+                            <div className="flex items-start space-x-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-muted-foreground overflow-hidden" style={{
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  lineHeight: '1.2em',
+                                  maxHeight: '2.4em'
+                                }}>
+                                  {conversation.lastMessage.content}
+                                </p>
+                              </div>
+                              <span className="text-xs text-muted-foreground flex-shrink-0 mt-0.5">
+                                {formatMessageTime(
+                                  conversation.lastMessage.timestamp
+                                )}
                               </span>
                             </div>
                           )}
@@ -360,7 +399,7 @@ export const Messages: React.FC = () => {
         </div>
 
         {/* Chat Area */}
-        <div className="lg:col-span-3">
+        <div className="flex-1 min-w-0">
           <Card className="card-financial h-full flex flex-col">
             {currentConversation ? (
               <>
@@ -369,9 +408,10 @@ export const Messages: React.FC = () => {
                   <div className="flex items-center space-x-3">
                     <Avatar className="w-10 h-10">
                       <AvatarFallback>
-                        {currentConversation.type === 'group' ? (
+                        {currentConversation.type === "group" ? (
                           <Users className="w-5 h-5" />
-                        ) : currentConversation.name === 'AI Financial Advisor' ? (
+                        ) : currentConversation.name ===
+                          "AI Financial Advisor" ? (
                           <Bot className="w-5 h-5" />
                         ) : (
                           currentConversation.name.charAt(0)
@@ -379,21 +419,22 @@ export const Messages: React.FC = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold">{currentConversation.name}</h3>
+                      <h3 className="font-semibold">
+                        {currentConversation.name}
+                      </h3>
                       <p className="text-sm text-muted-foreground">
-                        {currentConversation.type === 'group' 
+                        {currentConversation.type === "group"
                           ? `${currentConversation.participants.length} members`
-                          : currentConversation.isOnline ? 'Online' : 'Offline'
-                        }
+                          : currentConversation.isOnline
+                          ? "Online"
+                          : "Offline"}
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     {currentConversation.budgetId && (
-                      <Badge variant="outline">
-                        Budget Chat
-                      </Badge>
+                      <Badge variant="outline">Budget Chat</Badge>
                     )}
                     <Button variant="ghost" size="sm">
                       <Phone className="w-4 h-4" />
@@ -409,7 +450,7 @@ export const Messages: React.FC = () => {
 
                 {/* Messages */}
                 <CardContent className="flex-1 p-4">
-                  <ScrollArea className="h-[500px]">
+                  <ScrollArea className="h-[calc(100vh-28rem)]">
                     <div className="space-y-4">
                       {mockMessages.map(renderMessage)}
                     </div>
@@ -427,14 +468,16 @@ export const Messages: React.FC = () => {
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
                         placeholder="Type a message..."
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        onKeyPress={(e) =>
+                          e.key === "Enter" && handleSendMessage()
+                        }
                         className="resize-none"
                       />
                     </div>
                     <Button variant="ghost" size="sm">
                       <Smile className="w-4 h-4" />
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleSendMessage}
                       className="btn-primary"
                       disabled={!messageText.trim()}
@@ -442,7 +485,7 @@ export const Messages: React.FC = () => {
                       <Send className="w-4 h-4" />
                     </Button>
                   </div>
-                  
+
                   {/* Quick Actions for Budget Chats */}
                   {currentConversation.budgetId && (
                     <div className="flex gap-2 mt-2">

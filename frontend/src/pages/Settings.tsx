@@ -22,12 +22,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/authStore';
+import { useTheme } from '@/components/layout/ThemeProvider';
+import { toast } from '@/hooks/use-toast';
 
 export const Settings: React.FC = () => {
   const { user } = useAuthStore();
-  const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +33,17 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login, isAuthenticated } = useAuthStore();
+
+  // Force light mode for auth pages
+  useEffect(() => {
+    const html = document.documentElement;
+    const originalTheme = html.className;
+    html.className = "light";
+
+    return () => {
+      html.className = originalTheme;
+    };
+  }, []);
 
   const {
     register,
@@ -107,85 +118,25 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Hero Image */}
-      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden bg-white">
+      {/* Background Image with Gradient */}
+      <div className="absolute inset-0">
         <img
           src={heroImage}
           alt="Financial Dashboard"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-primary/90 to-success/90" />
-        <div className="relative z-10 p-12 flex flex-col justify-center text-white">
-          <div className="flex items-center space-x-3 mb-8">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <TrendingUp className="w-7 h-7" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">FinanceFlow</h1>
-              <p className="text-white/80">Personal Finance Management</p>
-            </div>
-          </div>
-          <div className="space-y-6">
-            <h2 className="text-4xl font-bold leading-tight">
-              Take Control of Your Finances
-            </h2>
-            <p className="text-lg text-white/90 leading-relaxed">
-              Track expenses, set budgets, and achieve your financial goals with
-              our comprehensive personal finance platform.
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-white rounded-full" />
-                <span className="text-white/90">Smart budget tracking</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-white rounded-full" />
-                <span className="text-white/90">Expense categorization</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-white rounded-full" />
-                <span className="text-white/90">
-                  Financial insights & reports
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-8">
-          {/* Mobile Header */}
-          <div className="lg:hidden text-center">
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-foreground">
-                FinanceFlow
-              </h1>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-8">
-            {/* Logo */}
-            <div className="text-center">
-              <div className="flex items-center justify-center space-x-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-primary to-success rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  FinanceFlow
-                </h1>
-              </div>
-            </div>
-
+      {/* Login Form */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 space-y-8">
             {/* Login Form */}
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900">Login</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Login</h2>
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

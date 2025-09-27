@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
-import { Sidebar } from './Sidebar';
-import { useAuthStore } from '@/stores/authStore';
-import { cn } from '@/lib/utils';
+import React, { useState } from "react";
+import { Outlet, Navigate } from "react-router-dom";
+import { Menu } from "lucide-react";
+import { Sidebar } from "./Sidebar";
+import { ProfileDropdown } from "./ProfileDropdown";
+import { NotificationDropdown } from "./NotificationDropdown";
+import { useAuthStore } from "@/stores/authStore";
+import { cn } from "@/lib/utils";
 
 export const Layout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -24,8 +26,8 @@ export const Layout: React.FC = () => {
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div 
-            className="absolute inset-0 bg-background/80 backdrop-blur-sm" 
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
           <div className="relative">
@@ -37,7 +39,7 @@ export const Layout: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="bg-card border-b border-card-border px-4 py-3 flex items-center justify-between lg:justify-end">
+        <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(true)}
@@ -46,17 +48,11 @@ export const Layout: React.FC = () => {
             <Menu className="w-5 h-5 text-foreground" />
           </button>
 
-          {/* Desktop Sidebar Toggle */}
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="hidden lg:flex p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            {sidebarCollapsed ? (
-              <Menu className="w-5 h-5 text-foreground" />
-            ) : (
-              <X className="w-5 h-5 text-foreground" />
-            )}
-          </button>
+          {/* Notifications & Profile */}
+          <div className="ml-auto flex items-center space-x-2">
+            <NotificationDropdown />
+            <ProfileDropdown />
+          </div>
         </header>
 
         {/* Page Content */}
