@@ -13,10 +13,10 @@ export class User {
     name: string;
 
     @Column({type: 'varchar', length: 255, unique: true, nullable: false})
-    email: string;
+    username: string;
 
     @Column({type: 'varchar', length: 255, nullable: false})
-    password_hash: string;
+    password: string;
 
     @ManyToMany(() => Bill, (bill) => bill.participants)
     bills_participating: Bill[];

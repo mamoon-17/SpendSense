@@ -14,7 +14,7 @@ import { ConversationsModule } from './modules/conversations/conversations.modul
 import { MessageHistoryModule } from './modules/message-history/message-history.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CategoriesModule } from './modules/categories/categories.module';
-
+import { AuthModule } from './modules/auth/auth.module';
 
 
 @Module({
@@ -51,6 +51,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
     MessageHistoryModule,
     NotificationsModule,
     CategoriesModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

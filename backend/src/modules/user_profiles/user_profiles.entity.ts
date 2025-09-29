@@ -2,10 +2,10 @@ import {
   Column,
   Entity,
   JoinColumn,
-  ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { User } from '../modules/users/users.entity';
+import { User } from '../users/users.entity';
 
 @Entity('user_profiles')
 export class UserProfile {
@@ -15,7 +15,7 @@ export class UserProfile {
   @Column('uuid', { name: 'user_id' })
   user_id: string;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @OneToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
