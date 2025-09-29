@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, ManyToMany, JoinTable } from "typeorm";
 import { Category } from "../categories/categories.entity";
 import { User } from "../users/users.entity";
 
@@ -39,4 +39,12 @@ export class Budget {
     @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' , onUpdate: 'CASCADE' })
     @JoinColumn({ name: 'created_by' })
     created_by: User;
+
+    @ManyToMany(() => User, (user) => user.budgets_participating, { cascade: true })
+    @JoinTable({
+        name: 'budget_participants',
+        joinColumn: { name: 'budget_id', referencedColumnName: 'id' },
+        inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' }
+    })
+    participants: User[];
 }

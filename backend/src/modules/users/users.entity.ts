@@ -1,4 +1,8 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, ManyToMany, OneToMany } from "typeorm";
+import { Bill } from "../bills/bills.entity";
+import { Budget } from "../budgets/budgets.entity";
+import { Conversation } from "../conversations/conversations.entity";
+import { Message } from "../message-history/message-history.entity";
 
 @Entity('users')
 export class User {
@@ -13,4 +17,16 @@ export class User {
 
     @Column({type: 'varchar', length: 255, nullable: false})
     password_hash: string;
+
+    @ManyToMany(() => Bill, (bill) => bill.participants)
+    bills_participating: Bill[];
+
+    @ManyToMany(() => Budget, (budget) => budget.participants)
+    budgets_participating: Budget[];
+
+    @ManyToMany(() => Conversation, (conversation) => conversation.participants)
+    conversations_participating: Conversation[];
+
+    @OneToMany(() => Message, (message) => message.sender)
+    messages_sent: Message[];
 }

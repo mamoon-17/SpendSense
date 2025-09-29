@@ -5,15 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './modules/users/users.module';
 import { UserProfielsModule } from './modules/user_profiles/user_profiles.module';
 import { BudgetsModule } from './modules/budgets/budgets.module';
-import { BudgetParticipantsModule } from './modules/budget_participants/budget_participants.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { SavingsGoalsModule } from './modules/savings_goals/savings_goals.module';
 import { BillsModule } from './modules/bills/bills.module';
-import { BillParticipantsModule } from './modules/bill_participants/bill_participants.module';
 import { ConnectionsModule } from './modules/connections/connections.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
-import { ConversationParticipantsModule } from './modules/conversation_participants/conversation_participants.module';
 import { MessageHistoryModule } from './modules/message-history/message-history.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -44,15 +41,13 @@ import { CategoriesModule } from './modules/categories/categories.module';
     UsersModule,
     UserProfielsModule,
     BudgetsModule,
-    BudgetParticipantsModule,
     ExpensesModule,
     SavingsGoalsModule,
     BillsModule,
-    BillParticipantsModule,
     ConnectionsModule,
     InvitationsModule,
     ConversationsModule,
-    ConversationParticipantsModule,
+    
     MessageHistoryModule,
     NotificationsModule,
     CategoriesModule,

@@ -1,4 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
+import { User } from '../users/users.entity';
+import { Message } from '../message-history/message-history.entity';
 
 export enum ConversationType {
   Direct = 'direct',
@@ -26,4 +28,15 @@ export class Conversation {
 
   @Column('uuid', { name: 'billSplit_id', nullable: true })
   billSplit_id: string | null;
+
+  @ManyToMany(() => User, (user) => user.conversations_participating, { cascade: true })
+  @JoinTable({
+    name: 'conversation_participants',
+    joinColumn: { name: 'conversation_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' },
+  })
+  participants: User[];
+
+  @OneToMany(() => Message, (message) => message.conversation)
+  messages: Message[];
 }
