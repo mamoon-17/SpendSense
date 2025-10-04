@@ -16,7 +16,6 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { CategoriesModule } from './modules/categories/categories.module';
 import { AuthModule } from './modules/auth/auth.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -25,7 +24,7 @@ import { AuthModule } from './modules/auth/auth.module';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
@@ -47,7 +46,7 @@ import { AuthModule } from './modules/auth/auth.module';
     ConnectionsModule,
     InvitationsModule,
     ConversationsModule,
-    
+
     MessageHistoryModule,
     NotificationsModule,
     CategoriesModule,
