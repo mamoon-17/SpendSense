@@ -4,6 +4,8 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  ManyToMany,
+  JoinTable
 } from 'typeorm';
 import { User } from '../users/users.entity';
 
@@ -53,4 +55,12 @@ export class SavingsGoal {
   @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @ManyToMany(() => User, (user) => user.savings_goals_participating, { cascade: true })
+  @JoinTable({
+    name: 'savings_goal_participants',
+    joinColumn: { name: 'savings_goal_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' }
+  })
+  participants: User[];
 }

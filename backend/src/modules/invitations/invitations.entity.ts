@@ -1,4 +1,14 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { User } from '../users/users.entity';
+import { Budget } from '../budgets/budgets.entity';
+import { Bill } from '../bills/bills.entity';
+import { SavingsGoal } from '../savings_goals/savings_goals.entity';
 
 export enum InvitationStatus {
   Pending = 'pending',
@@ -17,34 +27,23 @@ export class Invitation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // The user who receives the invitation
-  @Column({ type: 'varchar', length: 255, nullable: false })
-  username: string;
+  @ManyToOne(() => Budget, { nullable: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'budget_id' })
+  budget_id: Budget | null;
 
-  // Who sent the invitation
-  @Column('uuid', { name: 'sent_by', nullable: false })
-  sent_by: string;
+  @ManyToOne(() => Bill, { nullable: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'bill_id' })
+  bill_id: Bill | null;
 
-  // Status of the invitation
-  @Column({
-    type: 'enum',
-    enum: InvitationStatus,
-    enumName: 'invitation_status',
-    default: InvitationStatus.Pending,
-  })
+  @ManyToOne(() => SavingsGoal, { nullable: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'savinggoal_id' })
+  savinggoal_id: SavingsGoal | null;
+
+  @Column({ type: 'varchar', length: 255, unique: true, nullable: false })
+  token: string;
+
+  @Column({type: 'enum', enum: InvitationStatus, enumName: 'invitation_status', default: InvitationStatus.Pending,})
   status: InvitationStatus;
-
-  // Type of invitation: / budget / bill
-  @Column({
-    type: 'enum',
-    enum: InvitationType,
-    enumName: 'invitation_type',
-  })
-  type: InvitationType;
-
-  // Generic reference to target entity (budget, bill)
-  @Column('uuid', { name: 'target_id', nullable: false })
-  target_id: string;
 
   // Timestamp when invitation was sent
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
@@ -61,4 +60,12 @@ export class Invitation {
   // Timestamp when the invitation was accepted
   @Column({ type: 'timestamp', nullable: true })
   accepted_at: Date | null;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'sent_by' })
+  sender: User;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'sent_to' })
+  reveicer: User;
 }
