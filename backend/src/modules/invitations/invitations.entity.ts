@@ -6,6 +6,9 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../users/users.entity';
+import { Budget } from '../budgets/budgets.entity';
+import { Bill } from '../bills/bills.entity';
+import { SavingsGoal } from '../savings_goals/savings_goals.entity';
 
 export enum InvitationStatus {
   Pending = 'pending',
@@ -19,28 +22,23 @@ export class Invitation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: false })
-  email: string;
+  @ManyToOne(() => Budget, { nullable: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'budget_id' })
+  budget_id: Budget | null;
 
-  @Column('uuid', { name: 'budget_id', nullable: true })
-  budget_id: string | null;
+  @ManyToOne(() => Bill, { nullable: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'bill_id' })
+  bill_id: Bill | null;
 
-  @Column('uuid', { name: 'bill_id', nullable: true })
-  bill_id: string | null;
+  @ManyToOne(() => SavingsGoal, { nullable: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'savinggoal_id' })
+  savinggoal_id: SavingsGoal | null;
 
   @Column({ type: 'varchar', length: 255, unique: true, nullable: false })
   token: string;
 
-  @Column({
-    type: 'enum',
-    enum: InvitationStatus,
-    enumName: 'invitation_status',
-    default: InvitationStatus.Pending,
-  })
+  @Column({type: 'enum', enum: InvitationStatus, enumName: 'invitation_status', default: InvitationStatus.Pending,})
   status: InvitationStatus;
-
-  @Column('uuid', { name: 'sent_by', nullable: false })
-  sent_by: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   sent_at: Date;
@@ -54,4 +52,8 @@ export class Invitation {
   @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'sent_by' })
   sender: User;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'sent_to' })
+  reveicer: User;
 }
