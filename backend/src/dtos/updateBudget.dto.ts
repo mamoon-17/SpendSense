@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsEnum, IsDateString, IsArray } from 'class-validator';
-import { BudgetPeriod } from '../budgets/budgets.entity';
+import { BudgetPeriod } from '../modules/budgets/budgets.entity';
 
 import { PartialType } from "@nestjs/mapped-types";
 import { CreateBudgetDTO } from "./createBudget.dto";

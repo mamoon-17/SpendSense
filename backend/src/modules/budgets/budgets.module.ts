@@ -4,7 +4,7 @@ import { BudgetsService } from './budgets.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Budget } from './budgets.entity';
 
-@Module({
+@Module({   
   imports: [TypeOrmModule.forFeature([Budget])],
   controllers: [BudgetsController],
   providers: [BudgetsService],
