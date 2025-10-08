@@ -24,6 +24,9 @@ export class User {
     @ManyToMany(() => Budget, (budget) => budget.participants)
     budgets_participating: Budget[];
 
+    @ManyToMany(() => Budget, (savings_goals) => savings_goals.participants)
+    savings_goals_participating: Budget[];
+
     @ManyToMany(() => Conversation, (conversation) => conversation.participants)
     conversations_participating: Conversation[];
 
