@@ -28,7 +28,7 @@ export class InvitationsService {
       throw new Error('Sender connection must be in Connected status.');
     }
 
-    const newInvitation = this.repo.create(invitation);
+    const newInvitation = this.repo.create(invitation as Partial<Invitation>);
     await this.repo.save(newInvitation);
     return newInvitation;
   }

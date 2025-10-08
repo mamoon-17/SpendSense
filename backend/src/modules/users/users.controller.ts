@@ -13,8 +13,6 @@ import { UsersService } from './users.service';
 import { CreateUserDTO } from 'src/modules/users/dtos/createUser.dto';
 import { UpdateUserDTO } from 'src/modules/users/dtos/updateUser.dto';
 import { AuthGuard } from '../auth/auth.guard';
-import { CurrentUserInterceptor } from 'src/common/interceptors/current-user.interceptor';
-import { UseInterceptors } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from './users.entity';
 
@@ -24,7 +22,6 @@ export class UsersController {
 
   @Get('me')
   @UseGuards(AuthGuard)
-  @UseInterceptors(CurrentUserInterceptor)
   getCurrentUser(@CurrentUser() user: User) {
     return user;
   }

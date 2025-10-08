@@ -5,6 +5,7 @@ import {
   CallHandler,
 } from '@nestjs/common';
 import { Observable, from } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { UsersService } from 'src/modules/users/users.service';
 
 @Injectable()
@@ -15,17 +16,16 @@ export class CurrentUserInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     const userId = request.session?.userId;
 
-    if (userId) {
-      // Fetch user and attach to request
-      return from(
-        this.usersService.getUserById(userId).then((user) => {
-          request.currentUser = user;
-          return next.handle().toPromise();
-        }),
-      );
+    if (!userId) {
+      return next.handle(); // no user, just continue
     }
 
-    // If no userId, just continue
-    return next.handle();
+    // Convert promise to observable and attach user before continuing
+    return from(this.usersService.getUserById(userId)).pipe(
+      switchMap((user) => {
+        request.currentUser = user;
+        return next.handle();
+      }),
+    );
   }
 }
