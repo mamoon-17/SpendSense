@@ -46,3 +46,181 @@ Accept: application/json
   "username": "john_doe",
   "password": "secret123"
 }
+
+
+### Signup (Auth) - No JWT token generated
+POST http://localhost:3000/auth/signup
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Jane Doe",
+  "username": "jane_doe",
+  "password": "secret123"
+}
+
+
+
+
+
+GET http://localhost:3000/users
+Accept: application/json
+
+### Expected Response:
+### {
+###   "statusCode": 401,
+###   "message": "No authentication token found",
+###   "error": "Unauthorized"
+### }
+
+### 2. ❌ Test AuthGuard WITH invalid cookie - Should return 401 Unauthorized
+GET http://localhost:3000/users
+Accept: application/json
+Cookie: JWTtoken=invalid_token_here
+
+### Expected Response:
+### {
+###   "statusCode": 401,
+###   "message": "Invalid authentication token",
+###   "error": "Unauthorized"
+### }
+
+### 3. ❌ Test AuthGuard WITH malformed JWT - Should return 401 Unauthorized
+GET http://localhost:3000/users
+Accept: application/json
+Cookie: JWTtoken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid_payload.invalid_signature
+
+### Expected Response:
+### {
+###   "statusCode": 401,
+###   "message": "Invalid authentication token",
+###   "error": "Unauthorized"
+### }
+
+### 4. ❌ Test AuthGuard WITH JWT missing userId - Should return 401 Unauthorized
+### (This would require creating a custom JWT without userId for testing)
+
+### 5. ✅ Test AuthGuard WITH valid JWT cookie - Should return 200 OK
+### First, login to get a valid JWT cookie, then test:
+GET http://localhost:3000/users
+Accept: application/json
+Cookie: JWTtoken=YOUR_VALID_JWT_TOKEN_FROM_LOGIN
+
+### Expected Response:
+### {
+###   "message": "Users list here"
+### }
+
+### ========================================
+### STEP-BY-STEP TESTING INSTRUCTIONS
+### ========================================
+
+### Step 1: First, create a user via signup
+POST http://localhost:3000/auth/signup
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Test User",
+  "username": "test_user",
+  "password": "password123"
+}
+
+### Step 2: Login to get a valid JWT cookie
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "test_user",
+  "password": "password123"
+}
+
+### Step 3: Copy the JWT token from the login response and test protected endpoint
+### (The cookie should be automatically set by the browser/client)
+GET http://localhost:3000/users
+Accept: application/json
+
+### ========================================
+### MANUAL COOKIE TESTING
+### ========================================
+
+### If you want to manually test with a specific JWT token:
+### 1. Login first to get a valid token
+### 2. Copy the token from response headers or browser dev tools
+### 3. Use it in the Cookie header below:
+
+### GET http://localhost:3000/users
+### Accept: application/json
+### Cookie: JWTtoken=PASTE_YOUR_JWT_TOKEN_HERE
+
+### ========================================
+### 🧪 PROPER AUTHGUARD TESTING (CLEAR COOKIES FIRST!)
+### ========================================
+
+### Step 1: 🚪 LOGOUT to clear JWT cookie
+### NOTE: If you get 404, restart your backend server first!
+POST http://localhost:3000/auth/logout
+Accept: application/json
+
+### Alternative: Test if server is working with existing endpoint
+GET http://localhost:3000/users/public
+Accept: application/json
+
+### Step 2: ❌ Test protected endpoint WITHOUT cookie (should fail)
+GET http://localhost:3000/users
+Accept: application/json
+
+### Expected Response: 401 Unauthorized
+### {
+###   "statusCode": 401,
+###   "message": "No authentication token found",
+###   "error": "Unauthorized"
+### }
+
+### Step 3: ❌ Test protected endpoint WITH invalid cookie (should fail)
+GET http://localhost:3000/users
+Accept: application/json
+Cookie: JWTtoken=invalid_token_here
+
+### Expected Response: 401 Unauthorized
+### {
+###   "statusCode": 401,
+###   "message": "Invalid authentication token",
+###   "error": "Unauthorized"
+### }
+
+### Step 4: ✅ Test public endpoint (should work without auth)
+GET http://localhost:3000/users/public
+Accept: application/json
+
+### Expected Response: 200 OK
+### {
+###   "message": "This endpoint is public - no authentication required"
+### }
+
+### Step 5: 🔐 LOGIN to get valid JWT cookie
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "john_doe",
+  "password": "secret123"
+}
+
+### Step 6: ✅ Test protected endpoint WITH valid cookie (should work)
+GET http://localhost:3000/users
+Accept: application/json
+
+### Expected Response: 200 OK with users list
+
+
+GET http://localhost:3000/users/me
+Accept: application/json
+Cookie: JWTtoken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzNDQzZDA4MC0zZDQ2LTQwZDEtODMzYy0xMjA4OTAzMzc4YjIiLCJpYXQiOjE3NTk1Nzc3MDAsImV4cCI6MTc1OTU4MTMwMH0.ZcrRy-dTBQI4XOAUthO9OVqa0HMhdP9-G-7oUjCXkNg;
+
+
+GET http://localhost:3000/users/me
+Accept: application/json
+Cookie: JWTtoken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzNDQzZDA4MC0zZDQ2LTQwZDEtODMzYy0xMjA4OTAzMzc4YjIiLCJpYXQiOjE3NTk1NzgxMDYsImV4cCI6MTc1OTU4MTcwNn0.1yNymOAsA3-SflgkE6pXl2Nv2eRssQmEY6N9C4ilozM;

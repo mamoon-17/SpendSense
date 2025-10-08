@@ -1,9 +1,14 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
 import { LoginDTO } from 'src/dtos/login.dto';
+import { SignupDTO } from 'src/dtos/signup.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,5 +39,28 @@ export class AuthService {
     });
 
     return { token };
+  }
+
+  async signup(body: SignupDTO): Promise<{ message: string }> {
+    const { name, username, password } = body;
+
+    // Check if user already exists
+    try {
+      const existingUser = await this.userService.getUserByUsername(username);
+      if (existingUser) {
+        throw new ConflictException('Username already exists');
+      }
+    } catch (error) {
+      // If user not found, that's good - we can proceed with signup
+      if (error.message !== 'User not found') {
+        throw error;
+      }
+    }
+
+    // Create new user
+    const createUserPayload = { name, username, password };
+    await this.userService.createUser(createUserPayload);
+
+    return { message: 'User created successfully' };
   }
 }

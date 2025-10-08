@@ -1,35 +1,64 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDTO } from 'src/dtos/createUser.dto';
 import { UpdateUserDTO } from 'src/dtos/updateUser.dto';
-
+import { AuthGuard } from '../auth/auth.guard';
+import { CurrentUserInterceptor } from 'src/common/interceptors/current-user.interceptor';
+import { UseInterceptors } from '@nestjs/common';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @Controller('users')
 export class UsersController {
-    constructor(private readonly userService: UsersService) {}
+  constructor(private readonly userService: UsersService) {}
 
-    @Get()
-    async getAllUsers() {
-        return this.userService.getAllUsers();
-    }
+  @Get('me')
+  @UseGuards(AuthGuard)
+  @UseInterceptors(CurrentUserInterceptor)
+  getCurrentUser(@CurrentUser() user: any) {
+    return user;
+  }
+  @Get()
+  @UseGuards(AuthGuard)
+  async getAllUsers(@Request() req: any) {
+    // Access the authenticated user's ID from session
+    const userId = req.session?.userId;
+    console.log('Authenticated user ID:', userId);
 
-    @Post()
-    async createUser(@Body() payload: CreateUserDTO) {
-        return this.userService.createUser(payload);
-    }
+    return this.userService.getAllUsers();
+  }
 
-    @Get(':id')
-    async getUserById(@Param('id') id: string) {
-        return this.userService.getUserById(id);
-    }
+  @Post()
+  async createUser(@Body() payload: CreateUserDTO) {
+    return this.userService.createUser(payload);
+  }
 
-    @Patch(':id')
-    async updateUser(@Param('id') id: string, @Body() payload: UpdateUserDTO) {
-        return this.userService.updateUser(id, payload);
-    }
+  @Get('public')
+  async getPublicMessage() {
+    return { message: 'This endpoint is public - no authentication required' };
+  }
 
-    @Delete(':id')
-    async deleteUser(@Param('id') id: string) {
-        return this.userService.deleteUser(id);
-    }
+  @Get(':id')
+  async getUserById(@Param('id') id: string) {
+    return this.userService.getUserById(id);
+  }
+
+  @Patch(':id')
+  async updateUser(@Param('id') id: string, @Body() payload: UpdateUserDTO) {
+    return this.userService.updateUser(id, payload);
+  }
+
+  @Delete(':id')
+  async deleteUser(@Param('id') id: string) {
+    return this.userService.deleteUser(id);
+  }
 }
