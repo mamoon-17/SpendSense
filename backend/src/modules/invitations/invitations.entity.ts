@@ -1,11 +1,4 @@
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { User } from '../users/users.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum InvitationStatus {
   Pending = 'pending',
@@ -14,23 +7,25 @@ export enum InvitationStatus {
   Cancelled = 'cancelled',
 }
 
+export enum InvitationType {
+  Budget = 'budget',
+  Bill = 'bill',
+}
+
 @Entity('invitations')
 export class Invitation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // The user who receives the invitation
   @Column({ type: 'varchar', length: 255, nullable: false })
-  email: string;
+  username: string;
 
-  @Column('uuid', { name: 'budget_id', nullable: true })
-  budget_id: string | null;
+  // Who sent the invitation
+  @Column('uuid', { name: 'sent_by', nullable: false })
+  sent_by: string;
 
-  @Column('uuid', { name: 'bill_id', nullable: true })
-  bill_id: string | null;
-
-  @Column({ type: 'varchar', length: 255, unique: true, nullable: false })
-  token: string;
-
+  // Status of the invitation
   @Column({
     type: 'enum',
     enum: InvitationStatus,
@@ -39,19 +34,31 @@ export class Invitation {
   })
   status: InvitationStatus;
 
-  @Column('uuid', { name: 'sent_by', nullable: false })
-  sent_by: string;
+  // Type of invitation: / budget / bill
+  @Column({
+    type: 'enum',
+    enum: InvitationType,
+    enumName: 'invitation_type',
+  })
+  type: InvitationType;
 
+  // Generic reference to target entity (budget, bill)
+  @Column('uuid', { name: 'target_id', nullable: false })
+  target_id: string;
+
+  // Timestamp when invitation was sent
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   sent_at: Date;
 
-  @Column({ type: 'timestamp', nullable: false })
+  // Expiration timestamp
+  @Column({
+    type: 'timestamp',
+    nullable: false,
+    default: () => "CURRENT_TIMESTAMP + INTERVAL '7 days'",
+  })
   expires_at: Date;
 
+  // Timestamp when the invitation was accepted
   @Column({ type: 'timestamp', nullable: true })
   accepted_at: Date | null;
-
-  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
-  @JoinColumn({ name: 'sent_by' })
-  sender: User;
 }

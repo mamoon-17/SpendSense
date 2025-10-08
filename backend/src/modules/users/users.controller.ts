@@ -10,12 +10,13 @@ import {
   Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDTO } from 'src/dtos/createUser.dto';
-import { UpdateUserDTO } from 'src/dtos/updateUser.dto';
+import { CreateUserDTO } from 'src/modules/users/dtos/createUser.dto';
+import { UpdateUserDTO } from 'src/modules/users/dtos/updateUser.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserInterceptor } from 'src/common/interceptors/current-user.interceptor';
 import { UseInterceptors } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { User } from './users.entity';
 
 @Controller('users')
 export class UsersController {
@@ -24,27 +25,18 @@ export class UsersController {
   @Get('me')
   @UseGuards(AuthGuard)
   @UseInterceptors(CurrentUserInterceptor)
-  getCurrentUser(@CurrentUser() user: any) {
+  getCurrentUser(@CurrentUser() user: User) {
     return user;
   }
   @Get()
   @UseGuards(AuthGuard)
-  async getAllUsers(@Request() req: any) {
-    // Access the authenticated user's ID from session
-    const userId = req.session?.userId;
-    console.log('Authenticated user ID:', userId);
-
+  async getAllUsers() {
     return this.userService.getAllUsers();
   }
 
   @Post()
   async createUser(@Body() payload: CreateUserDTO) {
     return this.userService.createUser(payload);
-  }
-
-  @Get('public')
-  async getPublicMessage() {
-    return { message: 'This endpoint is public - no authentication required' };
   }
 
   @Get(':id')
