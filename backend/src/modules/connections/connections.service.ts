@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Connection, ConnectionStatus } from './connections.entity';
 import { Repository } from 'typeorm';
 import { CreateConnectionDto } from './dtos/createConnection.dto';
-import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class ConnectionsService {

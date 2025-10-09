@@ -15,8 +15,10 @@ import { MessageHistoryModule } from './modules/message-history/message-history.
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { AuthModule } from './modules/auth/auth.module';
+
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -53,6 +55,7 @@ import { CurrentUserInterceptor } from './common/interceptors/current-user.inter
     NotificationsModule,
     CategoriesModule,
     AuthModule,
+    ChatModule,
   ],
   // When DI-dependent interceptor is needed globally, provide it here
   providers: [

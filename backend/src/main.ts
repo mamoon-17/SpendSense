@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import cookieParser from 'cookie-parser'; // <-- Correct import
+import * as cookieParser from 'cookie-parser'; // <-- Correct import
 
 async function bootstrap() {
   // Development-only: allow self-signed certs to avoid TLS errors with poolers/proxies
