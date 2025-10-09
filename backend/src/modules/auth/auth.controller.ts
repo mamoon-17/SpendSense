@@ -13,7 +13,7 @@ export class AuthController {
     @Body() body: LoginDTO,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { token } = await this.authService.login(body);
+    const { token, user } = await this.authService.login(body);
 
     // Attach cookie
     res.cookie('JWTtoken', token, {
@@ -22,7 +22,7 @@ export class AuthController {
       sameSite: 'strict',
     });
 
-    return { message: 'Login successful' };
+    return { message: 'Login successful', user, token };
   }
 
   @Post('signup')

@@ -23,7 +23,7 @@ import heroImage from "@/assets/hero-finance.jpg";
 const registerSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Please enter a valid email address"),
+    username: z.string().min(3, "Username must be at least 3 characters"),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
@@ -77,16 +77,16 @@ export const Register: React.FC = () => {
     try {
       await authAPI.register({
         name: data.name,
-        email: data.email,
+        username: data.username,
         password: data.password,
       });
 
       toast({
         title: "Registration successful!",
-        description: "Please check your email to verify your account.",
+        description: "Your account has been created successfully.",
       });
 
-      navigate("/verify-email", { state: { email: data.email } });
+      navigate("/login");
     } catch (error: any) {
       toast({
         title: "Registration failed",
@@ -151,24 +151,24 @@ export const Register: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Email Field */}
+                  {/* Username Field */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">
-                      Email Address
+                      Username
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        {...register("email")}
-                        type="email"
-                        placeholder="Enter your email"
+                        {...register("username")}
+                        type="text"
+                        placeholder="Enter your username"
                         className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         disabled={isLoading}
                       />
                     </div>
-                    {errors.email && (
+                    {errors.username && (
                       <p className="text-sm text-red-500">
-                        {errors.email.message}
+                        {errors.username.message}
                       </p>
                     )}
                   </div>

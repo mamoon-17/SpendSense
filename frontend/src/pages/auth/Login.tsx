@@ -21,7 +21,7 @@ import { useAuthStore } from "@/stores/authStore";
 import heroImage from "@/assets/hero-finance.jpg";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -63,13 +63,13 @@ export const Login: React.FC = () => {
     try {
       // Handle demo credentials
       if (
-        (data.email === "john@demo.com" && data.password === "demo123") ||
-        (data.email === "sarah@demo.com" && data.password === "demo123")
+        (data.username === "john" && data.password === "demo123") ||
+        (data.username === "sarah" && data.password === "demo123")
       ) {
         const demoUser = {
-          id: data.email === "john@demo.com" ? "1" : "2",
-          name: data.email === "john@demo.com" ? "John Smith" : "Sarah Johnson",
-          email: data.email,
+          id: data.username === "john" ? "1" : "2",
+          name: data.username === "john" ? "John Smith" : "Sarah Johnson",
+          email: `${data.username}@demo.com`,
           role: "user" as const,
           profileComplete: true,
           emailVerified: true,
@@ -91,7 +91,7 @@ export const Login: React.FC = () => {
 
       // Regular login
       const response = await authAPI.login({
-        email: data.email,
+        username: data.username,
         password: data.password,
       });
       const { user, token } = response.data;
@@ -149,16 +149,16 @@ export const Login: React.FC = () => {
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        {...register("email")}
-                        type="email"
+                        {...register("username")}
+                        type="text"
                         placeholder="Type your username"
                         className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         disabled={isLoading}
                       />
                     </div>
-                    {errors.email && (
+                    {errors.username && (
                       <p className="text-sm text-red-500">
-                        {errors.email.message}
+                        {errors.username.message}
                       </p>
                     )}
                   </div>
@@ -232,17 +232,13 @@ export const Login: React.FC = () => {
                         <p className="text-xs text-gray-500 mb-1">
                           Demo User 1:
                         </p>
-                        <p className="text-sm font-mono">
-                          john@demo.com / demo123
-                        </p>
+                        <p className="text-sm font-mono">john / demo123</p>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-lg border">
                         <p className="text-xs text-gray-500 mb-1">
                           Demo User 2:
                         </p>
-                        <p className="text-sm font-mono">
-                          sarah@demo.com / demo123
-                        </p>
+                        <p className="text-sm font-mono">sarah / demo123</p>
                       </div>
                     </div>
                   </div>

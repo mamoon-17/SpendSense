@@ -17,7 +17,7 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async login(body: LoginDTO): Promise<{ token: string }> {
+  async login(body: LoginDTO): Promise<{ token: string; user: any }> {
     const { username, password } = body;
 
     // Find user
@@ -38,7 +38,10 @@ export class AuthService {
       expiresIn: '1h',
     });
 
-    return { token };
+    // Return user data without password
+    const { password: _, ...userWithoutPassword } = user;
+
+    return { token, user: userWithoutPassword };
   }
 
   async signup(body: SignupDTO): Promise<{ message: string }> {
