@@ -1,4 +1,16 @@
-import { Column, Entity, PrimaryGeneratedColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+  ManyToMany,
+  JoinTable,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
 import { User } from '../users/users.entity';
 import { Message } from '../message-history/message-history.entity';
 
@@ -8,6 +20,8 @@ export enum ConversationType {
 }
 
 @Entity('conversations')
+@Index(['updated_at']) // Index for sorting conversations by last activity
+@Index(['type']) // Index for filtering by conversation type
 export class Conversation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -29,7 +43,25 @@ export class Conversation {
   @Column('uuid', { name: 'billSplit_id', nullable: true })
   billSplit_id: string | null;
 
-  @ManyToMany(() => User, (user) => user.conversations_participating, { cascade: true })
+  @ManyToOne(() => Message, { nullable: true })
+  @JoinColumn({ name: 'last_message_id' })
+  last_message: Message | null;
+
+  @Column({ type: 'int', default: 0 })
+  unread_count: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  last_message_at: Date | null;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updated_at: Date;
+
+  @ManyToMany(() => User, (user) => user.conversations_participating, {
+    cascade: true,
+  })
   @JoinTable({
     name: 'conversation_participants',
     joinColumn: { name: 'conversation_id', referencedColumnName: 'id' },

@@ -60,6 +60,33 @@ export class ConnectionsService {
         { requester: { id: user_id }, status: ConnectionStatus.Connected },
         { receiver: { id: user_id }, status: ConnectionStatus.Connected },
       ],
+      relations: ['requester', 'receiver'],
     });
+  }
+
+  async getConnectionBetweenUsers(
+    userId1: string,
+    userId2: string,
+  ): Promise<Connection | null> {
+    return this.repo.findOne({
+      where: [
+        {
+          requester: { id: userId1 },
+          receiver: { id: userId2 },
+          status: ConnectionStatus.Connected,
+        },
+        {
+          requester: { id: userId2 },
+          receiver: { id: userId1 },
+          status: ConnectionStatus.Connected,
+        },
+      ],
+      relations: ['requester', 'receiver'],
+    });
+  }
+
+  async areUsersConnected(userId1: string, userId2: string): Promise<boolean> {
+    const connection = await this.getConnectionBetweenUsers(userId1, userId2);
+    return !!connection;
   }
 }

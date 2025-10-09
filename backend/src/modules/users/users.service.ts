@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './users.entity';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { CreateUserDTO } from 'src/modules/users/dtos/createUser.dto';
 import { UpdateUserDTO } from 'src/modules/users/dtos/updateUser.dto';
 import * as bcrypt from 'bcrypt';
@@ -30,6 +30,12 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     return user;
+  }
+
+  async findByIds(ids: string[]): Promise<User[]> {
+    return this.usersRepo.find({
+      where: { id: In(ids) },
+    });
   }
 
   async createUser(payload: CreateUserDTO): Promise<object> {
