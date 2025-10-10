@@ -61,34 +61,6 @@ export const Login: React.FC = () => {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      // Handle demo credentials
-      if (
-        (data.username === "john" && data.password === "demo123") ||
-        (data.username === "sarah" && data.password === "demo123")
-      ) {
-        const demoUser = {
-          id: data.username === "john" ? "1" : "2",
-          name: data.username === "john" ? "John Smith" : "Sarah Johnson",
-          email: `${data.username}@demo.com`,
-          role: "user" as const,
-          profileComplete: true,
-          emailVerified: true,
-          createdAt: new Date().toISOString(),
-        };
-
-        const demoToken = `demo_token_${demoUser.id}`;
-
-        login(demoUser, demoToken);
-
-        toast({
-          title: "Welcome to the demo!",
-          description: `Successfully logged in as ${demoUser.name}`,
-        });
-
-        navigate("/app/dashboard");
-        return;
-      }
-
       // Regular login
       const response = await authAPI.login({
         username: data.username,
@@ -220,29 +192,6 @@ export const Login: React.FC = () => {
                     "LOGIN"
                   )}
                 </Button>
-
-                {/* Demo Credentials */}
-                <div className="border-t pt-6">
-                  <div className="text-center mb-4">
-                    <p className="text-sm text-gray-600 mb-3">
-                      Try the demo with these credentials:
-                    </p>
-                    <div className="space-y-2 text-left">
-                      <div className="p-3 bg-gray-50 rounded-lg border">
-                        <p className="text-xs text-gray-500 mb-1">
-                          Demo User 1:
-                        </p>
-                        <p className="text-sm font-mono">john / demo123</p>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg border">
-                        <p className="text-xs text-gray-500 mb-1">
-                          Demo User 2:
-                        </p>
-                        <p className="text-sm font-mono">sarah / demo123</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Sign Up Link */}
                 <div className="text-center">

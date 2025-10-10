@@ -8,6 +8,7 @@ import {
   Post,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDTO } from 'src/modules/users/dtos/createUser.dto';
@@ -19,6 +20,13 @@ import { User } from './users.entity';
 @Controller('users')
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
+
+  @Get('search')
+  @UseGuards(AuthGuard)
+  async searchUsersByUsername(@Query('username') username: string) {
+    if (!username) return [];
+    return this.userService.searchUsersByUsername(username);
+  }
 
   @Get('me')
   @UseGuards(AuthGuard)

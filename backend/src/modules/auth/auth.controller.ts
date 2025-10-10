@@ -13,15 +13,7 @@ export class AuthController {
     @Body() body: LoginDTO,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { token, user } = await this.authService.login(body);
-
-    // Attach cookie
-    res.cookie('JWTtoken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in prod
-      sameSite: 'strict',
-    });
-
+    const { token, user } = await this.authService.login(body, res);
     return { message: 'Login successful', user, token };
   }
 

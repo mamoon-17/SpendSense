@@ -8,21 +8,10 @@ export const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
-// Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = useAuthStore.getState().token;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+// No request interceptor needed for cookies auth
 
 api.interceptors.response.use(
   (response) => response,
@@ -98,4 +87,37 @@ export const reportsAPI = {
       params: { format },
       responseType: "blob",
     }),
+};
+
+export const connectionsAPI = {
+  getConnections: () => api.get("/connections"),
+  createConnection: (data: { requester_id: string; receiver_id: string }) =>
+    api.post("/connections", data),
+  acceptRequest: (receiver_id: string) =>
+    api.patch("/connections", { receiver_id }),
+  deleteConnection: (id: string) => api.delete(`/connections/${id}`),
+  // Search users by username
+  searchUsersByUsername: (username: string) =>
+    api.get("/users/search", { params: { username } }),
+  // Add a connection (send request)
+  addConnection: (receiver_id: string) =>
+    api.post("/connections", { receiver_id }),
+};
+
+export const invitationsAPI = {
+  sendInvitation: (data: {
+    username: string;
+    sent_by: string;
+    type: string;
+    target_id: string;
+  }) => api.post("/invitations", data),
+  getInvitations: () => api.get("/invitations"),
+  acceptInvitation: (id: string) => api.post(`/invitations/${id}/accept`),
+  declineInvitation: (id: string) => api.post(`/invitations/${id}/decline`),
+};
+
+export const conversationsAPI = {
+  getConversations: () => api.get("/conversations"),
+  createConversation: (data: any) => api.post("/conversations", data),
+  getConversation: (id: string) => api.get(`/conversations/${id}`),
 };

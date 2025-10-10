@@ -28,112 +28,6 @@ import { useChat } from "../../hooks/useChat";
 import { sanitizeText } from "../../utils/sanitize";
 import { isValidId, isValidMessage } from "../../utils/validate";
 
-// Mock data for testing
-const mockConversations = [
-  {
-    id: "1",
-    name: "Sarah Johnson",
-    type: "direct" as const,
-    isOnline: true,
-    unreadCount: 0,
-    lastMessage: {
-      content:
-        "Based on your spending patterns, I recommend setting aside an extra $200 for dining next month.",
-      timestamp: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-    },
-    avatar: "S",
-  },
-  {
-    id: "2",
-    name: "Family Budget Group",
-    type: "group" as const,
-    participants: ["Sarah", "Mike", "John"],
-    unreadCount: 2,
-    lastMessage: {
-      content: "Mike added a new expense: Gas bill - $120",
-      timestamp: new Date(Date.now() - 114 * 60 * 1000).toISOString(),
-    },
-    avatar: "FBG",
-    budgetId: "budget_1",
-  },
-  {
-    id: "3",
-    name: "AI Financial Advisor",
-    type: "direct" as const,
-    isOnline: true,
-    unreadCount: 0,
-    lastMessage: {
-      content:
-        "Your savings goal progress looks great! You're ahead of schedule by 15%.",
-      timestamp: new Date(Date.now() - 174 * 60 * 1000).toISOString(),
-    },
-    avatar: "AI",
-  },
-];
-
-const mockMessages = {
-  "1": [
-    {
-      id: "1",
-      content:
-        "Based on your spending patterns, I recommend setting aside an extra $200 for dining next month.",
-      sender: "sarah",
-      senderName: "Sarah Johnson",
-      sent_at: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-      status: "delivered",
-    },
-  ],
-  "2": [
-    {
-      id: "1",
-      content: "Budget Shared",
-      sender: "system",
-      senderName: "System",
-      sent_at: new Date(Date.now() - 24 * 60 * 1000).toISOString(),
-      status: "delivered",
-      isSystem: true,
-      budgetData: { title: "Monthly Groceries", amount: "$800" },
-    },
-    {
-      id: "2",
-      content:
-        "Good catch! I think we can cut back on takeout and cook more at home.",
-      sender: "user_1",
-      senderName: "You",
-      sent_at: new Date(Date.now() - 19 * 60 * 1000).toISOString(),
-      status: "read",
-    },
-    {
-      id: "3",
-      content: "Looks great! I approved the changes.",
-      sender: "user_1",
-      senderName: "You",
-      sent_at: new Date(Date.now() - 9 * 60 * 1000).toISOString(),
-      status: "read",
-    },
-    {
-      id: "4",
-      content:
-        "Based on your spending patterns, I recommend setting aside an extra $200 for dining next month.",
-      sender: "ai",
-      senderName: "AI Financial Advisor",
-      sent_at: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-      status: "delivered",
-    },
-  ],
-  "3": [
-    {
-      id: "1",
-      content:
-        "Your savings goal progress looks great! You're ahead of schedule by 15%.",
-      sender: "ai",
-      senderName: "AI Financial Advisor",
-      sent_at: new Date(Date.now() - 174 * 60 * 1000).toISOString(),
-      status: "delivered",
-    },
-  ],
-};
-
 const ModernChatApp: React.FC = observer(() => {
   const { chatStore, socket } = useChat();
   const [searchTerm, setSearchTerm] = useState("");
@@ -144,14 +38,12 @@ const ModernChatApp: React.FC = observer(() => {
   const [sendError, setSendError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Use mock data for now
-  const conversations = mockConversations;
+  // TODO: Replace with real API data
+  const conversations: any[] = [];
   const currentConversation = conversations.find(
     (c) => c.id === selectedConversation
   );
-  const messages = selectedConversation
-    ? (mockMessages as any)[selectedConversation] || []
-    : [];
+  const messages: any[] = [];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -326,74 +218,81 @@ const ModernChatApp: React.FC = observer(() => {
           <CardContent className="p-0">
             <ScrollArea className="h-[calc(100vh-12rem)] max-h-[600px]">
               <div className="space-y-2 p-4">
-                {filteredConversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    onClick={() => handleSelectConversation(conversation.id)}
-                    className={cn(
-                      "p-4 rounded-lg cursor-pointer transition-colors hover:bg-gray-50",
-                      selectedConversation === conversation.id &&
-                        "bg-blue-50 border border-blue-200"
-                    )}
-                  >
-                    <div className="flex items-start space-x-3 w-full">
-                      <div className="relative">
-                        <Avatar className="w-10 h-10">
-                          <AvatarFallback>
-                            {conversation.type === "group" ? (
-                              <Users className="w-5 h-5" />
-                            ) : conversation.name === "AI Financial Advisor" ? (
-                              <Bot className="w-5 h-5" />
-                            ) : (
-                              conversation.name.charAt(0)
+                {filteredConversations.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    No conversations found.
+                  </div>
+                ) : (
+                  filteredConversations.map((conversation) => (
+                    <div
+                      key={conversation.id}
+                      onClick={() => handleSelectConversation(conversation.id)}
+                      className={cn(
+                        "p-4 rounded-lg cursor-pointer transition-colors hover:bg-gray-50",
+                        selectedConversation === conversation.id &&
+                          "bg-blue-50 border border-blue-200"
+                      )}
+                    >
+                      <div className="flex items-start space-x-3 w-full">
+                        <div className="relative">
+                          <Avatar className="w-10 h-10">
+                            <AvatarFallback>
+                              {conversation.type === "group" ? (
+                                <Users className="w-5 h-5" />
+                              ) : conversation.name ===
+                                "AI Financial Advisor" ? (
+                                <Bot className="w-5 h-5" />
+                              ) : (
+                                conversation.name.charAt(0)
+                              )}
+                            </AvatarFallback>
+                          </Avatar>
+                          {conversation.isOnline &&
+                            conversation.type === "direct" && (
+                              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                             )}
-                          </AvatarFallback>
-                        </Avatar>
-                        {conversation.isOnline &&
-                          conversation.type === "direct" && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-                          )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium text-sm leading-tight truncate flex-1 mr-2">
-                            {conversation.name}
-                          </h4>
-                          {conversation.unreadCount > 0 && (
-                            <Badge className="bg-blue-600 text-white text-xs flex-shrink-0">
-                              {conversation.unreadCount}
-                            </Badge>
-                          )}
                         </div>
 
-                        {conversation.lastMessage && (
-                          <div className="flex items-start space-x-2">
-                            <div className="flex-1 min-w-0">
-                              <p
-                                className="text-xs text-gray-600 overflow-hidden"
-                                style={{
-                                  display: "-webkit-box",
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: "vertical",
-                                  lineHeight: "1.2em",
-                                  maxHeight: "2.4em",
-                                }}
-                              >
-                                {conversation.lastMessage.content}
-                              </p>
-                            </div>
-                            <span className="text-xs text-gray-500 flex-shrink-0 mt-0.5">
-                              {formatMessageTime(
-                                conversation.lastMessage.timestamp
-                              )}
-                            </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-medium text-sm leading-tight truncate flex-1 mr-2">
+                              {conversation.name}
+                            </h4>
+                            {conversation.unreadCount > 0 && (
+                              <Badge className="bg-blue-600 text-white text-xs flex-shrink-0">
+                                {conversation.unreadCount}
+                              </Badge>
+                            )}
                           </div>
-                        )}
+
+                          {conversation.lastMessage && (
+                            <div className="flex items-start space-x-2">
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className="text-xs text-gray-600 overflow-hidden"
+                                  style={{
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: "vertical",
+                                    lineHeight: "1.2em",
+                                    maxHeight: "2.4em",
+                                  }}
+                                >
+                                  {conversation.lastMessage.content}
+                                </p>
+                              </div>
+                              <span className="text-xs text-gray-500 flex-shrink-0 mt-0.5">
+                                {formatMessageTime(
+                                  conversation.lastMessage.timestamp
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </ScrollArea>
           </CardContent>
@@ -456,7 +355,13 @@ const ModernChatApp: React.FC = observer(() => {
               <CardContent className="flex-1 p-4 overflow-hidden">
                 <ScrollArea className="h-[calc(100vh-20rem)]">
                   <div className="space-y-4">
-                    {messages.map(renderMessage)}
+                    {messages.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8">
+                        No messages yet.
+                      </div>
+                    ) : (
+                      messages.map(renderMessage)
+                    )}
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>

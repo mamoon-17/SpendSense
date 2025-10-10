@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
@@ -17,7 +18,10 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async login(body: LoginDTO): Promise<{ token: string; user: any }> {
+  async login(
+    body: LoginDTO,
+    res?: Response,
+  ): Promise<{ token: string; user: any }> {
     const { username, password } = body;
 
     // Find user
@@ -41,6 +45,15 @@ export class AuthService {
     // Return user data without password
     const { password: _, ...userWithoutPassword } = user;
 
+    // If Express response is provided, set cookie
+    if (res) {
+      res.cookie('JWTtoken', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 1000, // 1 hour
+      });
+    }
     return { token, user: userWithoutPassword };
   }
 

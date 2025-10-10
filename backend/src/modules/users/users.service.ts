@@ -80,4 +80,14 @@ export class UsersService {
     await this.usersRepo.delete(id);
     return { msg: 'User deleted successfully' };
   }
+
+  async searchUsersByUsername(username: string): Promise<User[]> {
+    // Find users where username contains the search string (case-insensitive)
+    return this.usersRepo
+      .createQueryBuilder('user')
+      .where('LOWER(user.username) LIKE LOWER(:username)', {
+        username: `%${username}%`,
+      })
+      .getMany();
+  }
 }
