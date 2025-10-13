@@ -49,18 +49,26 @@ import { cn } from "@/lib/utils";
 import { connectionsAPI, invitationsAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/authStore";
 
 interface Connection {
   id: string;
-  name: string;
-  email: string;
-  avatar?: string;
+  requester: {
+    id: string;
+    name: string;
+    username: string;
+    email?: string;
+  };
+  receiver: {
+    id: string;
+    name: string;
+    username: string;
+    email?: string;
+  };
   status: "connected" | "pending" | "blocked";
-  role: "owner" | "admin" | "editor" | "viewer";
-  joinedAt: string;
-  lastActive: string;
-  sharedBudgets: number;
-  totalSpent: number;
+  accepted_at: string | null;
+  last_active: string | null;
+  created_at: string;
 }
 
 interface PendingInvite {
@@ -91,6 +99,7 @@ export const Connections: React.FC = () => {
   const [isInviting, setIsInviting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   // Real API queries (no mock data)
   const { data: connections = [] } = useQuery({
@@ -111,11 +120,17 @@ export const Connections: React.FC = () => {
         .catch(() => []),
   });
 
-  const filteredConnections = connections.filter(
-    (connection) =>
-      connection.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      connection.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredConnections = connections.filter((connection) => {
+    const otherUser =
+      connection.requester.id === user?.id
+        ? connection.receiver
+        : connection.requester;
+    return (
+      otherUser.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      otherUser.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      otherUser.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   const handleSendInvite = async () => {
     if (!inviteEmail || !selectedBudget) {
@@ -389,7 +404,9 @@ export const Connections: React.FC = () => {
                   {
                     connections.filter(
                       (c) =>
-                        new Date(c.lastActive) > new Date(Date.now() - 3600000)
+                        c.status === "connected" &&
+                        c.last_active &&
+                        new Date(c.last_active) > new Date(Date.now() - 3600000)
                     ).length
                   }
                 </p>
@@ -434,136 +451,171 @@ export const Connections: React.FC = () => {
                   </CardContent>
                 </Card>
               ) : (
-                filteredConnections.map((connection) => (
-                  <Card key={connection.id} className="card-financial">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="relative">
-                            <Avatar className="w-12 h-12">
-                              <AvatarFallback>
-                                {connection.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            {connection.status === "connected" &&
-                              new Date(connection.lastActive) >
-                                new Date(Date.now() - 3600000) && (
-                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-background" />
-                              )}
-                          </div>
+                filteredConnections.map((connection) => {
+                  const otherUser =
+                    connection.requester.id === user?.id
+                      ? connection.receiver
+                      : connection.requester;
+                  const isReceiver = connection.receiver.id === user?.id;
+                  const isPending = connection.status === "pending";
 
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2">
-                              <h3 className="font-semibold text-foreground">
-                                {connection.name}
-                              </h3>
-                              <Badge
-                                className={cn(
-                                  "text-xs",
-                                  getRoleBadgeColor(connection.role)
+                  return (
+                    <Card key={connection.id} className="card-financial">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className="relative">
+                              <Avatar className="w-12 h-12">
+                                <AvatarFallback>
+                                  {otherUser.name
+                                    ?.split(" ")
+                                    .map((n) => n[0])
+                                    .join("") ||
+                                    otherUser.username?.[0]?.toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              {connection.status === "connected" &&
+                                connection.last_active &&
+                                new Date(connection.last_active) >
+                                  new Date(Date.now() - 3600000) && (
+                                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-background" />
                                 )}
-                              >
-                                {getRoleIcon(connection.role)}
-                                <span className="ml-1 capitalize">
-                                  {connection.role}
-                                </span>
-                              </Badge>
-                              {connection.status === "pending" && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-warning border-warning/20"
-                                >
-                                  Pending
-                                </Badge>
-                              )}
                             </div>
 
-                            <p className="text-sm text-muted-foreground">
-                              {connection.email}
-                            </p>
-
-                            <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                              <span>
-                                Joined{" "}
-                                {format(
-                                  new Date(connection.joinedAt),
-                                  "MMM dd, yyyy"
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-2">
+                                <h3 className="font-semibold text-foreground">
+                                  {otherUser.name || otherUser.username}
+                                </h3>
+                                {isPending && isReceiver && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-warning border-warning/20"
+                                  >
+                                    Pending Approval
+                                  </Badge>
                                 )}
-                              </span>
-                              <span>
-                                {connection.sharedBudgets} shared budgets
-                              </span>
-                              {connection.totalSpent > 0 && (
+                                {isPending && !isReceiver && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-info border-info/20"
+                                  >
+                                    Request Sent
+                                  </Badge>
+                                )}
+                                {connection.status === "connected" && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-success border-success/20"
+                                  >
+                                    Connected
+                                  </Badge>
+                                )}
+                              </div>
+
+                              <p className="text-sm text-muted-foreground">
+                                @{otherUser.username}
+                              </p>
+
+                              <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                                 <span>
-                                  ${connection.totalSpent.toLocaleString()}{" "}
-                                  spent
+                                  {isPending && isReceiver
+                                    ? `Requested ${format(
+                                        new Date(connection.created_at),
+                                        "MMM dd, yyyy"
+                                      )}`
+                                    : connection.accepted_at
+                                    ? `Connected ${format(
+                                        new Date(connection.accepted_at),
+                                        "MMM dd, yyyy"
+                                      )}`
+                                    : `Requested ${format(
+                                        new Date(connection.created_at),
+                                        "MMM dd, yyyy"
+                                      )}`}
                                 </span>
-                              )}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center space-x-2">
-                          {connection.status === "pending" ? (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-success hover:text-success"
-                                onClick={() => {
-                                  toast({
-                                    title: "Connection Accepted",
-                                    description: `Connection request from ${connection.name} accepted.`,
-                                  });
-                                }}
-                              >
-                                <Check className="w-4 h-4" />
+                          <div className="flex items-center space-x-2">
+                            {isPending && isReceiver ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-success hover:text-success"
+                                  onClick={async () => {
+                                    try {
+                                      await connectionsAPI.acceptRequest(
+                                        connection.id
+                                      );
+                                      toast({
+                                        title: "Connection Accepted",
+                                        description: `Connection request from ${
+                                          otherUser.name || otherUser.username
+                                        } accepted.`,
+                                      });
+                                      // Refresh the connections list
+                                      window.location.reload();
+                                    } catch (error) {
+                                      toast({
+                                        title: "Error",
+                                        description:
+                                          "Failed to accept connection request.",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <Check className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => {
+                                    toast({
+                                      title: "Connection Declined",
+                                      description: `Connection request from ${
+                                        otherUser.name || otherUser.username
+                                      } declined.`,
+                                    });
+                                  }}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </>
+                            ) : connection.status === "connected" ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    handleStartChat(
+                                      connection.id,
+                                      otherUser.name || otherUser.username
+                                    )
+                                  }
+                                  title="Start Chat"
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                </Button>
+                                <Button size="sm" variant="outline">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              <Button size="sm" variant="outline" disabled>
+                                Pending...
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => {
-                                  toast({
-                                    title: "Connection Declined",
-                                    description: `Connection request from ${connection.name} declined.`,
-                                  });
-                                }}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  handleStartChat(
-                                    connection.id,
-                                    connection.name
-                                  )
-                                }
-                                title="Start Chat"
-                              >
-                                <MessageCircle className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <Settings className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
             </TabsContent>
 

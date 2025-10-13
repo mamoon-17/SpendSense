@@ -36,12 +36,17 @@ export class ConnectionsService {
     return new_connection;
   }
 
-  async acceptRequest(receiver_id: string): Promise<Connection> {
+  async acceptRequest(
+    connection_id: string,
+    user_id: string,
+  ): Promise<Connection> {
     const connection = await this.repo.findOne({
       where: {
-        receiver: { id: receiver_id },
+        id: connection_id,
+        receiver: { id: user_id },
         status: ConnectionStatus.Pending,
       },
+      relations: ['requester', 'receiver'],
     });
 
     if (!connection) {
@@ -51,6 +56,7 @@ export class ConnectionsService {
     connection.status = ConnectionStatus.Connected;
     connection.accepted_at = new Date();
     await this.repo.save(connection);
+
     return connection;
   }
 
@@ -88,5 +94,13 @@ export class ConnectionsService {
   async areUsersConnected(userId1: string, userId2: string): Promise<boolean> {
     const connection = await this.getConnectionBetweenUsers(userId1, userId2);
     return !!connection;
+  }
+
+  async getUserConnections(user_id: string): Promise<Connection[]> {
+    return this.repo.find({
+      where: [{ requester: { id: user_id } }, { receiver: { id: user_id } }],
+      relations: ['requester', 'receiver'],
+      order: { created_at: 'DESC' },
+    });
   }
 }

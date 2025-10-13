@@ -93,8 +93,8 @@ export const connectionsAPI = {
   getConnections: () => api.get("/connections"),
   createConnection: (data: { requester_id: string; receiver_id: string }) =>
     api.post("/connections", data),
-  acceptRequest: (receiver_id: string) =>
-    api.patch("/connections", { receiver_id }),
+  acceptRequest: (connection_id: string) =>
+    api.patch("/connections", { connection_id }),
   deleteConnection: (id: string) => api.delete(`/connections/${id}`),
   // Search users by username
   searchUsersByUsername: (username: string) =>

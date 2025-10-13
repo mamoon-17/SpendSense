@@ -9,7 +9,7 @@ import { UsersModule } from '../users/users.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Conversation]),
-    ConnectionsModule,
+    forwardRef(() => ConnectionsModule),
     UsersModule,
   ],
   controllers: [ConversationsController],
