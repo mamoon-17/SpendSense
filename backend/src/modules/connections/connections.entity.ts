@@ -1,9 +1,10 @@
 import {
-  Column,
   Entity,
-  JoinColumn,
-  ManyToOne,
   PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
 } from 'typeorm';
 import { User } from '../users/users.entity';
 
@@ -18,31 +19,26 @@ export class Connection {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('uuid', { name: 'user_id', nullable: false })
-  user_id: string;
+  // User who initiated the connection
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'requester_id' })
+  requester: User;
 
-  @Column('uuid', { name: 'connected_user_id', nullable: false })
-  connected_user_id: string;
+  // User who received the connection request
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'receiver_id' })
+  receiver: User;
 
   @Column({
     type: 'enum',
     enum: ConnectionStatus,
-    enumName: 'connection_status',
     default: ConnectionStatus.Pending,
   })
   status: ConnectionStatus;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  joined_at: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  accepted_at: Date | null;
 
   @Column({ type: 'timestamp', nullable: true })
   last_active: Date | null;
-
-  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
-  user: User;
-
-  @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
-  @JoinColumn({ name: 'connected_user_id' })
-  connected_user: User;
 }

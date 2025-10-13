@@ -1,0 +1,18 @@
+### Create a connection request
+POST http://localhost:3000/connections
+Content-Type: application/json
+Accept: application/json
+
+{
+  "receiver_id": "b785538e-ad96-41ac-bf70-157da2523080",
+  "requester_id": "0d320aa4-a3c3-44e8-a477-9d079a0cac45"
+}
+
+### Accept a connection request
+PATCH http://localhost:3000/connections
+Content-Type: application/json
+Accept: application/json
+
+{
+  "receiver_id": "b785538e-ad96-41ac-bf70-157da2523080"
+}

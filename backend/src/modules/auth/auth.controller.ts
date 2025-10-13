@@ -1,7 +1,7 @@
 import { Body, Controller, Post, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDTO } from 'src/dtos/login.dto';
-import { SignupDTO } from 'src/dtos/signup.dto';
+import { LoginDTO } from 'src/modules/users/dtos/login.dto';
+import { SignupDTO } from 'src/modules/users/dtos/signup.dto';
 import type { Response } from 'express';
 
 @Controller('auth')
@@ -32,7 +32,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  async logout(@Res({ passthrough: true }) res: Response) {
+  logout(@Res({ passthrough: true }) res: Response) {
     // Clear the JWT cookie
     res.clearCookie('JWTtoken');
     return { message: 'Logout successful' };
