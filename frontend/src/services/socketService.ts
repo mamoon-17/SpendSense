@@ -12,13 +12,28 @@ export class SocketService {
   connect() {
     if (!this.token)
       throw new Error("JWT token required for socket connection");
-    this.socket = io(import.meta.env.VITE_API_WS_URL, {
+    const apiWsEnv = (import.meta as any).env?.VITE_API_WS_URL as
+      | string
+      | undefined;
+    const apiHttpEnv = (import.meta as any).env?.VITE_API_URL as
+      | string
+      | undefined;
+    // Derive WS base from API URL if WS URL not provided
+    const derivedBase = apiHttpEnv
+      ? apiHttpEnv.replace(/\/?api\/?$/, "")
+      : "http://localhost:3000";
+    const baseUrl = apiWsEnv || derivedBase;
+
+    this.socket = io(baseUrl, {
       auth: { token: this.token },
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      transports: ["websocket"],
+      // Let socket.io choose best transport; polling fallback avoids premature close
+      // transports: ["websocket"],
+      withCredentials: true,
+      path: "/socket.io",
     });
     this.registerDefaultHandlers();
   }
@@ -27,15 +42,16 @@ export class SocketService {
     if (!this.socket) return;
     this.socket.on("connect", () => {
       // Connection established
+      // console.debug("Socket connected", this.socket?.id);
     });
     this.socket.on("disconnect", (reason) => {
       // Handle disconnect
     });
     this.socket.on("connect_error", (err) => {
-      // Handle connection error
+      console.error("Socket connect_error", err?.message || err);
     });
     this.socket.on("error", (err) => {
-      // Handle server error
+      console.error("Socket error", err);
     });
   }
 

@@ -46,7 +46,7 @@ import {
 import { AIAssistant } from "@/components/ai/AIAssistant";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { connectionsAPI, invitationsAPI } from "@/lib/api";
+import { connectionsAPI, invitationsAPI, conversationsAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
@@ -198,13 +198,38 @@ export const Connections: React.FC = () => {
     }
   };
 
-  const handleStartChat = (connectionId: string, connectionName: string) => {
-    toast({
-      title: "Starting Chat",
-      description: `Opening chat with ${connectionName}...`,
-    });
-    // Navigate to Messages page
-    navigate("/messages");
+  const handleStartChat = async (
+    connectionId: string,
+    connectionName: string
+  ) => {
+    try {
+      const connection = connections.find((c) => c.id === connectionId);
+      if (!connection || !user) return;
+      const otherUser =
+        connection.requester.id === user.id
+          ? connection.receiver
+          : connection.requester;
+
+      // Create or get a direct conversation with the other user
+      const res = await conversationsAPI.createConversation({
+        name: `Chat with ${otherUser.name || otherUser.username}`,
+        type: "direct",
+        participant_ids: [otherUser.id],
+      });
+      const conversation = res.data;
+      toast({
+        title: "Starting Chat",
+        description: `Opening chat with ${connectionName}...`,
+      });
+      // Navigate to chat screen; ModernChatApp will join via UI interaction
+      navigate("/messages", { state: { conversationId: conversation.id } });
+    } catch (e: any) {
+      toast({
+        title: "Unable to start chat",
+        description: e?.response?.data?.message || "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getRoleIcon = (role: string) => {

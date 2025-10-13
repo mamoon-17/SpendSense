@@ -27,23 +27,23 @@ import { format, isToday, isYesterday } from "date-fns";
 import { useChat } from "../../hooks/useChat";
 import { sanitizeText } from "../../utils/sanitize";
 import { isValidId, isValidMessage } from "../../utils/validate";
+import { useLocation } from "react-router-dom";
 
 const ModernChatApp: React.FC = observer(() => {
   const { chatStore, socket } = useChat();
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedConversation, setSelectedConversation] = useState<
     string | null
-  >("2");
+  >(chatStore.currentConversationId || null);
   const [messageText, setMessageText] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // TODO: Replace with real API data
-  const conversations: any[] = [];
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const conversations: any[] = chatStore.conversations;
   const currentConversation = conversations.find(
-    (c) => c.id === selectedConversation
+    (c) => c.id === (chatStore.currentConversationId || selectedConversation)
   );
-  const messages: any[] = [];
+  const messages: any[] = currentConversation?.messages || [];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,6 +54,7 @@ const ModernChatApp: React.FC = observer(() => {
     if (isValidId(id)) {
       chatStore.setCurrentConversation(id);
       socket?.emit("join_conversation", { conversationId: id });
+      socket?.emit("get_messages", { conversationId: id, page: 1, limit: 50 });
       chatStore.markAsRead(id);
     }
   };
@@ -77,10 +78,16 @@ const ModernChatApp: React.FC = observer(() => {
       status: "sending" as const,
     };
 
+    // Optimistically update UI
+    const convId = chatStore.currentConversationId || selectedConversation;
+    if (convId) {
+      chatStore.addMessage(convId, newMessage);
+    }
+
     // Emit to socket
-    if (selectedConversation) {
+    if (convId) {
       socket?.emit("send_message", {
-        conversation_id: selectedConversation,
+        conversation_id: convId,
         content: sanitized,
       });
     }
@@ -89,21 +96,27 @@ const ModernChatApp: React.FC = observer(() => {
     setSendError(null);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const formatMessageTime = (ts: string | Date) => {
+    const date = typeof ts === "string" ? new Date(ts) : ts;
+    if (isToday(date)) return format(date, "p");
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "MMM d");
+  };
+
+  const getConversationDisplayName = (conv: any) => {
+    if (!conv) return "Conversation";
+    if (conv.type === "direct" && Array.isArray(conv.participants)) {
+      const meId = chatStore.currentUserId;
+      const other = conv.participants.find((p: any) => p && p.id !== meId);
+      return other?.name || other?.username || conv.name || "Direct";
+    }
+    return conv.name || "Conversation";
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
-    }
-  };
-
-  const formatMessageTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    if (isToday(date)) {
-      return format(date, "HH:mm");
-    } else if (isYesterday(date)) {
-      return "Yesterday";
-    } else {
-      return format(date, "MMM d");
     }
   };
 
@@ -180,8 +193,21 @@ const ModernChatApp: React.FC = observer(() => {
   };
 
   const filteredConversations = conversations.filter((conv) =>
-    conv.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (conv.name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Auto-select conversation if navigated from connections
+  useEffect(() => {
+    const navConvId = (location.state as any)?.conversationId as
+      | string
+      | undefined;
+    if (navConvId) {
+      handleSelectConversation(navConvId);
+    }
+    // Also fetch list via socket (optional, REST also used in hook)
+    socket?.emit("get_conversations");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="h-full flex bg-gray-50">
@@ -228,9 +254,9 @@ const ModernChatApp: React.FC = observer(() => {
                       key={conversation.id}
                       onClick={() => handleSelectConversation(conversation.id)}
                       className={cn(
-                        "p-4 rounded-lg cursor-pointer transition-colors hover:bg-gray-50",
+                        "p-4 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800",
                         selectedConversation === conversation.id &&
-                          "bg-blue-50 border border-blue-200"
+                          "bg-blue-50 border border-blue-200 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-100"
                       )}
                     >
                       <div className="flex items-start space-x-3 w-full">
@@ -243,7 +269,10 @@ const ModernChatApp: React.FC = observer(() => {
                                 "AI Financial Advisor" ? (
                                 <Bot className="w-5 h-5" />
                               ) : (
-                                conversation.name.charAt(0)
+                                (
+                                  getConversationDisplayName(conversation) ||
+                                  "?"
+                                ).charAt(0)
                               )}
                             </AvatarFallback>
                           </Avatar>
@@ -256,7 +285,7 @@ const ModernChatApp: React.FC = observer(() => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
                             <h4 className="font-medium text-sm leading-tight truncate flex-1 mr-2">
-                              {conversation.name}
+                              {getConversationDisplayName(conversation)}
                             </h4>
                             {conversation.unreadCount > 0 && (
                               <Badge className="bg-blue-600 text-white text-xs flex-shrink-0">
@@ -321,7 +350,7 @@ const ModernChatApp: React.FC = observer(() => {
                   </Avatar>
                   <div>
                     <h3 className="font-semibold">
-                      {currentConversation.name}
+                      {getConversationDisplayName(currentConversation)}
                     </h3>
                     <p className="text-sm text-gray-600">
                       {currentConversation.type === "group"
@@ -335,20 +364,7 @@ const ModernChatApp: React.FC = observer(() => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  {currentConversation.budgetId && (
-                    <Badge variant="outline">Budget Chat</Badge>
-                  )}
-                  <Button variant="ghost" size="sm">
-                    <Phone className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Video className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </div>
+                {/* Call/video buttons removed; keep optional badge if needed */}
               </CardHeader>
 
               {/* Messages */}
