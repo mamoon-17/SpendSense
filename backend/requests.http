@@ -121,8 +121,8 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "name": "Test User",
-  "username": "test_user",
+  "name": "Haziq Bilal",
+  "username": "haziq154",
   "password": "password123"
 }
 
@@ -224,3 +224,1340 @@ Cookie: JWTtoken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzNDQzZDA4MC
 GET http://localhost:3000/users/me
 Accept: application/json
 Cookie: JWTtoken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzNDQzZDA4MC0zZDQ2LTQwZDEtODMzYy0xMjA4OTAzMzc4YjIiLCJpYXQiOjE3NTk1NzgxMDYsImV4cCI6MTc1OTU4MTcwNn0.1yNymOAsA3-SflgkE6pXl2Nv2eRssQmEY6N9C4ilozM;
+
+### ========================================
+### 💰 BILLS MODULE - COMPLETE TESTING FLOW
+### ========================================
+
+### PREREQUISITES:
+### 1. Login first to get JWT token
+### 2. Have at least 2 users created (for participants)
+### 3. Have at least 1 category created (type = 'bills')
+### Replace USER_ID, CATEGORY_ID, and BILL_ID with actual IDs from your database
+
+### ========================================
+### STEP 0: GET CATEGORIES (For category_id in bills)
+### ========================================
+
+### Get all bill categories
+GET http://localhost:3000/categories/bills
+Accept: application/json
+
+### Get all categories
+GET http://localhost:3000/categories
+Accept: application/json
+
+### 🆕 Create a category for bills (if you don't have one)
+POST http://localhost:3000/categories
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Food & Dining",
+  "type": "bills",
+  "icon": "🍽️"
+}
+
+### ========================================
+### STEP 1: CREATE A BILL
+### ========================================
+
+### 📋 INSTRUCTIONS: 
+### 1. Run "Get all users" above to get 3 user IDs
+### 2. Run "Get all categories" above to get 1 category ID
+### 3. Replace the IDs below with the actual UUIDs
+### 4. Then run this request
+
+### 🔹 FIRST: Get a category ID by running this request below ⬇️
+### Then copy the "id" from response and paste it in the bill request
+
+### 🔹 READY TO SEND: Create a new bill with 3 participants
+POST http://localhost:3000/bills
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Team Dinner at Italiano",
+  "description": "Italian restaurant team dinner",
+  "total_amount": 150.00,
+  "split_type": "equal",
+  "due_date": "2025-11-15T00:00:00.000Z",
+  "category_id": "ea83727a-f7aa-49fe-b7b8-5b079555285b",
+  "participant_ids": [
+    "0dfaf6b4-7b5e-4d88-935f-702c9e52e87e",
+    "d57d2fc2-6ca8-4fd4-8738-8e252c921fb4",
+    "7ec16e0c-4e7f-4b77-8f47-0928d03622d5"
+  ]
+}
+
+### Expected Response: 
+### { "msg": "Bill created successfully" }
+### This automatically creates payment records for each participant
+
+### ========================================
+### STEP 2: GET ALL BILLS (Enhanced with progress)
+### ========================================
+
+### Get all bills (with payment progress and split type display)
+GET http://localhost:3000/bills
+Accept: application/json
+
+### Expected Response:
+### [
+###   {
+###     "id": "bill-uuid",
+###     "name": "Dinner at Italiano",
+###     "total_amount": "120.50",
+###     "split_type": "equal",
+###     "split_type_display": "Equal Split",
+###     "participant_count": 3,
+###     "payment_progress": "0.00",
+###     "status": "pending",
+###     ...
+###   }
+### ]
+
+### ========================================
+### STEP 3: GET BILL BY ID
+### ========================================
+
+### Get specific bill
+GET http://localhost:3000/bills/436d7053-7c63-405e-8753-68fa2a2126af
+Accept: application/json
+
+### ========================================
+### STEP 4: GET BILL WITH PAYMENT DETAILS
+### ========================================
+
+### Get bill with individual participant payment status
+GET http://localhost:3000/bills/436d7053-7c63-405e-8753-68fa2a2126af/details
+Accept: application/json
+
+### Expected Response:
+### {
+###   "id": "bill-uuid",
+###   "name": "Dinner at Italiano",
+###   "participant_count": 3,
+###   "payment_progress": "0.00",
+###   "paid_participants": 0,
+###   "pending_participants": 3,
+###   "participants_details": [
+###     {
+###       "id": "user-1",
+###       "name": "John",
+###       "amount_owed": "40.17",
+###       "is_paid": false,
+###       "payment_status": "Pending"
+###     },
+###     {
+###       "id": "user-2",
+###       "name": "Sarah",
+###       "amount_owed": "40.17",
+###       "is_paid": false,
+###       "payment_status": "Pending"
+###     },
+###     {
+###       "id": "user-3",
+###       "name": "Mike",
+###       "amount_owed": "40.16",
+###       "is_paid": false,
+###       "payment_status": "Pending"
+###     }
+###   ]
+### }
+
+### ========================================
+### STEP 5: MARK PAYMENT AS PAID
+### ========================================
+
+### Mark first participant as paid
+PATCH http://localhost:3000/bills/436d7053-7c63-405e-8753-68fa2a2126af/payment//mark-paid
+Accept: application/json
+
+### Expected Response:
+### { "msg": "Payment marked as paid" }
+### Bill status automatically changes to "partial"
+
+### Mark second participant as paid
+PATCH http://localhost:3000/bills/436d7053-7c63-405e-8753-68fa2a2126af/payment/7ec16e0c-4e7f-4b77-8f47-0928d03622d5/mark-paid
+Accept: application/json
+
+### Mark third participant as paid (bill becomes "completed")
+PATCH http://localhost:3000/bills/REPLACE_WITH_BILL_ID/payment/REPLACE_WITH_PARTICIPANT_ID_3/mark-paid
+Accept: application/json
+
+### Expected: Bill status automatically changes to "completed"
+
+### ========================================
+### STEP 6: GET DASHBOARD SUMMARY
+### ========================================
+
+### Get summary statistics for dashboard cards
+GET http://localhost:3000/bills/summary/dashboard
+Accept: application/json
+
+### Expected Response:
+### {
+###   "total_bills": "254.80",        // Total amount of all bills
+###   "you_owe": "40.17",             // Amount you need to pay
+###   "owed_to_you": "80.34",         // Amount others owe you
+###   "active_bills": 2,              // Non-completed bills
+###   "bills_this_month": 3           // Bills due this month
+### }
+
+### ========================================
+### STEP 7: FILTER BY STATUS
+### ========================================
+
+### Get all bills (any status)
+GET http://localhost:3000/bills/status/all
+Accept: application/json
+
+### Get only pending bills
+GET http://localhost:3000/bills/status/pending
+Accept: application/json
+
+### Get only partial bills (some paid)
+GET http://localhost:3000/bills/status/partial
+Accept: application/json
+
+### Get only completed bills (History tab)
+GET http://localhost:3000/bills/status/completed
+Accept: application/json
+
+### ========================================
+### STEP 8: FILTER BY CATEGORY
+### ========================================
+
+### Get all bills (any category)
+GET http://localhost:3000/bills/category/all
+Accept: application/json
+
+### Get bills by specific category (e.g., Dining)
+GET http://localhost:3000/bills/category/REPLACE_WITH_CATEGORY_ID
+Accept: application/json
+
+### ========================================
+### STEP 9: UPDATE BILL
+### ========================================
+
+### Update bill details (only creator can do this)
+PATCH http://localhost:3000/bills/436d7053-7c63-405e-8753-68fa2a2126af
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Updated Dinner Name",
+  "total_amount": 150.00,
+  "due_date": "2025-03-01"
+}
+
+### Expected Response:
+### { "msg": "Bill updated successfully" }
+
+### ========================================
+### STEP 10: UPDATE BILL STATUS MANUALLY
+### ========================================
+
+### Update only bill status (creator or participants can do this)
+PATCH http://localhost:3000/bills/REPLACE_WITH_BILL_ID/status
+Content-Type: application/json
+Accept: application/json
+
+{
+  "status": "completed"
+}
+
+### Expected Response:
+### { "msg": "Bill status updated successfully" }
+
+### ========================================
+### STEP 11: DELETE BILL
+### ========================================
+
+### Delete bill (only creator can do this)
+DELETE http://localhost:3000/bills/REPLACE_WITH_BILL_ID
+Accept: application/json
+
+### Expected Response:
+### { "msg": "Bill deleted successfully" }
+
+### ========================================
+### 🧪 COMPLETE TESTING SCENARIO
+### ========================================
+
+### Scenario: Test complete bills flow with real data
+
+### 1. Create 3 users first:
+POST http://localhost:3000/auth/signup
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "username": "john_bills",
+  "password": "password123"
+}
+
+###
+POST http://localhost:3000/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Sarah Smith",
+  "username": "sarah_bills",
+  "password": "password123"
+}
+
+###
+POST http://localhost:3000/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Mike Johnson",
+  "username": "mike_bills",
+  "password": "password123"
+}
+
+### 2. Login as John (bill creator):
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "username": "john_bills",
+  "password": "password123"
+}
+
+### 3. Get all users to copy their IDs:
+GET http://localhost:3000/users
+Accept: application/json
+### 👆 RUN THIS FIRST - Copy the "id" values from the response
+
+### 4. Get categories to copy category ID:
+GET http://localhost:3000/categories
+Accept: application/json
+### 👆 RUN THIS SECOND - Copy a category "id" from the response
+
+### 5. Create a bill with the IDs from steps 3 & 4:
+POST http://localhost:3000/bills
+Content-Type: application/json
+
+{
+  "name": "Team Lunch",
+  "description": "Pizza party",
+  "total_amount": 90.00,
+  "split_type": "equal",
+  "due_date": "2025-11-15",
+  "category_id": "paste-category-id-here",
+  "participant_ids": [
+    "john-id-here",
+    "sarah-id-here",
+    "mike-id-here"
+  ]
+}
+
+### 6. Get bill details to see payment records:
+GET http://localhost:3000/bills/paste-bill-id-here/details
+Accept: application/json
+
+### 7. Mark John's payment as paid:
+PATCH http://localhost:3000/bills/paste-bill-id/payment/john-id/mark-paid
+Accept: application/json
+
+### 8. Check payment progress (should be 33.33%):
+GET http://localhost:3000/bills/paste-bill-id-here/details
+Accept: application/json
+
+### 9. Get dashboard summary:
+GET http://localhost:3000/bills/summary/dashboard
+Accept: application/json
+
+### 10. Filter by status:
+GET http://localhost:3000/bills/status/partial
+Accept: application/json
+
+### ========================================
+### 🚀 QUICK START GUIDE - CREATE YOUR FIRST BILL
+### ========================================
+
+### STEP 1: Create 3 test users (if not already created)
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "name": "Alice Johnson",
+  "username": "alice",
+  "password": "test123"
+}
+
+###
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "name": "Bob Smith",
+  "username": "bob",
+  "password": "test123"
+}
+
+###
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "name": "Charlie Brown",
+  "username": "charlie",
+  "password": "test123"
+}
+
+### STEP 2: Get all users and COPY the 3 user IDs
+GET http://localhost:3000/users
+Accept: application/json
+
+### STEP 3: Create a category for bills
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Food & Dining",
+  "type": "bills",
+  "icon": "🍽️"
+}
+
+### STEP 4: Get categories and COPY the category ID
+GET http://localhost:3000/categories
+Accept: application/json
+
+### STEP 5: Create a bill (REPLACE THE IDs WITH YOUR ACTUAL UUIDs FROM ABOVE)
+POST http://localhost:3000/bills
+Content-Type: application/json
+
+{
+  "name": "Pizza Party",
+  "description": "Team lunch at Pizza Hut",
+  "total_amount": 90.00,
+  "split_type": "equal",
+  "due_date": "2025-11-15T00:00:00.000Z",
+  "category_id": "PASTE_YOUR_CATEGORY_ID_HERE",
+  "participant_ids": [
+    "PASTE_ALICE_ID_HERE",
+    "PASTE_BOB_ID_HERE",
+    "PASTE_CHARLIE_ID_HERE"
+  ]
+}
+
+### STEP 6: Get all bills to see your created bill
+GET http://localhost:3000/bills
+Accept: application/json
+
+### ========================================
+### 🔥 READY TO USE - Just paste your IDs here
+### ========================================
+
+### Get users and category IDs
+GET http://localhost:3000/users
+
+###
+GET http://localhost:3000/categories
+
+### ✅ CREATE BILL - Copy IDs from above and paste below, then send!
+POST http://localhost:3000/bills
+Content-Type: application/json
+
+{
+  "name": "Team Lunch",
+  "description": "Pizza and drinks",
+  "total_amount": 120.00,
+  "split_type": "equal",
+  "due_date": "2025-11-20T00:00:00.000Z",
+  "category_id": "",
+  "participant_ids": [
+    "",
+    "",
+    ""
+  ]
+}
+
+### ========================================
+### ✅ TESTING CHECKLIST
+### ========================================
+### 
+### [ ] Create bill successfully
+### [ ] Bill creates payment records for all participants
+### [ ] Get all bills with progress data
+### [ ] Get bill by ID
+### [ ] Get bill with payment details
+### [ ] Mark payment as paid
+### [ ] Bill status changes automatically (pending → partial → completed)
+### [ ] Get dashboard summary with correct calculations
+### [ ] Filter by status (all, pending, partial, completed)
+### [ ] Filter by category
+### [ ] Update bill (only creator)
+### [ ] Update bill status
+### [ ] Delete bill (only creator)
+### [ ] Authorization checks work (creator vs participant)
+###
+### ========================================
+
+### ========================================
+### 💸 EXPENSES MODULE - COMPLETE TESTING FLOW
+### ========================================
+
+### PREREQUISITES:
+### 1. Login first to get JWT token
+### 2. Have at least 1 category created (type = 'expenses')
+
+### ========================================
+### STEP 0: SETUP - Create Expense Categories
+### ========================================
+
+### Create Food & Dining category
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Food & Dining 2",
+  "type": "expenses",
+  "icon": "🍽️"
+}
+
+###
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Transportation",
+  "type": "expenses",
+  "icon": "🚗"
+}
+
+###
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Entertainment",
+  "type": "expenses",
+  "icon": "🎬"
+}
+
+###
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Shopping",
+  "type": "expenses",
+  "icon": "🛍️"
+}
+
+###
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Healthcare",
+  "type": "expenses",
+  "icon": "🏥"
+}
+
+### Get all expense categories
+GET http://localhost:3000/categories
+Accept: application/json
+
+### ========================================
+### STEP 1: CREATE EXPENSES
+### ========================================
+
+### Create expense #1 - Grocery Shopping
+POST http://localhost:3000/expenses
+Content-Type: application/json
+
+{
+  "description": "Grocery Shopping at Whole Foods",
+  "amount": 87.50,
+  "category_id": "82db8668-3f29-4d60-98f9-5e80decd1e14",
+  "date": "2025-10-13T10:30:00.000Z",
+  "payment_method": "Credit Card",
+  "notes": "Weekly groceries - organic produce",
+  "tags": ["groceries", "organic"],
+  "location": "Whole Foods Market"
+}
+
+### Create expense #2 - Gas Station
+POST http://localhost:3000/expenses
+Content-Type: application/json
+
+{
+  "description": "Gas Station Fill-up",
+  "amount": 45.20,
+  "category_id": "f564b185-0865-4b88-a425-4d1505737a7d",
+  "date": "2025-10-12T08:15:00.000Z",
+  "payment_method": "Debit Card",
+  "notes": "Full tank",
+  "tags": ["fuel", "car"],
+  "location": "Shell Station"
+}
+
+### Create expense #3 - Netflix
+POST http://localhost:3000/expenses
+Content-Type: application/json
+
+{
+  "description": "Netflix Subscription",
+  "amount": 15.99,
+  "category_id": "a1d6b6c7-f385-4e07-99ad-69ee697b0bbc",
+  "date": "2025-10-11T00:00:00.000Z",
+  "payment_method": "Credit Card",
+  "notes": "Monthly subscription",
+  "tags": ["subscription", "streaming"]
+}
+
+### Create expense #4 - Coffee
+POST http://localhost:3000/expenses
+Content-Type: application/json
+
+{
+  "description": "Coffee at Starbucks",
+  "amount": 5.75,
+  "category_id": "82db8668-3f29-4d60-98f9-5e80decd1e14",
+  "date": "2025-10-13T07:00:00.000Z",
+  "payment_method": "Cash",
+  "notes": "Morning latte",
+  "tags": ["coffee", "breakfast"],
+  "location": "Starbucks Downtown"
+}
+
+### Create expense #5 - Online Shopping
+POST http://localhost:3000/expenses
+Content-Type: application/json
+
+{
+  "description": "Amazon Order - Office Supplies",
+  "amount": 34.99,
+  "category_id": "9c791b0e-ac1e-4b5b-ad84-0661d8ee344e",
+  "date": "2025-10-10T14:20:00.000Z",
+  "payment_method": "Credit Card",
+  "notes": "Notebook, pens, and sticky notes",
+  "tags": ["office", "supplies"]
+}
+
+### ========================================
+### STEP 2: GET ALL EXPENSES
+### ========================================
+
+### Get all expenses (sorted by date descending)
+GET http://localhost:3000/expenses
+Accept: application/json
+
+### Expected Response:
+### [
+###   {
+###     "id": "expense-uuid",
+###     "description": "Grocery Shopping",
+###     "amount": "87.50",
+###     "category_id": "category-uuid",
+###     "date": "2025-10-13T10:30:00.000Z",
+###     "payment_method": "Credit Card",
+###     "notes": "Weekly groceries",
+###     "tags": ["groceries", "organic"],
+###     "location": "Whole Foods Market",
+###     ...
+###   }
+### ]
+
+### ========================================
+### STEP 3: GET EXPENSE BY ID
+### ========================================
+
+### Get specific expense details
+GET http://localhost:3000/expenses/PASTE_EXPENSE_ID_HERE
+Accept: application/json
+
+### ========================================
+### STEP 4: GET EXPENSES SUMMARY/ANALYTICS
+### ========================================
+
+### Get summary for current month (default)
+GET http://localhost:3000/expenses/summary
+Accept: application/json
+
+### Get summary for this week
+GET http://localhost:3000/expenses/summary?period=week
+Accept: application/json
+
+### Get summary for this year
+GET http://localhost:3000/expenses/summary?period=year
+Accept: application/json
+
+### Expected Response:
+### {
+###   "total_spent": "189.43",
+###   "average_transaction": "37.89",
+###   "total_transactions": 5,
+###   "categorized_count": 5,
+###   "top_category": "food-category-id",
+###   "category_breakdown": [
+###     {
+###       "category_id": "food-category-id",
+###       "amount": "93.25"
+###     },
+###     {
+###       "category_id": "transport-category-id",
+###       "amount": "45.20"
+###     }
+###   ],
+###   "period": "month"
+### }
+
+### ========================================
+### STEP 5: FILTER EXPENSES BY CATEGORY
+### ========================================
+
+### Get all expenses (any category)
+GET http://localhost:3000/expenses/category/all
+Accept: application/json
+
+### Get only Food & Dining expenses
+GET http://localhost:3000/expenses/category/9c791b0e-ac1e-4b5b-ad84-0661d8ee344e
+
+### Get only Transportation expenses
+GET http://localhost:3000/expenses/category/PASTE_TRANSPORT_CATEGORY_ID_HERE
+Accept: application/json
+
+### ========================================
+### STEP 6: FILTER BY DATE RANGE
+### ========================================
+
+### Get expenses for last 7 days
+GET http://localhost:3000/expenses/date-range?start=2025-10-06&end=2025-10-13
+Accept: application/json
+
+### Get expenses for current month
+GET http://localhost:3000/expenses/date-range?start=2025-10-01&end=2025-10-31
+Accept: application/json
+
+### ========================================
+### STEP 7: SEARCH EXPENSES
+### ========================================
+
+### Search by description
+GET http://localhost:3000/expenses/search?q=coffee
+Accept: application/json
+
+### Search by location
+GET http://localhost:3000/expenses/search?q=starbucks
+Accept: application/json
+
+### Search by notes
+GET http://localhost:3000/expenses/search?q=subscription
+Accept: application/json
+
+### ========================================
+### STEP 8: FILTER BY TAGS
+### ========================================
+
+### Get expenses with specific tags
+GET http://localhost:3000/expenses/tags?tags=groceries,organic
+Accept: application/json
+
+### Get expenses tagged as subscriptions
+GET http://localhost:3000/expenses/tags?tags=subscription
+Accept: application/json
+
+### ========================================
+### STEP 9: UPDATE EXPENSE
+### ========================================
+
+### Update expense amount and notes
+PATCH http://localhost:3000/expenses/PASTE_EXPENSE_ID_HERE
+Content-Type: application/json
+
+{
+  "amount": 92.00,
+  "notes": "Updated - included some extra items"
+}
+
+### Update expense category
+PATCH http://localhost:3000/expenses/PASTE_EXPENSE_ID_HERE
+Content-Type: application/json
+
+{
+  "category_id": "PASTE_NEW_CATEGORY_ID_HERE"
+}
+
+### Update payment method
+PATCH http://localhost:3000/expenses/b0c2455b-11b9-47d1-be85-5f0f8bc5dda2
+Content-Type: application/json
+
+{
+  "payment_method": "Cash"
+}
+
+### Expected Response:
+### { "msg": "Expense updated successfully" }
+
+### ========================================
+### STEP 10: DELETE EXPENSE
+### ========================================
+
+### Delete an expense
+DELETE http://localhost:3000/expenses/PASTE_EXPENSE_ID_HERE
+Accept: application/json
+
+### Expected Response:
+### { "msg": "Expense deleted successfully" }
+
+### ========================================
+### 🧪 COMPLETE EXPENSES TESTING SCENARIO
+### ========================================
+
+### 1. Login first
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "username": "john_doe",
+  "password": "secret123"
+}
+
+### 2. Get categories and copy IDs
+GET http://localhost:3000/categories
+Accept: application/json
+
+### 3. Create multiple expenses
+POST http://localhost:3000/expenses
+Content-Type: application/json
+
+{
+  "description": "Lunch at Italian Restaurant",
+  "amount": 28.50,
+  "category_id": "ea83727a-f7aa-49fe-b7b8-5b079555285b",
+  "date": "2025-10-13T12:00:00.000Z",
+  "payment_method": "Credit Card",
+  "notes": "Business lunch with client",
+  "tags": ["lunch", "business"],
+  "location": "Italiano Downtown"
+}
+
+### 4. Get all expenses
+GET http://localhost:3000/expenses
+Accept: application/json
+
+### 5. View analytics
+GET http://localhost:3000/expenses/summary?period=month
+Accept: application/json
+
+### 6. Filter by category
+GET http://localhost:3000/expenses/category/ea83727a-f7aa-49fe-b7b8-5b079555285b
+Accept: application/json
+
+### 7. Search expenses
+GET http://localhost:3000/expenses/search?q=lunch
+Accept: application/json
+
+### ========================================
+### ✅ EXPENSES TESTING CHECKLIST
+### ========================================
+### 
+### [ ] Create expense with all fields
+### [ ] Create expense with minimal fields (description, amount, category, date)
+### [ ] Get all expenses (sorted by date)
+### [ ] Get expense by ID
+### [ ] Get expenses summary/analytics (month/week/year)
+### [ ] Filter expenses by category
+### [ ] Filter expenses by date range
+### [ ] Search expenses by text (description/location/notes)
+### [ ] Filter expenses by tags
+### [ ] Update expense amount
+### [ ] Update expense category
+### [ ] Update expense payment method
+### [ ] Update expense notes and tags
+### [ ] Delete expense
+### [ ] Verify user can only access their own expenses
+### [ ] Category breakdown shows correct totals
+### [ ] Average transaction calculates correctly
+### [ ] Top category detection works
+###
+### ========================================
+
+### ========================================
+### 💰 SAVINGS GOALS MODULE - COMPLETE TESTING FLOW
+### ========================================
+
+### PREREQUISITES:
+### 1. Login first to get JWT token
+### 2. Have at least 1 category created (type = 'savings')
+
+### ========================================
+### STEP 0: SETUP - Create Savings Categories
+### ========================================
+
+### Create Emergency Fund category
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Emergency Fund",
+  "type": "savings",
+  "icon": "🆘"
+}
+
+###
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Vacation",
+  "type": "savings",
+  "icon": "✈️"
+}
+
+###
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "New Car",
+  "type": "savings",
+  "icon": "🚗"
+}
+
+###
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Home Down Payment",
+  "type": "savings",
+  "icon": "🏠"
+}
+
+###
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Education",
+  "type": "savings",
+  "icon": "🎓"
+}
+
+### Get all categories
+GET http://localhost:3000/categories
+Accept: application/json
+
+### ========================================
+### STEP 1: CREATE SAVINGS GOALS
+### ========================================
+
+### Create goal #1 - Emergency Fund
+POST http://localhost:3000/savings-goals
+Content-Type: application/json
+
+{
+  "name": "Emergency Fund",
+  "description": "6 months of living expenses",
+  "target_amount": 15000,
+  "current_amount": 8750,
+  "target_date": "2024-12-31",
+  "category_id": "c84d7a8b-31c9-48e7-920f-c12ffa3cd6c3",
+  "priority": "high",
+  "monthly_target": 1250
+}
+
+### Create goal #2 - Europe Vacation
+POST http://localhost:3000/savings-goals
+Content-Type: application/json
+
+{
+  "name": "Europe Vacation",
+  "description": "Summer 2024 trip to Italy and France",
+  "target_amount": 5000,
+  "current_amount": 3200,
+  "target_date": "2024-07-15",
+  "category_id": "232d047d-6fa7-49d7-b601-2ebd71d6b8ba",
+  "priority": "medium",
+  "monthly_target": 600
+}
+
+### Create goal #3 - New Car
+POST http://localhost:3000/savings-goals
+Content-Type: application/json
+
+{
+  "name": "New Car",
+  "description": "Down payment for Tesla Model 3",
+  "target_amount": 10000,
+  "current_amount": 2500,
+  "target_date": "2025-06-01",
+  "category_id": "38ad28df-e915-48de-a6b6-8cde4a8e6b83",
+  "priority": "medium",
+  "monthly_target": 500
+}
+
+### Create goal #4 - Home Down Payment
+POST http://localhost:3000/savings-goals
+Content-Type: application/json
+
+{
+  "name": "Home Down Payment",
+  "description": "20% down payment for first home",
+  "target_amount": 50000,
+  "current_amount": 12000,
+  "target_date": "2026-12-31",
+  "category_id": "533cbbdf-de43-4c85-afc1-88bbf21577e7",
+  "priority": "high",
+  "monthly_target": 2000
+}
+
+### Create goal #5 - Master's Degree
+POST http://localhost:3000/savings-goals
+Content-Type: application/json
+
+{
+  "name": "Master's Degree",
+  "description": "Graduate school tuition",
+  "target_amount": 25000,
+  "current_amount": 5000,
+  "target_date": "2025-09-01",
+  "category_id": "ec4bb402-e26b-4f57-8e65-116363616bfe",
+  "priority": "low",
+  "monthly_target": 1000
+}
+
+### ========================================
+### STEP 2: GET ALL SAVINGS GOALS
+### ========================================
+
+### Get all savings goals (with progress calculations)
+GET http://localhost:3000/savings-goals
+Accept: application/json
+
+### Expected Response:
+### [
+###   {
+###     "id": "goal-uuid",
+###     "name": "Emergency Fund",
+###     "target_amount": "15000.00",
+###     "current_amount": "8750.00",
+###     "progress_percentage": "58.33",
+###     "amount_remaining": "6250.00",
+###     "days_left": 45,
+###     "months_left": 2,
+###     "time_left_display": "2 months",
+###     "calculated_status": "on_track",
+###     "is_completed": false,
+###     "is_overdue": false,
+###     ...
+###   }
+### ]
+
+### ========================================
+### STEP 3: GET SAVINGS GOAL BY ID
+### ========================================
+
+### Get specific savings goal details
+GET http://localhost:3000/savings-goals/PASTE_GOAL_ID_HERE
+Accept: application/json
+
+### ========================================
+### STEP 4: GET SUMMARY/STATISTICS
+### ========================================
+
+### Get summary for dashboard cards
+GET http://localhost:3000/savings-goals/summary
+Accept: application/json
+
+### Expected Response:
+### {
+###   "total_target": "105000.00",
+###   "total_saved": "31450.00",
+###   "progress_percentage": "29.95",
+###   "completed_goals": 0,
+###   "active_goals": 5,
+###   "total_goals": 5,
+###   "monthly_target": "5350.00"
+### }
+
+### ========================================
+### STEP 5: ADD MONEY TO A GOAL
+### ========================================
+
+### Add $500 to Emergency Fund
+PATCH http://localhost:3000/savings-goals/d55c459d-f2d3-459a-a782-db8f065e0d17/add
+Content-Type: application/json
+
+{
+  "amount": 500
+}
+
+### Expected Response:
+### {
+###   "msg": "Amount added successfully",
+###   "goal": {
+###     "id": "goal-uuid",
+###     "current_amount": "9250.00",
+###     "progress_percentage": "61.67",
+###     ...
+###   }
+### }
+
+### Add $1000 to Vacation Fund
+PATCH http://localhost:3000/savings-goals/d55c459d-f2d3-459a-a782-db8f065e0d17/add
+Content-Type: application/json
+
+{
+  "amount": 1000
+}
+
+### ========================================
+### STEP 6: WITHDRAW MONEY FROM A GOAL
+### ========================================
+
+### Withdraw $200 from Emergency Fund
+PATCH http://localhost:3000/savings-goals/d55c459d-f2d3-459a-a782-db8f065e0d17/withdraw
+Content-Type: application/json
+
+{
+  "amount": 200
+}
+
+### Expected Response:
+### {
+###   "msg": "Amount withdrawn successfully",
+###   "goal": {
+###     "id": "goal-uuid",
+###     "current_amount": "9050.00",
+###     "progress_percentage": "60.33",
+###     ...
+###   }
+### }
+
+### ========================================
+### STEP 7: UPDATE A SAVINGS GOAL
+### ========================================
+
+### Update target amount and deadline
+PATCH http://localhost:3000/savings-goals/d55c459d-f2d3-459a-a782-db8f065e0d17
+Content-Type: application/json
+
+{
+  "target_amount": 18000,
+  "target_date": "2025-03-31",
+  "monthly_target": 1500
+}
+
+### Update priority
+PATCH http://localhost:3000/savings-goals/d55c459d-f2d3-459a-a782-db8f065e0d17
+Content-Type: application/json
+
+{
+  "priority": "high"
+}
+
+### Update name and description
+PATCH http://localhost:3000/savings-goals/d55c459d-f2d3-459a-a782-db8f065e0d17
+Content-Type: application/json
+
+{
+  "name": "Emergency Fund - Updated",
+  "description": "8 months of living expenses (updated)"
+}
+
+### Expected Response:
+### {
+###   "msg": "Savings goal updated successfully",
+###   "goal": { ... }
+### }
+
+### ========================================
+### STEP 8: FILTER BY STATUS
+### ========================================
+
+### Get all goals (any status)
+GET http://localhost:3000/savings-goals/status/all
+Accept: application/json
+
+### Get only active goals
+GET http://localhost:3000/savings-goals/status/active
+Accept: application/json
+
+### Get only completed goals
+GET http://localhost:3000/savings-goals/status/completed
+Accept: application/json
+
+### Get only on-track goals
+GET http://localhost:3000/savings-goals/status/on_track
+Accept: application/json
+
+### Get only behind goals
+GET http://localhost:3000/savings-goals/status/behind
+Accept: application/json
+
+### Get only overdue goals
+GET http://localhost:3000/savings-goals/status/overdue
+Accept: application/json
+
+### ========================================
+### STEP 9: FILTER BY PRIORITY
+### ========================================
+
+### Get high priority goals
+GET http://localhost:3000/savings-goals/priority/high
+Accept: application/json
+
+### Get medium priority goals
+GET http://localhost:3000/savings-goals/priority/medium
+Accept: application/json
+
+### Get low priority goals
+GET http://localhost:3000/savings-goals/priority/low
+Accept: application/json
+
+### ========================================
+### STEP 10: DELETE A SAVINGS GOAL
+### ========================================
+
+### Delete a savings goal
+DELETE http://localhost:3000/savings-goals/PASTE_GOAL_ID_HERE
+Accept: application/json
+
+### Expected Response:
+### { "msg": "Savings goal deleted successfully" }
+
+### ========================================
+### 🧪 COMPLETE SAVINGS GOALS TESTING SCENARIO
+### ========================================
+
+### 1. Login first
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "username": "john_doe",
+  "password": "secret123"
+}
+
+### 2. Get categories and copy savings category IDs
+GET http://localhost:3000/categories
+Accept: application/json
+
+### 3. Create a savings goal with real data
+POST http://localhost:3000/savings-goals
+Content-Type: application/json
+
+{
+  "name": "Emergency Fund",
+  "description": "6 months living expenses",
+  "target_amount": 15000,
+  "current_amount": 5000,
+  "target_date": "2025-12-31",
+  "category_id": "PASTE_CATEGORY_ID_HERE",
+  "priority": "high",
+  "monthly_target": 1250
+}
+
+### 4. Get all savings goals
+GET http://localhost:3000/savings-goals
+Accept: application/json
+
+### 5. View summary
+GET http://localhost:3000/savings-goals/summary
+Accept: application/json
+
+### 6. Add money to the goal
+PATCH http://localhost:3000/savings-goals/PASTE_GOAL_ID/add
+Content-Type: application/json
+
+{
+  "amount": 1000
+}
+
+### 7. Check progress
+GET http://localhost:3000/savings-goals/PASTE_GOAL_ID
+Accept: application/json
+
+### 8. Filter by priority
+GET http://localhost:3000/savings-goals/priority/high
+Accept: application/json
+
+### 9. Filter by status
+GET http://localhost:3000/savings-goals/status/active
+Accept: application/json
+
+### ========================================
+### 🚀 QUICK START - CREATE YOUR FIRST GOAL
+### ========================================
+
+### STEP 1: Login
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "username": "john_doe",
+  "password": "secret123"
+}
+
+### STEP 2: Create a savings category
+POST http://localhost:3000/categories
+Content-Type: application/json
+
+{
+  "name": "Emergency Fund",
+  "type": "savings",
+  "icon": "🆘"
+}
+
+### STEP 3: Get categories and copy the ID
+GET http://localhost:3000/categories
+Accept: application/json
+
+### STEP 4: Create your first savings goal
+POST http://localhost:3000/savings-goals
+Content-Type: application/json
+
+{
+  "name": "Emergency Fund",
+  "description": "6 months of expenses",
+  "target_amount": 15000,
+  "current_amount": 0,
+  "target_date": "2025-12-31",
+  "category_id": "",
+  "priority": "high",
+  "monthly_target": 1250
+}
+
+### STEP 5: View your goals
+GET http://localhost:3000/savings-goals
+Accept: application/json
+
+### STEP 6: View dashboard summary
+GET http://localhost:3000/savings-goals/summary
+Accept: application/json
+
+### ========================================
+### ✅ SAVINGS GOALS TESTING CHECKLIST
+### ========================================
+### 
+### [ ] Create savings goal with all fields
+### [ ] Create savings goal with minimal fields
+### [ ] Get all savings goals with progress
+### [ ] Get savings goal by ID
+### [ ] Get summary/statistics for dashboard
+### [ ] Add money to a goal
+### [ ] Withdraw money from a goal
+### [ ] Update goal details (amount, date, priority)
+### [ ] Filter goals by status (active, completed, on_track, behind, overdue)
+### [ ] Filter goals by priority (high, medium, low)
+### [ ] Delete a savings goal
+### [ ] Progress percentage calculates correctly
+### [ ] Time left displays correctly (days/months)
+### [ ] Status automatically updates based on progress
+### [ ] Goal auto-completes when target reached
+### [ ] Verify user can only access their own goals
+### [ ] Amount remaining calculates correctly
+### [ ] Monthly target displays correctly
+### [ ] Overdue detection works
+### [ ] On-track vs behind calculation works
+###
+### ========================================
