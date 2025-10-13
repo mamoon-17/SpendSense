@@ -5,13 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Bill } from './bills.entity';
+import { Bill, BillSplitType } from './bills.entity';
 import { BillParticipant } from './bill-participant.entity';
 import { User } from '../users/users.entity';
 import { Category } from '../categories/categories.entity';
-import { CreateBillDTO } from 'src/dtos/createBill.dto';
-import { UpdateBillDTO } from 'src/dtos/updateBill.dto';
-import { UpdateBillStatusDTO } from 'src/dtos/updateBillStatus.dto';
+import { CreateBillDTO } from './dtos/createBill.dto';
+import { UpdateBillDTO } from './dtos/updateBill.dto';
+import { UpdateBillStatusDTO } from './dtos/updateBillStatus.dto';
 
 @Injectable()
 export class BillsService {
@@ -119,14 +119,14 @@ export class BillsService {
       name: payload.name,
       description: payload.description,
       total_amount: payload.total_amount.toString(),
-      split_type: payload.split_type,
+      split_type: payload.split_type as BillSplitType,
       due_date: payload.due_date,
       category: category,
       created_by: creator,
       participants: participants,
     });
 
-    const savedBill = await this.billsRepo.save(bill);
+    const savedBill = (await this.billsRepo.save(bill)) as Bill;
 
     // Calculate split amount
     const totalAmount = parseFloat(savedBill.total_amount);
@@ -204,7 +204,7 @@ export class BillsService {
       name: payload.name,
       description: payload.description,
       total_amount: payload.total_amount?.toString(),
-      split_type: payload.split_type,
+      split_type: payload.split_type as BillSplitType,
       due_date: payload.due_date,
     });
 

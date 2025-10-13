@@ -6,7 +6,7 @@ import {
   IsDateString,
   IsEnum,
 } from 'class-validator';
-import { SavingsGoalPriority } from '../modules/savings_goals/savings_goals.entity';
+import { SavingsGoalPriority } from '../savings_goals.entity';
 
 export class UpdateSavingsGoalDTO {
   @IsString()

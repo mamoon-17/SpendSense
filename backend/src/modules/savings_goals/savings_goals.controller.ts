@@ -14,8 +14,8 @@ import { SavingsGoalsService } from './savings_goals.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserInterceptor } from '../../common/interceptors/current-user.interceptor';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CreateSavingsGoalDTO } from '../../dtos/createSavingsGoal.dto';
-import { UpdateSavingsGoalDTO } from '../../dtos/updateSavingsGoal.dto';
+import { CreateSavingsGoalDTO } from './dtos/createSavingsGoal.dto';
+import { UpdateSavingsGoalDTO } from './dtos/updateSavingsGoal.dto';
 
 @Controller('savings-goals')
 @UseGuards(AuthGuard)

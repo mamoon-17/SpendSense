@@ -11,8 +11,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ExpensesService } from './expenses.service';
-import { CreateExpenseDTO } from 'src/dtos/createExpense.dto';
-import { UpdateExpenseDTO } from 'src/dtos/updateExpense.dto';
+import { CreateExpenseDTO } from './dtos/createExpense.dto';
+import { UpdateExpenseDTO } from './dtos/updateExpense.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserInterceptor } from 'src/common/interceptors/current-user.interceptor';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';

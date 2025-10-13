@@ -1,14 +1,13 @@
 import {
-  IsString,
   IsNotEmpty,
+  IsString,
   IsNumber,
-  IsEnum,
   IsUUID,
-  IsArray,
-  IsOptional,
   IsDateString,
+  IsArray,
+  IsEnum,
+  IsOptional,
 } from 'class-validator';
-import { BillSplitType } from '../modules/bills/bills.entity';
 
 export class CreateBillDTO {
   @IsString()
@@ -23,9 +22,9 @@ export class CreateBillDTO {
   @IsNotEmpty()
   total_amount: number;
 
-  @IsEnum(BillSplitType)
+  @IsEnum(['equal', 'percentage', 'custom'])
   @IsNotEmpty()
-  split_type: BillSplitType;
+  split_type: string;
 
   @IsDateString()
   @IsNotEmpty()

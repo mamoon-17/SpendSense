@@ -9,9 +9,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { BillsService } from './bills.service';
-import { CreateBillDTO } from 'src/dtos/createBill.dto';
-import { UpdateBillDTO } from 'src/dtos/updateBill.dto';
-import { UpdateBillStatusDTO } from 'src/dtos/updateBillStatus.dto';
+import { CreateBillDTO } from './dtos/createBill.dto';
+import { UpdateBillDTO } from './dtos/updateBill.dto';
+import { UpdateBillStatusDTO } from './dtos/updateBillStatus.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserInterceptor } from 'src/common/interceptors/current-user.interceptor';
 import { UseInterceptors } from '@nestjs/common';

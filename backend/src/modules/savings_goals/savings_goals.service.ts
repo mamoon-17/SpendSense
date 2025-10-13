@@ -5,9 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SavingsGoal, SavingsGoalStatus } from './savings_goals.entity';
-import { CreateSavingsGoalDTO } from '../../dtos/createSavingsGoal.dto';
-import { UpdateSavingsGoalDTO } from '../../dtos/updateSavingsGoal.dto';
+import {
+  SavingsGoal,
+  SavingsGoalStatus,
+  SavingsGoalPriority,
+} from './savings_goals.entity';
+import { CreateSavingsGoalDTO } from './dtos/createSavingsGoal.dto';
+import { UpdateSavingsGoalDTO } from './dtos/updateSavingsGoal.dto';
 
 @Injectable()
 export class SavingsGoalsService {
@@ -28,7 +32,7 @@ export class SavingsGoalsService {
       current_amount: (data.current_amount || 0).toString(),
       target_date: data.target_date,
       category_id: data.category_id,
-      priority: data.priority,
+      priority: data.priority as SavingsGoalPriority,
       monthly_target: data.monthly_target
         ? data.monthly_target.toString()
         : null,
@@ -37,7 +41,9 @@ export class SavingsGoalsService {
       auto_save: false,
     });
 
-    const savedGoal = await this.savingsGoalRepo.save(savingsGoal);
+    const savedGoal = (await this.savingsGoalRepo.save(
+      savingsGoal,
+    )) as SavingsGoal;
 
     return {
       msg: 'Savings goal created successfully',

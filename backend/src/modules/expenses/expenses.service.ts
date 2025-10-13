@@ -7,8 +7,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Expense } from './expenses.entity';
 import { Category } from '../categories/categories.entity';
-import { CreateExpenseDTO } from 'src/dtos/createExpense.dto';
-import { UpdateExpenseDTO } from 'src/dtos/updateExpense.dto';
+import { CreateExpenseDTO } from './dtos/createExpense.dto';
+import { UpdateExpenseDTO } from './dtos/updateExpense.dto';
 
 @Injectable()
 export class ExpensesService {

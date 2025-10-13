@@ -1,13 +1,12 @@
 import {
-  IsString,
   IsNotEmpty,
+  IsString,
   IsNumber,
   IsUUID,
-  IsOptional,
   IsDateString,
   IsEnum,
+  IsOptional,
 } from 'class-validator';
-import { SavingsGoalPriority } from '../modules/savings_goals/savings_goals.entity';
 
 export class CreateSavingsGoalDTO {
   @IsString()
@@ -34,9 +33,9 @@ export class CreateSavingsGoalDTO {
   @IsNotEmpty()
   category_id: string;
 
-  @IsEnum(SavingsGoalPriority)
-  @IsNotEmpty()
-  priority: SavingsGoalPriority;
+  @IsEnum(['high', 'medium', 'low'])
+  @IsOptional()
+  priority?: string;
 
   @IsNumber()
   @IsOptional()
