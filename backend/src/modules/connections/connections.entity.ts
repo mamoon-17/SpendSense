@@ -41,7 +41,4 @@ export class Connection {
 
   @Column({ type: 'timestamp', nullable: true })
   last_active: Date | null;
-
-  @CreateDateColumn()
-  created_at: Date;
 }

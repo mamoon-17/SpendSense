@@ -100,7 +100,7 @@ export class ConnectionsService {
     return this.repo.find({
       where: [{ requester: { id: user_id } }, { receiver: { id: user_id } }],
       relations: ['requester', 'receiver'],
-      order: { created_at: 'DESC' },
+      order: { accepted_at: 'DESC' },
     });
   }
 }

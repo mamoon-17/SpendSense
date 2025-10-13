@@ -68,7 +68,7 @@ interface Connection {
   status: "connected" | "pending" | "blocked";
   accepted_at: string | null;
   last_active: string | null;
-  created_at: string;
+  created_at?: string;
 }
 
 interface PendingInvite {
@@ -102,13 +102,20 @@ export const Connections: React.FC = () => {
   const { user } = useAuthStore();
 
   // Real API queries (no mock data)
-  const { data: connections = [] } = useQuery({
+  const { data: connections = [], refetch: refetchConnections } = useQuery({
     queryKey: ["connections"],
     queryFn: () =>
       connectionsAPI
         .getConnections()
-        .then((res) => res.data)
-        .catch(() => []),
+        .then((res) => {
+          console.log("Connections API Response:", res.data);
+          return res.data;
+        })
+        .catch((error) => {
+          console.error("Connections API Error:", error);
+          return [];
+        }),
+    refetchInterval: 30000, // Refetch every 30 seconds to catch new requests
   });
 
   const { data: pendingInvites = [] } = useQuery({
@@ -120,11 +127,29 @@ export const Connections: React.FC = () => {
         .catch(() => []),
   });
 
+  // Separate pending requests that the current user received
+  const pendingRequests = connections.filter((connection) => {
+    return (
+      connection.status === "pending" && connection.receiver.id === user?.id
+    );
+  });
+
   const filteredConnections = connections.filter((connection) => {
     const otherUser =
       connection.requester.id === user?.id
         ? connection.receiver
         : connection.requester;
+
+    console.log("Connection:", {
+      id: connection.id,
+      status: connection.status,
+      requester: connection.requester.id,
+      receiver: connection.receiver.id,
+      currentUser: user?.id,
+      isReceiver: connection.receiver.id === user?.id,
+      otherUser: otherUser.username,
+    });
+
     return (
       otherUser.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       otherUser.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -362,16 +387,16 @@ export const Connections: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Pending Invites
+                  Pending Requests
                 </p>
                 <p className="text-2xl font-bold text-warning">
-                  {pendingInvites.filter((i) => i.status === "pending").length}
+                  {pendingRequests.length}
                 </p>
               </div>
               <Send className="w-8 h-8 text-warning" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Awaiting response
+              Awaiting your approval
             </p>
           </CardContent>
         </Card>
@@ -418,12 +443,119 @@ export const Connections: React.FC = () => {
         </Card>
       </div>
 
+      {/* Pending Connection Requests - Prominent Display */}
+      {pendingRequests.length > 0 && (
+        <Card className="card-financial border-warning/20 bg-warning/5">
+          <CardHeader>
+            <CardTitle className="text-warning flex items-center">
+              <UserPlus className="w-5 h-5 mr-2" />
+              Connection Requests ({pendingRequests.length})
+            </CardTitle>
+            <CardDescription>
+              You have {pendingRequests.length} pending connection request
+              {pendingRequests.length > 1 ? "s" : ""}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {pendingRequests.map((connection) => (
+              <div
+                key={connection.id}
+                className="flex items-center justify-between p-4 bg-background rounded-lg border"
+              >
+                <div className="flex items-center space-x-4">
+                  <Avatar className="w-12 h-12">
+                    <AvatarFallback>
+                      {connection.requester.name
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("") ||
+                        connection.requester.username?.[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold">
+                      {connection.requester.name ||
+                        connection.requester.username}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      @{connection.requester.username}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Requested{" "}
+                      {format(
+                        new Date(
+                          connection.created_at ||
+                            connection.accepted_at ||
+                            new Date()
+                        ),
+                        "MMM dd, yyyy 'at' h:mm a"
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await connectionsAPI.acceptRequest(connection.id);
+                        toast({
+                          title: "Connection Accepted",
+                          description: `You are now connected with ${
+                            connection.requester.name ||
+                            connection.requester.username
+                          }`,
+                        });
+                        // Refresh the connections list
+                        await refetchConnections();
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to accept connection request.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="bg-success hover:bg-success/90 text-success-foreground"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Accept
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      toast({
+                        title: "Connection Declined",
+                        description: `Connection request from ${
+                          connection.requester.name ||
+                          connection.requester.username
+                        } declined.`,
+                      });
+                    }}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
-          <Tabs defaultValue="connections" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs
+            defaultValue={
+              pendingRequests.length > 0 ? "requests" : "connections"
+            }
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="connections">Connections</TabsTrigger>
+              <TabsTrigger value="requests">Connection Requests</TabsTrigger>
               <TabsTrigger value="invites">Pending Invites</TabsTrigger>
               <TabsTrigger value="permissions">Permissions</TabsTrigger>
             </TabsList>
@@ -521,7 +653,11 @@ export const Connections: React.FC = () => {
                                 <span>
                                   {isPending && isReceiver
                                     ? `Requested ${format(
-                                        new Date(connection.created_at),
+                                        new Date(
+                                          connection.created_at ||
+                                            connection.accepted_at ||
+                                            new Date()
+                                        ),
                                         "MMM dd, yyyy"
                                       )}`
                                     : connection.accepted_at
@@ -530,7 +666,9 @@ export const Connections: React.FC = () => {
                                         "MMM dd, yyyy"
                                       )}`
                                     : `Requested ${format(
-                                        new Date(connection.created_at),
+                                        new Date(
+                                          connection.created_at || new Date()
+                                        ),
                                         "MMM dd, yyyy"
                                       )}`}
                                 </span>
@@ -557,7 +695,7 @@ export const Connections: React.FC = () => {
                                         } accepted.`,
                                       });
                                       // Refresh the connections list
-                                      window.location.reload();
+                                      await refetchConnections();
                                     } catch (error) {
                                       toast({
                                         title: "Error",
@@ -616,6 +754,106 @@ export const Connections: React.FC = () => {
                     </Card>
                   );
                 })
+              )}
+            </TabsContent>
+
+            <TabsContent value="requests" className="space-y-4 mt-6">
+              {pendingRequests.length === 0 ? (
+                <Card className="card-financial">
+                  <CardContent className="p-4 text-center text-muted-foreground">
+                    No pending connection requests.
+                  </CardContent>
+                </Card>
+              ) : (
+                pendingRequests.map((connection) => (
+                  <Card
+                    key={connection.id}
+                    className="card-financial border-warning/20"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <Avatar className="w-12 h-12">
+                            <AvatarFallback>
+                              {connection.requester.name
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("") ||
+                                connection.requester.username?.[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="font-semibold">
+                              {connection.requester.name ||
+                                connection.requester.username}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              @{connection.requester.username}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Requested{" "}
+                              {format(
+                                new Date(
+                                  connection.created_at ||
+                                    connection.accepted_at ||
+                                    new Date()
+                                ),
+                                "MMM dd, yyyy 'at' h:mm a"
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await connectionsAPI.acceptRequest(
+                                  connection.id
+                                );
+                                toast({
+                                  title: "Connection Accepted",
+                                  description: `You are now connected with ${
+                                    connection.requester.name ||
+                                    connection.requester.username
+                                  }`,
+                                });
+                                await refetchConnections();
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description:
+                                    "Failed to accept connection request.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                            className="bg-success hover:bg-success/90 text-success-foreground"
+                          >
+                            <Check className="w-4 h-4 mr-2" />
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              toast({
+                                title: "Connection Declined",
+                                description: `Connection request from ${
+                                  connection.requester.name ||
+                                  connection.requester.username
+                                } declined.`,
+                              });
+                            }}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
               )}
             </TabsContent>
 
