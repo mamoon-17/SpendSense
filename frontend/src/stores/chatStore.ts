@@ -9,13 +9,24 @@ export interface Message {
   status?: string;
 }
 
+export interface Participant {
+  id: string;
+  name: string;
+  username: string;
+}
+
 export interface Conversation {
   id: string;
   name?: string;
   type?: "direct" | "group";
-  participants: string[]; // userIds
+  participants: Participant[]; // Full participant objects
   unreadCount: number;
   messages: Message[];
+  lastMessage?: Message;
+  lastActivity?: string;
+  page: number;
+  total: number;
+  limit: number;
 }
 
 class ChatStore {
@@ -35,22 +46,53 @@ class ChatStore {
       name: c.name,
       type: c.type,
       participants: Array.isArray(c.participants)
-        ? c.participants.map((p: any) => p.id)
+        ? c.participants.map((p: any) => ({
+            id: p.id,
+            name: p.name || p.username,
+            username: p.username || p.name,
+          }))
         : [],
       unreadCount: typeof c.unread_count === "number" ? c.unread_count : 0,
+      lastMessage: c.last_message
+        ? {
+            id: c.last_message.id,
+            content: c.last_message.content,
+            sender: c.last_message.sender?.id || c.last_message.sender,
+            sent_at: c.last_message.sent_at || c.last_message.created_at,
+            status: c.last_message.status,
+          }
+        : undefined,
+      lastActivity: c.last_message_at || c.updated_at,
       messages: [],
+      page: 1,
+      total: 0,
+      limit: 20,
     }));
-    // Preserve existing messages if we already have a conversation cached
+    // Preserve existing messages and pagination if we already have a conversation cached
     this.conversations = mapped.map((conv) => {
       const existing = this.conversations.find((c) => c.id === conv.id);
-      return existing ? { ...conv, messages: existing.messages } : conv;
+      return existing
+        ? {
+            ...conv,
+            messages: existing.messages,
+            page: existing.page,
+            total: existing.total,
+          }
+        : conv;
     });
+    // Sort by lastActivity descending
+    this.sortConversations();
   }
 
   // Set/replace messages for a conversation from server payload
-  setMessagesForConversation(conversationId: string, serverMessages: any[]) {
+  setMessagesForConversation(
+    conversationId: string,
+    serverMessages: any[],
+    page: number = 1,
+    total: number = 0
+  ) {
     const conv = this.ensureConversation(conversationId);
-    conv.messages = (serverMessages || []).map((m: any) => ({
+    const normalized = (serverMessages || []).map((m: any) => ({
       id: m.id,
       content: m.content,
       sender: typeof m.sender === "object" ? m.sender.id : m.sender,
@@ -61,6 +103,16 @@ class ChatStore {
       sent_at: m.sent_at,
       status: m.status,
     }));
+
+    if (page === 1) {
+      // First page, replace all messages
+      conv.messages = normalized;
+    } else {
+      // Pagination: prepend older messages
+      conv.messages = [...normalized, ...conv.messages];
+    }
+    conv.page = page;
+    conv.total = total;
   }
 
   setConversations(convs: Conversation[]) {
@@ -85,10 +137,33 @@ class ChatStore {
       sent_at: message.sent_at,
       status: message.status,
     };
-    conv.messages.push(normalized);
+
+    // Deduplication: replace optimistic "sending" messages
+    const existingIndex = conv.messages.findIndex(
+      (m) =>
+        m.status === "sending" &&
+        m.content === normalized.content &&
+        m.sender === normalized.sender
+    );
+
+    if (existingIndex !== -1) {
+      // Replace optimistic message
+      conv.messages[existingIndex] = normalized;
+    } else {
+      // Add new message
+      conv.messages.push(normalized);
+    }
+
+    // Update last message and activity
+    conv.lastMessage = normalized;
+    conv.lastActivity = normalized.sent_at;
+
     if (normalized.sender !== this.currentUserId) {
       conv.unreadCount = (conv.unreadCount || 0) + 1;
     }
+
+    // Re-sort conversations
+    this.sortConversations();
   }
 
   markAsRead(conversationId: string) {
@@ -106,6 +181,14 @@ class ChatStore {
     this.currentUserId = id;
   }
 
+  sortConversations() {
+    this.conversations.sort((a, b) => {
+      const aTime = a.lastActivity || a.lastMessage?.sent_at || "";
+      const bTime = b.lastActivity || b.lastMessage?.sent_at || "";
+      return bTime.localeCompare(aTime);
+    });
+  }
+
   private ensureConversation(conversationId: string): Conversation {
     let conv = this.conversations.find((c) => c.id === conversationId);
     if (!conv) {
@@ -116,6 +199,9 @@ class ChatStore {
         participants: [],
         unreadCount: 0,
         messages: [],
+        page: 1,
+        total: 0,
+        limit: 20,
       };
       this.conversations.push(conv);
     }

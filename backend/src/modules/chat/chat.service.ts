@@ -155,7 +155,10 @@ export class ChatService {
         userId,
         pagination,
       );
-      client.emit('message_history', messageHistory);
+      client.emit('message_history', {
+        ...messageHistory,
+        conversationId,
+      });
     } catch (error: any) {
       this.logger.error(`Failed to get message history: ${error.message}`);
       client.emit('error', { message: 'Failed to get message history' });

@@ -35,12 +35,15 @@ export function useChat() {
         chatStore.setConversationsFromServer(conversations || []);
       });
       socket.on("message_history", (payload: any) => {
-        const { messages, page, limit, total } = payload || {};
-        // We assume last requested conversationId is current selection
-        if (chatStore.currentConversationId) {
+        const { messages, page, limit, total, conversationId } = payload || {};
+        // Use conversationId from payload if available
+        const targetConvId = conversationId || chatStore.currentConversationId;
+        if (targetConvId) {
           chatStore.setMessagesForConversation(
-            chatStore.currentConversationId,
-            messages || []
+            targetConvId,
+            messages || [],
+            page || 1,
+            total || 0
           );
         }
       });

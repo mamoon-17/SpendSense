@@ -24,7 +24,16 @@ interface JoinConversationData {
   conversationId: string;
 }
 
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({
+  cors: {
+    origin: [
+      'http://localhost:8080',
+      'http://localhost:8081',
+      'http://localhost:3000',
+    ],
+    credentials: true,
+  },
+})
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;

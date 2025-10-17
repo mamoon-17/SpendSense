@@ -39,6 +39,8 @@ const ModernChatApp: React.FC = observer(() => {
   const [messageText, setMessageText] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesScrollRef = useRef<HTMLDivElement | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const conversations: any[] = chatStore.conversations;
   const currentConversation = conversations.find(
     (c) => c.id === (chatStore.currentConversationId || selectedConversation)
@@ -96,11 +98,35 @@ const ModernChatApp: React.FC = observer(() => {
     setSendError(null);
   };
 
-  const formatMessageTime = (ts: string | Date) => {
-    const date = typeof ts === "string" ? new Date(ts) : ts;
-    if (isToday(date)) return format(date, "p");
-    if (isYesterday(date)) return "Yesterday";
-    return format(date, "MMM d");
+  const formatMessageTime = (ts: string | Date | undefined) => {
+    if (!ts) return "";
+    try {
+      const date = typeof ts === "string" ? new Date(ts) : ts;
+      if (isNaN(date.getTime())) return "";
+      if (isToday(date)) return format(date, "p");
+      if (isYesterday(date)) return "Yesterday";
+      return format(date, "MMM d");
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "";
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    if (target.scrollTop <= 10 && !isLoadingMore && currentConversation) {
+      const { page, total, limit } = currentConversation;
+      const hasMore = page * limit < total;
+      if (hasMore && selectedConversation) {
+        setIsLoadingMore(true);
+        socket?.emit("get_messages", {
+          conversationId: selectedConversation,
+          page: page + 1,
+          limit: limit,
+        });
+        setTimeout(() => setIsLoadingMore(false), 1000);
+      }
+    }
   };
 
   const getConversationDisplayName = (conv: any) => {
@@ -334,17 +360,16 @@ const ModernChatApp: React.FC = observer(() => {
           {currentConversation ? (
             <>
               {/* Chat Header */}
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-gray-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
                   <Avatar className="w-10 h-10">
                     <AvatarFallback>
                       {currentConversation.type === "group" ? (
                         <Users className="w-5 h-5" />
-                      ) : currentConversation.name ===
-                        "AI Financial Advisor" ? (
-                        <Bot className="w-5 h-5" />
                       ) : (
-                        currentConversation.name.charAt(0)
+                        (
+                          getConversationDisplayName(currentConversation) || "?"
+                        ).charAt(0)
                       )}
                     </AvatarFallback>
                   </Avatar>
@@ -368,9 +393,17 @@ const ModernChatApp: React.FC = observer(() => {
               </CardHeader>
 
               {/* Messages */}
-              <CardContent className="flex-1 p-4 overflow-hidden">
-                <ScrollArea className="h-[calc(100vh-20rem)]">
-                  <div className="space-y-4">
+              <CardContent className="flex-1 p-2 overflow-hidden">
+                <ScrollArea
+                  className="h-[calc(100vh-20rem)]"
+                  onScrollCapture={handleScroll}
+                >
+                  <div className="space-y-2">
+                    {isLoadingMore && (
+                      <div className="text-center text-muted-foreground py-2 text-sm">
+                        Loading more messages...
+                      </div>
+                    )}
                     {messages.length === 0 ? (
                       <div className="text-center text-muted-foreground py-8">
                         No messages yet.
@@ -384,7 +417,7 @@ const ModernChatApp: React.FC = observer(() => {
               </CardContent>
 
               {/* Message Input */}
-              <div className="p-4 border-t border-gray-200">
+              <div className="p-2 border-t border-gray-200">
                 <div className="flex items-end space-x-2">
                   <Button variant="ghost" size="sm">
                     <Paperclip className="w-4 h-4" />
