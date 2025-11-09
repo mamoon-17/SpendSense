@@ -22,7 +22,7 @@ import heroImage from "@/assets/hero-finance.jpg";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -77,11 +77,19 @@ export const Login: React.FC = () => {
 
       navigate("/app/dashboard");
     } catch (error: any) {
+      console.log("Login error:", error);
+      console.log("Error response:", error.response);
+      console.log("Error data:", error.response?.data);
+      
+      const errorMessage = 
+        error.response?.data?.message || 
+        error.response?.data?.error ||
+        error.message ||
+        "Please check your credentials and try again.";
+      
       toast({
         title: "Login failed",
-        description:
-          error.response?.data?.message ||
-          "Please check your credentials and try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

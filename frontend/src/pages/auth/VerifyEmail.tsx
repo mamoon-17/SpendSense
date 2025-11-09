@@ -57,8 +57,8 @@ export const VerifyEmail: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // Assuming there's a resend endpoint
-      await authAPI.register({ name: '', email, password: '' }); // This would be a resend endpoint
+      // Use the registration endpoint shape (username) since there's no dedicated resend endpoint
+      await authAPI.register({ name: '', username: email as string, password: '' }); // This triggers resend behavior using 'username'
       toast({
         title: 'Verification email sent',
         description: 'Please check your email for a new verification link.',

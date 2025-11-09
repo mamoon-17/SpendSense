@@ -26,13 +26,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      useAuthStore.getState().logout();
+    const authStore = useAuthStore.getState();
+    
+    // Only log out if the user is already logged in
+    if (error.response?.status === 401 && authStore.isAuthenticated) {
+      authStore.logout();
       window.location.href = "/login";
     }
+
     return Promise.reject(error);
   }
 );
+
 
 // API endpoints
 export const authAPI = {
@@ -57,6 +62,19 @@ export const userAPI = {
   getProfile: () => api.get("/user/profile"),
   updateProfile: (data: any) => api.put("/user/profile", data),
   deleteAccount: () => api.delete("/user/account"),
+};
+
+export const userProfilesAPI = {
+  getUserProfiles: () => api.get("/user-profiles"),
+  getUserProfileById: (id: string) => api.get(`/user-profiles/${id}`),
+  createUserProfile: (data: any) => api.post("/user-profiles", data),
+  updateUserProfile: (id: string, data: any) => api.patch(`/user-profiles/${id}`, data),
+  deleteUserProfile: (id: string) => api.delete(`/user-profiles/${id}`),
+  updateUserPreferences: (id: string, preferences: Record<string, unknown>) =>
+    api.patch(`/user-profiles/${id}`, { preferences }),
+  
+  updateUserSettings: (id: string, settings: any) =>
+    api.patch(`/user-profiles/${id}`, settings),
 };
 
 export const budgetAPI = {

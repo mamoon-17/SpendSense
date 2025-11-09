@@ -28,8 +28,8 @@ const registerSchema = z
       .string()
       .min(8, "Password must be at least 8 characters")
       .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        "Password must contain uppercase, lowercase, and number"
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
+        "Password must contain at least 8 characters, including uppercase, lowercase, and a number"
       ),
     confirmPassword: z.string(),
   })
@@ -88,11 +88,19 @@ export const Register: React.FC = () => {
 
       navigate("/login");
     } catch (error: any) {
+      console.log("Registration error:", error);
+      console.log("Error response:", error.response);
+      console.log("Error data:", error.response?.data);
+      
+      const errorMessage = 
+        error.response?.data?.message || 
+        error.response?.data?.error ||
+        error.message ||
+        "An error occurred during registration.";
+      
       toast({
         title: "Registration failed",
-        description:
-          error.response?.data?.message ||
-          "An error occurred during registration.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
