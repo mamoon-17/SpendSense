@@ -15,6 +15,7 @@ import {
   Plus,
   Bot,
   Send,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,12 +23,24 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { format, isToday, isYesterday } from "date-fns";
 import { useChat } from "../../hooks/useChat";
 import { sanitizeText } from "../../utils/sanitize";
 import { isValidId, isValidMessage } from "../../utils/validate";
 import { useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { connectionsAPI, conversationsAPI } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { useAuthStore } from "@/stores/authStore";
 
 const ModernChatApp: React.FC = observer(() => {
   const { chatStore, socket } = useChat();
@@ -41,11 +54,41 @@ const ModernChatApp: React.FC = observer(() => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuthStore();
   const conversations: any[] = chatStore.conversations;
   const currentConversation = conversations.find(
     (c) => c.id === (chatStore.currentConversationId || selectedConversation)
   );
   const messages: any[] = currentConversation?.messages || [];
+
+  // Fetch connections for group chat creation
+  const { data: connections = [] } = useQuery({
+    queryKey: ["connections"],
+    queryFn: () =>
+      connectionsAPI
+        .getConnections()
+        .then((res) => res.data)
+        .catch(() => []),
+  });
+
+  // Get connected users (status === "connected")
+  const connectedUsers = connections
+    .filter((conn: any) => conn.status === "connected")
+    .map((conn: any) => {
+      const otherUser =
+        conn.requester.id === user?.id ? conn.receiver : conn.requester;
+      return {
+        id: otherUser.id,
+        name: otherUser.name || otherUser.username,
+        username: otherUser.username,
+        email: otherUser.email,
+      };
+    });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -161,6 +204,87 @@ const ModernChatApp: React.FC = observer(() => {
     }
   };
 
+  const handleToggleParticipant = (userId: string) => {
+    setSelectedParticipants((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleCreateGroup = async () => {
+    // Validate inputs
+    if (!groupName.trim()) {
+      toast({
+        title: "Group name required",
+        description: "Please enter a name for the group chat.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedParticipants.length < 2) {
+      toast({
+        title: "Not enough participants",
+        description: "Please select at least 2 people for the group chat.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingGroup(true);
+    try {
+      console.log("Creating group chat:", {
+        name: groupName.trim(),
+        type: "group",
+        participant_ids: selectedParticipants,
+      });
+
+      const res = await conversationsAPI.createConversation({
+        name: groupName.trim(),
+        type: "group",
+        participant_ids: selectedParticipants,
+      });
+
+      console.log("Group chat created:", res.data);
+
+      toast({
+        title: "Group chat created",
+        description: `"${groupName}" group chat has been created successfully.`,
+      });
+
+      // Refresh conversations list
+      const conversationsRes = await conversationsAPI.getConversations();
+      if (conversationsRes.data) {
+        chatStore.setConversationsFromServer(conversationsRes.data);
+      }
+      
+      // Also request via socket
+      socket?.emit("get_conversations");
+      
+      // Close dialog and reset
+      setShowCreateGroup(false);
+      setGroupName("");
+      setSelectedParticipants([]);
+      
+      // Open the new conversation
+      if (res.data?.id) {
+        setTimeout(() => {
+          handleSelectConversation(res.data.id);
+        }, 100);
+      }
+    } catch (error: any) {
+      console.error("Error creating group chat:", error);
+      toast({
+        title: "Failed to create group",
+        description: error?.response?.data?.message || error?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
+
   const renderMessage = (message: any) => {
     const isOwn =
       message.sender === chatStore.currentUserId || message.sender === "user_1";
@@ -272,7 +396,12 @@ const ModernChatApp: React.FC = observer(() => {
                   {conversations.filter((c) => c.unreadCount > 0).length}
                 </Badge>
               </CardTitle>
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowCreateGroup(true)}
+                title="Create Group Chat"
+              >
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -495,6 +624,145 @@ const ModernChatApp: React.FC = observer(() => {
           {sendError}
         </div>
       )}
+
+      {/* Create Group Chat Dialog */}
+      <Dialog open={showCreateGroup} onOpenChange={setShowCreateGroup}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create Group Chat</DialogTitle>
+            <DialogDescription>
+              Select at least 2 people to start a group conversation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Group Name Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Group Name</label>
+              <Input
+                placeholder="Enter group name..."
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                maxLength={50}
+              />
+            </div>
+
+            {/* Participants Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Select Participants ({selectedParticipants.length} selected)
+              </label>
+              <ScrollArea className="h-[300px] border rounded-md p-4">
+                {connectedUsers.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No connections available</p>
+                    <p className="text-xs mt-1">
+                      Connect with people first to create a group chat
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {connectedUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleToggleParticipant(user.id);
+                        }}
+                        className={cn(
+                          "flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200",
+                          selectedParticipants.includes(user.id)
+                            ? "bg-blue-600 text-white border-2 border-blue-700 shadow-md"
+                            : "hover:bg-gray-100 border-2 border-transparent"
+                        )}
+                      >
+                        <Avatar className="w-10 h-10">
+                          <AvatarFallback>
+                            {(user.name || user.username || "U").charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            "font-medium text-sm truncate",
+                            selectedParticipants.includes(user.id) ? "text-white" : ""
+                          )}>
+                            {user.name || user.username}
+                          </p>
+                          {user.name && (
+                            <p className={cn(
+                              "text-xs truncate",
+                              selectedParticipants.includes(user.id) 
+                                ? "text-blue-100" 
+                                : "text-muted-foreground"
+                            )}>
+                              @{user.username}
+                            </p>
+                          )}
+                        </div>
+                        {selectedParticipants.includes(user.id) && (
+                          <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-lg">
+                            <Check className="w-4 h-4 text-blue-600 font-bold" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateGroup(false);
+                setGroupName("");
+                setSelectedParticipants([]);
+              }}
+              disabled={isCreatingGroup}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isCreatingGroup) return;
+                if (selectedParticipants.length < 2) {
+                  toast({
+                    title: "Not enough participants",
+                    description: "Please select at least 2 people for the group chat.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                if (!groupName.trim()) {
+                  toast({
+                    title: "Group name required",
+                    description: "Please enter a name for the group chat.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                handleCreateGroup();
+              }}
+              disabled={isCreatingGroup}
+              className={cn(
+                "min-w-[120px]",
+                (selectedParticipants.length < 2 || !groupName.trim())
+                  ? "opacity-50"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              )}
+              type="button"
+            >
+              {isCreatingGroup ? "Creating..." : "Create Group"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 });

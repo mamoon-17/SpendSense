@@ -39,6 +39,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   private logger: Logger = new Logger('ChatGateway');
+  private connectedUsers: Map<string, string> = new Map(); // userId -> socketId
 
   constructor(
     private readonly chatService: ChatService,
@@ -52,9 +53,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const payload = this.socketAuthService.authenticateSocket(token);
       client.data.user = payload;
+      const userId = payload.userId;
+      
+      // Track connected user
+      this.connectedUsers.set(userId, client.id);
+      
       this.logger.log(
-        `Client connected: ${client.id}, User: ${payload.userId}`,
+        `Client connected: ${client.id}, User: ${userId}`,
       );
+
+      // Notify all clients that this user is now online
+      this.server.emit('user_online', { userId });
+      
+      // Send list of online users to the newly connected client
+      const onlineUserIds = Array.from(this.connectedUsers.keys());
+      client.emit('online_users', { userIds: onlineUserIds });
     } catch (err: any) {
       this.logger.warn(`Socket authentication failed: ${err.message}`);
       client.disconnect();
@@ -62,7 +75,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
+    const userId = this.socketAuthService.getUserIdFromSocket(client);
+    if (userId) {
+      // Remove from connected users
+      this.connectedUsers.delete(userId);
+      // Notify all clients that this user is now offline
+      this.server.emit('user_offline', { userId });
+      this.logger.log(`Client disconnected: ${client.id}, User: ${userId}`);
+    } else {
+      this.logger.log(`Client disconnected: ${client.id}`);
+    }
   }
 
   @SubscribeMessage('send_message')
@@ -220,5 +242,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client,
       this.server,
     );
+  }
+
+  @SubscribeMessage('get_online_users')
+  handleGetOnlineUsers(@ConnectedSocket() client: Socket) {
+    const onlineUserIds = Array.from(this.connectedUsers.keys());
+    client.emit('online_users', { userIds: onlineUserIds });
   }
 }

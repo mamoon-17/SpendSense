@@ -42,10 +42,10 @@ export class SocketService {
     if (!this.socket) return;
     this.socket.on("connect", () => {
       // Connection established
-      // console.debug("Socket connected", this.socket?.id);
+      console.log("Socket connected", this.socket?.id);
     });
     this.socket.on("disconnect", (reason) => {
-      // Handle disconnect
+      console.log("Socket disconnected", reason);
     });
     this.socket.on("connect_error", (err) => {
       console.error("Socket connect_error", err?.message || err);
@@ -53,6 +53,10 @@ export class SocketService {
     this.socket.on("error", (err) => {
       console.error("Socket error", err);
     });
+  }
+
+  isConnected(): boolean {
+    return this.socket?.connected || false;
   }
 
   on(event: string, handler: (...args: any[]) => void) {

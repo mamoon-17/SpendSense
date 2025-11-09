@@ -124,7 +124,7 @@ class ChatStore {
     this.currentConversationId = id;
   }
 
-  addMessage(conversationId: string, message: any) {
+  addMessage(conversationId: string, message: any, socket?: any) {
     const conv = this.ensureConversation(conversationId);
     const normalized: Message = {
       id: message.id,
@@ -167,6 +167,13 @@ class ChatStore {
     
     if (isFromOtherUser && !isConversationOpen) {
       conv.unreadCount = (conv.unreadCount || 0) + 1;
+    } else if (isFromOtherUser && isConversationOpen) {
+      // If conversation is open and message is from other user, mark as read immediately
+      normalized.status = "read";
+      // Notify server to mark as read
+      if (socket) {
+        socket.emit("mark_as_read", { conversationId });
+      }
     }
 
     // Re-sort conversations
@@ -221,15 +228,23 @@ class ChatStore {
   }
 
   setOnlineUsers(userIds: string[]) {
-    this.onlineUsers = new Set(userIds);
+    console.log("Setting online users in store:", userIds);
+    this.onlineUsers = new Set(userIds.map(id => String(id).trim()));
+    console.log("Online users set updated. Current online users:", Array.from(this.onlineUsers));
   }
 
   addOnlineUser(userId: string) {
-    this.onlineUsers.add(userId);
+    const normalizedId = String(userId).trim();
+    console.log("Adding online user:", normalizedId);
+    this.onlineUsers.add(normalizedId);
+    console.log("Online users after add:", Array.from(this.onlineUsers));
   }
 
   removeOnlineUser(userId: string) {
-    this.onlineUsers.delete(userId);
+    const normalizedId = String(userId).trim();
+    console.log("Removing online user:", normalizedId);
+    this.onlineUsers.delete(normalizedId);
+    console.log("Online users after remove:", Array.from(this.onlineUsers));
   }
 
   // Get the other participant for a direct conversation
@@ -286,7 +301,21 @@ class ChatStore {
     if (!other || !other.id) {
       return false;
     }
-    return this.onlineUsers.has(String(other.id).trim());
+    const otherId = String(other.id).trim();
+    const isOnline = this.onlineUsers.has(otherId);
+    
+    // Debug logging in development
+    if (process.env.NODE_ENV === "development") {
+      console.log("Checking online status:", {
+        conversationId: conversation.id,
+        otherParticipant: other.name || other.username,
+        otherId,
+        onlineUsers: Array.from(this.onlineUsers),
+        isOnline,
+      });
+    }
+    
+    return isOnline;
   }
 
   // Get display name for a conversation (shows other participant for direct, name for group)

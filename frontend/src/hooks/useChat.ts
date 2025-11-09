@@ -21,9 +21,33 @@ export function useChat() {
         })
         .catch(() => {});
 
+      // Request online users when socket connects
+      const handleConnect = () => {
+        console.log("Socket connected, requesting online users");
+        socket.emit("get_online_users");
+      };
+      
+      socket.on("connect", handleConnect);
+
+      // Also request immediately if already connected
+      const requestOnlineUsers = () => {
+        try {
+          // Try to emit - socket.io will handle if not connected
+          console.log("Requesting online users...");
+          socket.emit("get_online_users");
+        } catch (error) {
+          console.error("Error requesting online users:", error);
+        }
+      };
+      
+      // Check immediately and after delays to catch connection
+      setTimeout(requestOnlineUsers, 100);
+      setTimeout(requestOnlineUsers, 500);
+      setTimeout(requestOnlineUsers, 2000);
+
       // Socket event handlers
       socket.on("new_message", (msg: any) => {
-        chatStore.addMessage(msg.conversation_id, msg);
+        chatStore.addMessage(msg.conversation_id, msg, socket);
       });
       socket.on("user_typing", (data: any) => {
         chatStore.setTypingUsers(data.users || []);
@@ -60,20 +84,32 @@ export function useChat() {
       });
       socket.on("user_online", (data: any) => {
         // Handle explicit online status updates
+        console.log("Received user_online event:", data);
         if (data?.userId && data.userId !== user.id) {
+          console.log("User came online:", data.userId);
           chatStore.addOnlineUser(data.userId);
+        } else {
+          console.log("Ignoring user_online for self or invalid data");
         }
       });
       socket.on("user_offline", (data: any) => {
         // Handle explicit offline status updates
+        console.log("Received user_offline event:", data);
         if (data?.userId && data.userId !== user.id) {
+          console.log("User went offline:", data.userId);
           chatStore.removeOnlineUser(data.userId);
+        } else {
+          console.log("Ignoring user_offline for self or invalid data");
         }
       });
       socket.on("online_users", (data: any) => {
         // Handle list of online users
+        console.log("Received online_users event:", data);
         if (Array.isArray(data?.userIds)) {
+          console.log("Setting online users list:", data.userIds);
           chatStore.setOnlineUsers(data.userIds);
+        } else {
+          console.warn("Invalid online_users data:", data);
         }
       });
       socket.on("messages_marked_read", (data: any) => {
@@ -92,10 +128,7 @@ export function useChat() {
           );
         }
       });
-      // Request online users list on connection
-      socket.on("connect", () => {
-        socket.emit("get_online_users");
-      });
+      // Online users list is automatically sent on connection by the backend
       // ...other event handlers
     }
     return () => {
