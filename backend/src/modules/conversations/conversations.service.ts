@@ -44,8 +44,15 @@ export class ConversationsService {
       throw new NotFoundException('One or more participants not found');
     }
 
-    // Validate connections between participants (only connected users can chat)
-    await this.validateConnections(allParticipantIds);
+    // Validate connections between participants
+    // For direct chats: all participants must be connected to each other
+    // For group chats: creator must be connected to each participant (participants don't need to be connected to each other)
+    if (type === ConversationType.Direct) {
+      await this.validateConnections(allParticipantIds);
+    } else {
+      // For group chats, only validate that creator is connected to each participant
+      await this.validateGroupConnections(creatorId, participant_ids);
+    }
 
     // Check if direct conversation already exists between these users
     if (type === ConversationType.Direct) {
@@ -155,6 +162,28 @@ export class ConversationsService {
             `Users are not connected and cannot start a conversation`,
           );
         }
+      }
+    }
+  }
+
+  private async validateGroupConnections(
+    creatorId: string,
+    participantIds: string[],
+  ): Promise<void> {
+    // For group chats, only check that creator is connected to each participant
+    // Participants don't need to be connected to each other
+    for (const participantId of participantIds) {
+      if (participantId === creatorId) continue; // Skip self
+
+      const areConnected = await this.connectionsService.areUsersConnected(
+        creatorId,
+        participantId,
+      );
+
+      if (!areConnected) {
+        throw new ForbiddenException(
+          `You are not connected to ${participantId} and cannot add them to the group`,
+        );
       }
     }
   }

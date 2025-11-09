@@ -35,6 +35,7 @@ class ChatStore {
   typingUsers: string[] = [];
   currentUserId: string = "";
   onlineUsers: Set<string> = new Set(); // Track online user IDs
+  _onlineUsersArray: string[] = []; // Observable array for MobX tracking
 
   constructor() {
     makeAutoObservable(this);
@@ -229,7 +230,9 @@ class ChatStore {
 
   setOnlineUsers(userIds: string[]) {
     console.log("Setting online users in store:", userIds);
-    this.onlineUsers = new Set(userIds.map(id => String(id).trim()));
+    const normalizedIds = userIds.map(id => String(id).trim());
+    this.onlineUsers = new Set(normalizedIds);
+    this._onlineUsersArray = normalizedIds; // Update observable array for MobX
     console.log("Online users set updated. Current online users:", Array.from(this.onlineUsers));
   }
 
@@ -237,6 +240,7 @@ class ChatStore {
     const normalizedId = String(userId).trim();
     console.log("Adding online user:", normalizedId);
     this.onlineUsers.add(normalizedId);
+    this._onlineUsersArray = Array.from(this.onlineUsers); // Update observable array
     console.log("Online users after add:", Array.from(this.onlineUsers));
   }
 
@@ -244,6 +248,7 @@ class ChatStore {
     const normalizedId = String(userId).trim();
     console.log("Removing online user:", normalizedId);
     this.onlineUsers.delete(normalizedId);
+    this._onlineUsersArray = Array.from(this.onlineUsers); // Update observable array
     console.log("Online users after remove:", Array.from(this.onlineUsers));
   }
 
@@ -302,7 +307,8 @@ class ChatStore {
       return false;
     }
     const otherId = String(other.id).trim();
-    const isOnline = this.onlineUsers.has(otherId);
+    // Use the observable array to ensure MobX tracks this property
+    const isOnline = this._onlineUsersArray.includes(otherId) || this.onlineUsers.has(otherId);
     
     // Debug logging in development
     if (process.env.NODE_ENV === "development") {
@@ -310,7 +316,8 @@ class ChatStore {
         conversationId: conversation.id,
         otherParticipant: other.name || other.username,
         otherId,
-        onlineUsers: Array.from(this.onlineUsers),
+        onlineUsersArray: this._onlineUsersArray,
+        onlineUsersSet: Array.from(this.onlineUsers),
         isOnline,
       });
     }

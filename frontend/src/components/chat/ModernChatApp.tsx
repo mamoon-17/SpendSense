@@ -55,6 +55,7 @@ const ModernChatApp: React.FC = observer(() => {
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showGroupMembers, setShowGroupMembers] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
@@ -117,6 +118,13 @@ const ModernChatApp: React.FC = observer(() => {
     if (isValidId(id)) {
       chatStore.setCurrentConversation(id);
       socket?.emit("join_conversation", { conversationId: id });
+      // Clear existing messages first to avoid showing old messages from other conversations
+      const conv = chatStore.conversations.find(c => c.id === id);
+      if (conv) {
+        conv.messages = [];
+        conv.page = 1;
+        conv.total = 0;
+      }
       socket?.emit("get_messages", { conversationId: id, page: 1, limit: 50 });
       // Mark as read both locally and on server
       chatStore.markAsRead(id);
@@ -267,10 +275,19 @@ const ModernChatApp: React.FC = observer(() => {
       setGroupName("");
       setSelectedParticipants([]);
       
-      // Open the new conversation
+      // Open the new conversation and clear any existing messages
       if (res.data?.id) {
+        // Clear messages for the new conversation to ensure fresh start
+        const newConv = chatStore.conversations.find(c => c.id === res.data.id);
+        if (newConv) {
+          newConv.messages = [];
+          newConv.page = 1;
+          newConv.total = 0;
+        }
         setTimeout(() => {
           handleSelectConversation(res.data.id);
+          // Request fresh messages for the new group
+          socket?.emit("get_messages", { conversationId: res.data.id, page: 1, limit: 50 });
         }, 100);
       }
     } catch (error: any) {
@@ -289,6 +306,8 @@ const ModernChatApp: React.FC = observer(() => {
     const isOwn =
       message.sender === chatStore.currentUserId || message.sender === "user_1";
     const isSystem = message.isSystem;
+    const isGroup = currentConversation?.type === "group";
+    const senderName = message.senderName || "Unknown";
 
     return (
       <div
@@ -304,7 +323,7 @@ const ModernChatApp: React.FC = observer(() => {
           {!isOwn && !isSystem && (
             <Avatar className="w-8 h-8 mt-1">
               <AvatarFallback className="text-xs">
-                {currentConversation?.avatar || "U"}
+                {senderName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
           )}
@@ -327,6 +346,13 @@ const ModernChatApp: React.FC = observer(() => {
                 <div className="text-lg font-bold text-blue-600">
                   {message.budgetData.amount}
                 </div>
+              </div>
+            )}
+
+            {/* Show sender name in group chats */}
+            {isGroup && !isOwn && !isSystem && (
+              <div className="text-xs font-semibold text-gray-700 mb-1">
+                {senderName}
               </div>
             )}
 
@@ -452,9 +478,6 @@ const ModernChatApp: React.FC = observer(() => {
                               )}
                             </AvatarFallback>
                           </Avatar>
-                          {chatStore.isOtherParticipantOnline(conversation) && (
-                              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-                            )}
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -523,17 +546,23 @@ const ModernChatApp: React.FC = observer(() => {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-semibold">
-                      {getConversationDisplayName(currentConversation)}
-                    </h3>
+                    {currentConversation.type === "group" ? (
+                      <h3 
+                        className="font-semibold cursor-pointer hover:text-blue-600 transition-colors"
+                        onClick={() => setShowGroupMembers(true)}
+                        title="Click to view group members"
+                      >
+                        {getConversationDisplayName(currentConversation)}
+                      </h3>
+                    ) : (
+                      <h3 className="font-semibold">
+                        {getConversationDisplayName(currentConversation)}
+                      </h3>
+                    )}
                     <p className="text-sm text-gray-600">
                       {currentConversation.type === "group"
-                        ? `${
-                            currentConversation.participants?.length || 3
-                          } members`
-                        : chatStore.isOtherParticipantOnline(currentConversation)
-                        ? "Online"
-                        : "Offline"}
+                        ? `${currentConversation.participants?.length || 0} member${(currentConversation.participants?.length || 0) !== 1 ? 's' : ''}`
+                        : ""}
                     </p>
                   </div>
                 </div>
@@ -763,6 +792,66 @@ const ModernChatApp: React.FC = observer(() => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Group Members Dialog */}
+      {currentConversation?.type === "group" && (
+        <Dialog open={showGroupMembers} onOpenChange={setShowGroupMembers}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Group Members</DialogTitle>
+              <DialogDescription>
+                {currentConversation.participants?.length || 0} member{(currentConversation.participants?.length || 0) !== 1 ? 's' : ''} in this group
+              </DialogDescription>
+            </DialogHeader>
+
+            <ScrollArea className="h-[300px] border rounded-md p-4">
+              {currentConversation.participants && currentConversation.participants.length > 0 ? (
+                <div className="space-y-2">
+                  {currentConversation.participants.map((participant: any) => {
+                    const isCurrentUser = participant.id === chatStore.currentUserId;
+                    return (
+                      <div
+                        key={participant.id}
+                        className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50"
+                      >
+                        <Avatar className="w-10 h-10">
+                          <AvatarFallback>
+                            {(participant.name || participant.username || "U").charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">
+                            {participant.name || participant.username}
+                            {isCurrentUser && (
+                              <span className="text-xs text-muted-foreground ml-2">(You)</span>
+                            )}
+                          </p>
+                          {participant.name && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              @{participant.username}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No members found</p>
+                </div>
+              )}
+            </ScrollArea>
+
+            <DialogFooter>
+              <Button onClick={() => setShowGroupMembers(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 });
