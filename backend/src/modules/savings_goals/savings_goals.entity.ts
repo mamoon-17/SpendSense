@@ -5,7 +5,9 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   ManyToMany,
-  JoinTable
+  JoinTable,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../users/users.entity';
 
@@ -13,6 +15,14 @@ export enum SavingsGoalPriority {
   High = 'high',
   Medium = 'medium',
   Low = 'low',
+}
+
+export enum SavingsGoalStatus {
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+  BEHIND = 'behind',
+  ON_TRACK = 'on_track',
+  OVERDUE = 'overdue',
 }
 
 @Entity('savings_goals')
@@ -49,8 +59,24 @@ export class SavingsGoal {
   @Column('numeric', { precision: 12, scale: 2, nullable: true })
   monthly_target: string | null;
 
+  @Column({ type: 'boolean', default: false })
+  auto_save: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: SavingsGoalStatus,
+    default: SavingsGoalStatus.ACTIVE,
+  })
+  status: SavingsGoalStatus;
+
   @Column('uuid', { name: 'user_id', nullable: false })
   user_id: string;
+
+  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  created_at: Date;
+
+  @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  updated_at: Date;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })

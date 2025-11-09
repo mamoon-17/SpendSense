@@ -27,6 +27,12 @@ export class Expense {
   @Column({ type: 'text', array: true, nullable: true })
   tags: string[] | null;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  payment_method: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  notes: string | null;
+
   @Column({ type: 'boolean', default: false })
   ai_categorized: boolean;
 
