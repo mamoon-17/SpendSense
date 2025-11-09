@@ -24,12 +24,8 @@ export class UsersService {
     return user;
   }
 
-  async getUserByUsername(username: string): Promise<User> {
-    const user = await this.usersRepo.findOne({ where: { username } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
+  async getUserByUsername(username: string): Promise<User | null> {
+    return this.usersRepo.findOne({ where: { username } });
   }
 
   async findByIds(ids: string[]): Promise<User[]> {

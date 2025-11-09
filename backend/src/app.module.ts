@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { UsersModule } from './modules/users/users.module';
-import { UserProfielsModule } from './modules/user_profiles/user_profiles.module';
+import { UserProfilesModule } from './modules/user_profiles/user_profiles.module';
 import { BudgetsModule } from './modules/budgets/budgets.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { SavingsGoalsModule } from './modules/savings_goals/savings_goals.module';
@@ -42,7 +42,7 @@ import { ChatModule } from './modules/chat/chat.module';
       inject: [ConfigService],
     }),
     UsersModule,
-    UserProfielsModule,
+    UserProfilesModule,
     BudgetsModule,
     ExpensesModule,
     SavingsGoalsModule,

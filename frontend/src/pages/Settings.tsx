@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Bell, 
@@ -31,17 +31,18 @@ export const Settings: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   // Profile settings
   const [profile, setProfile] = useState({
     name: user?.name || '',
     email: user?.email || '',
     avatar: '',
-    timezone: 'UTC-5',
-    currency: 'USD',
-    dateFormat: 'MM/DD/YYYY'
+    timezone: '',
+    currency: '',
+    dateFormat: ''
   });
-
+  
   // Notification settings
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
@@ -212,6 +213,7 @@ export const Settings: React.FC = () => {
                       <SelectItem value="EUR">EUR (€)</SelectItem>
                       <SelectItem value="GBP">GBP (£)</SelectItem>
                       <SelectItem value="CAD">CAD ($)</SelectItem>
+                      <SelectItem value="PKR">PKR (Rs)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -224,7 +226,6 @@ export const Settings: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
                       <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

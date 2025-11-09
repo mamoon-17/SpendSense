@@ -18,19 +18,16 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async login(
-    body: LoginDTO,
-    res?: Response,
-  ): Promise<{ token: string; user: any }> {
+  async login(body: LoginDTO, res?: Response,): Promise<{ token: string; user: any }> {
     const { username, password } = body;
 
     // Find user
     const user = await this.userService.getUserByUsername(username);
-    if (!user) throw new UnauthorizedException('User not found');
+    if (!user) throw new UnauthorizedException('Username or password is incorrect');
 
     // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+    if (!isMatch) throw new UnauthorizedException('Username or password is incorrect');
 
     // Sign JWT
     const jwtSecret = this.configService.get<string>('JWT_SECRET');
