@@ -169,12 +169,39 @@ export class ChatService {
     conversationId: string,
     userId: string,
     client: Socket,
+    server: Server,
   ) {
     try {
+      // Mark messages as read (this updates the database)
       await this.messageHistoryService.markMessagesAsRead(
         conversationId,
         userId,
       );
+
+      // Get the recently marked messages to notify senders
+      // We'll get the latest messages that belong to other users and are now read
+      const messageResult = await this.messageHistoryService.getMessageHistory(
+        conversationId,
+        userId,
+        { page: 1, limit: 50 },
+      );
+
+      // Emit status updates to all participants in the conversation
+      // This notifies senders that their messages have been read
+      const readMessages = messageResult.messages.filter(
+        (msg) => msg.sender?.id !== userId && msg.status === MessageStatus.READ,
+      );
+
+      // Emit status update for each read message to notify the sender
+      readMessages.forEach((msg) => {
+        server.to(conversationId).emit('message_status_update', {
+          conversationId,
+          messageId: msg.id,
+          status: MessageStatus.READ,
+        });
+      });
+
+      // Confirm to the client that messages were marked as read
       client.emit('messages_marked_read', { conversationId });
     } catch (error: any) {
       this.logger.error(`Failed to mark messages as read: ${error.message}`);

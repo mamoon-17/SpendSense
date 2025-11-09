@@ -51,13 +51,33 @@ const ModernChatApp: React.FC = observer(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Mark messages as read in real-time when conversation is open
+  useEffect(() => {
+    const convId = chatStore.currentConversationId || selectedConversation;
+    if (convId && currentConversation) {
+      // Mark all unread messages as read when viewing
+      const unreadMessages = currentConversation.messages.filter(
+        (msg) => msg.sender !== chatStore.currentUserId && msg.status !== "read"
+      );
+      
+      if (unreadMessages.length > 0) {
+        // Mark locally
+        chatStore.markAsRead(convId);
+        // Notify server to mark as read and update sender
+        socket?.emit("mark_as_read", { conversationId: convId });
+      }
+    }
+  }, [chatStore.currentConversationId, selectedConversation, currentConversation, messages, socket]);
+
   const handleSelectConversation = (id: string) => {
     setSelectedConversation(id);
     if (isValidId(id)) {
       chatStore.setCurrentConversation(id);
       socket?.emit("join_conversation", { conversationId: id });
       socket?.emit("get_messages", { conversationId: id, page: 1, limit: 50 });
+      // Mark as read both locally and on server
       chatStore.markAsRead(id);
+      socket?.emit("mark_as_read", { conversationId: id });
     }
   };
 
@@ -130,13 +150,8 @@ const ModernChatApp: React.FC = observer(() => {
   };
 
   const getConversationDisplayName = (conv: any) => {
-    if (!conv) return "Conversation";
-    if (conv.type === "direct" && Array.isArray(conv.participants)) {
-      const meId = chatStore.currentUserId;
-      const other = conv.participants.find((p: any) => p && p.id !== meId);
-      return other?.name || other?.username || conv.name || "Direct";
-    }
-    return conv.name || "Conversation";
+    // Use the store's method which properly handles participant filtering
+    return chatStore.getConversationDisplayName(conv);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -218,9 +233,15 @@ const ModernChatApp: React.FC = observer(() => {
     );
   };
 
-  const filteredConversations = conversations.filter((conv) =>
-    (conv.name || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredConversations = conversations.filter((conv) => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    // For direct conversations, search by the other participant's name
+    const displayName = getConversationDisplayName(conv).toLowerCase();
+    // Also search in the stored name as fallback
+    const storedName = (conv.name || "").toLowerCase();
+    return displayName.includes(searchLower) || storedName.includes(searchLower);
+  });
 
   // Auto-select conversation if navigated from connections
   useEffect(() => {
@@ -302,8 +323,7 @@ const ModernChatApp: React.FC = observer(() => {
                               )}
                             </AvatarFallback>
                           </Avatar>
-                          {conversation.isOnline &&
-                            conversation.type === "direct" && (
+                          {chatStore.isOtherParticipantOnline(conversation) && (
                               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                             )}
                         </div>
@@ -382,7 +402,7 @@ const ModernChatApp: React.FC = observer(() => {
                         ? `${
                             currentConversation.participants?.length || 3
                           } members`
-                        : currentConversation.isOnline
+                        : chatStore.isOtherParticipantOnline(currentConversation)
                         ? "Online"
                         : "Offline"}
                     </p>

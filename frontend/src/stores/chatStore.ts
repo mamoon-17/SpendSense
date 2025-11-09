@@ -34,6 +34,7 @@ class ChatStore {
   currentConversationId: string | null = null;
   typingUsers: string[] = [];
   currentUserId: string = "";
+  onlineUsers: Set<string> = new Set(); // Track online user IDs
 
   constructor() {
     makeAutoObservable(this);
@@ -47,9 +48,9 @@ class ChatStore {
       type: c.type,
       participants: Array.isArray(c.participants)
         ? c.participants.map((p: any) => ({
-            id: p.id,
-            name: p.name || p.username,
-            username: p.username || p.name,
+            id: p.id || p.user_id, // Handle both id and user_id
+            name: p.name || p.username || "",
+            username: p.username || p.name || "",
           }))
         : [],
       unreadCount: typeof c.unread_count === "number" ? c.unread_count : 0,
@@ -158,7 +159,13 @@ class ChatStore {
     conv.lastMessage = normalized;
     conv.lastActivity = normalized.sent_at;
 
-    if (normalized.sender !== this.currentUserId) {
+    // Only increment unread count if:
+    // 1. The message is from someone else (not the current user)
+    // 2. The conversation is NOT currently open
+    const isFromOtherUser = normalized.sender !== this.currentUserId;
+    const isConversationOpen = this.currentConversationId === conversationId;
+    
+    if (isFromOtherUser && !isConversationOpen) {
       conv.unreadCount = (conv.unreadCount || 0) + 1;
     }
 
@@ -170,6 +177,38 @@ class ChatStore {
     const conv = this.conversations.find((c) => c.id === conversationId);
     if (conv) {
       conv.unreadCount = 0;
+      // Also mark all messages in this conversation as read
+      conv.messages.forEach((msg) => {
+        if (msg.sender !== this.currentUserId && msg.status !== "read") {
+          msg.status = "read";
+        }
+      });
+    }
+  }
+
+  // Mark a specific message as read
+  markMessageAsRead(conversationId: string, messageId: string) {
+    const conv = this.conversations.find((c) => c.id === conversationId);
+    if (conv) {
+      const message = conv.messages.find((m) => m.id === messageId);
+      if (message && message.sender !== this.currentUserId) {
+        message.status = "read";
+      }
+    }
+  }
+
+  // Update message status (called when receiving status updates from server)
+  updateMessageStatus(conversationId: string, messageId: string, status: string) {
+    const conv = this.conversations.find((c) => c.id === conversationId);
+    if (conv) {
+      const message = conv.messages.find((m) => m.id === messageId);
+      if (message) {
+        message.status = status;
+      }
+      // Also update last message if it's the same message
+      if (conv.lastMessage?.id === messageId) {
+        conv.lastMessage.status = status;
+      }
     }
   }
 
@@ -179,6 +218,109 @@ class ChatStore {
 
   setCurrentUserId(id: string) {
     this.currentUserId = id;
+  }
+
+  setOnlineUsers(userIds: string[]) {
+    this.onlineUsers = new Set(userIds);
+  }
+
+  addOnlineUser(userId: string) {
+    this.onlineUsers.add(userId);
+  }
+
+  removeOnlineUser(userId: string) {
+    this.onlineUsers.delete(userId);
+  }
+
+  // Get the other participant for a direct conversation
+  getOtherParticipant(conversation: Conversation): Participant | null {
+    if (!conversation || conversation.type !== "direct") {
+      return null;
+    }
+    
+    if (!Array.isArray(conversation.participants) || conversation.participants.length === 0) {
+      return null;
+    }
+
+    // Always filter out the current user to get the OTHER participant
+    const currentUserIdStr = this.currentUserId ? String(this.currentUserId).trim() : null;
+    
+    if (currentUserIdStr) {
+      // Filter out the current user and get the other participant(s)
+      const others = conversation.participants.filter(
+        (p: Participant) => {
+          if (!p || !p.id) return false;
+          const participantIdStr = String(p.id).trim();
+          return participantIdStr !== currentUserIdStr;
+        }
+      );
+      
+      if (others.length > 0) {
+        return others[0];
+      }
+    }
+    
+    // Fallback: if currentUserId is not set, and there are exactly 2 participants,
+    // we can't determine which one is the "other", so return null
+    // This should not happen in normal operation, but we handle it gracefully
+    if (conversation.participants.length === 2 && !currentUserIdStr) {
+      // Can't determine which is "other" without currentUserId
+      return null;
+    }
+    
+    // If only one participant and we have currentUserId, it means the other participant is missing
+    // This is an edge case - return null
+    if (conversation.participants.length === 1) {
+      return null;
+    }
+    
+    return null;
+  }
+
+  // Check if the other participant in a direct conversation is online
+  isOtherParticipantOnline(conversation: Conversation): boolean {
+    if (!conversation || conversation.type !== "direct") {
+      return false;
+    }
+    const other = this.getOtherParticipant(conversation);
+    if (!other || !other.id) {
+      return false;
+    }
+    return this.onlineUsers.has(String(other.id).trim());
+  }
+
+  // Get display name for a conversation (shows other participant for direct, name for group)
+  getConversationDisplayName(conversation: Conversation): string {
+    if (!conversation) return "Conversation";
+    
+    if (conversation.type === "direct") {
+      const other = this.getOtherParticipant(conversation);
+      if (other) {
+        // Prefer name, then username, then fallback to conversation name
+        return other.name || other.username || conversation.name || "Unknown User";
+      }
+      // Last resort: use conversation name if available, otherwise generic
+      if (conversation.name && conversation.name !== "Direct Message") {
+        // Try to extract name from conversation name like "Chat with John"
+        const match = conversation.name.match(/Chat with (.+)/i);
+        if (match && match[1]) {
+          return match[1];
+        }
+        return conversation.name;
+      }
+      // Debug: Log when we can't find the other participant
+      if (process.env.NODE_ENV === "development") {
+        console.warn("Could not find other participant for direct conversation:", {
+          conversationId: conversation.id,
+          participants: conversation.participants,
+          currentUserId: this.currentUserId,
+          conversationName: conversation.name,
+        });
+      }
+      return "Direct Message";
+    }
+    
+    return conversation.name || "Group Conversation";
   }
 
   sortConversations() {

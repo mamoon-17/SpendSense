@@ -218,6 +218,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       data.conversationId,
       userId,
       client,
+      this.server,
     );
   }
 }
