@@ -38,4 +38,12 @@ export class ConversationsController {
   async getConversationById(@Param('id') id: string) {
     return this.conversationsService.findById(id);
   }
+
+  @Post(':id/leave')
+  async leaveConversation(
+    @Param('id') conversationId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.conversationsService.removeParticipant(conversationId, user.id);
+  }
 }

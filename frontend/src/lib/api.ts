@@ -27,7 +27,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const authStore = useAuthStore.getState();
-    
+
     // Only log out if the user is already logged in
     if (error.response?.status === 401 && authStore.isAuthenticated) {
       authStore.logout();
@@ -37,7 +37,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
 
 // API endpoints
 export const authAPI = {
@@ -68,11 +67,12 @@ export const userProfilesAPI = {
   getUserProfiles: () => api.get("/user-profiles"),
   getUserProfileById: (id: string) => api.get(`/user-profiles/${id}`),
   createUserProfile: (data: any) => api.post("/user-profiles", data),
-  updateUserProfile: (id: string, data: any) => api.patch(`/user-profiles/${id}`, data),
+  updateUserProfile: (id: string, data: any) =>
+    api.patch(`/user-profiles/${id}`, data),
   deleteUserProfile: (id: string) => api.delete(`/user-profiles/${id}`),
   updateUserPreferences: (id: string, preferences: Record<string, unknown>) =>
     api.patch(`/user-profiles/${id}`, { preferences }),
-  
+
   updateUserSettings: (id: string, settings: any) =>
     api.patch(`/user-profiles/${id}`, settings),
 };
@@ -148,4 +148,5 @@ export const conversationsAPI = {
   getConversations: () => api.get("/conversations"),
   createConversation: (data: any) => api.post("/conversations", data),
   getConversation: (id: string) => api.get(`/conversations/${id}`),
+  leaveConversation: (id: string) => api.post(`/conversations/${id}/leave`),
 };

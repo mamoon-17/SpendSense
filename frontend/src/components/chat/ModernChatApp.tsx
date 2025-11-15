@@ -57,7 +57,9 @@ const ModernChatApp: React.FC = observer(() => {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showGroupMembers, setShowGroupMembers] = useState(false);
   const [groupName, setGroupName] = useState("");
-  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
+    []
+  );
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const { toast } = useToast();
   const { user } = useAuthStore();
@@ -103,7 +105,7 @@ const ModernChatApp: React.FC = observer(() => {
       const unreadMessages = currentConversation.messages.filter(
         (msg) => msg.sender !== chatStore.currentUserId && msg.status !== "read"
       );
-      
+
       if (unreadMessages.length > 0) {
         // Mark locally
         chatStore.markAsRead(convId);
@@ -111,24 +113,41 @@ const ModernChatApp: React.FC = observer(() => {
         socket?.emit("mark_as_read", { conversationId: convId });
       }
     }
-  }, [chatStore.currentConversationId, selectedConversation, currentConversation, messages, socket]);
+  }, [
+    chatStore.currentConversationId,
+    selectedConversation,
+    currentConversation,
+    messages,
+    socket,
+  ]);
 
   const handleSelectConversation = (id: string) => {
     setSelectedConversation(id);
     if (isValidId(id)) {
-      chatStore.setCurrentConversation(id);
-      socket?.emit("join_conversation", { conversationId: id });
-      // Clear existing messages first to avoid showing old messages from other conversations
-      const conv = chatStore.conversations.find(c => c.id === id);
+      // First, clear the current conversation to force a fresh render
+      chatStore.setCurrentConversation("");
+
+      // Clear messages immediately for the target conversation
+      const conv = chatStore.conversations.find((c) => c.id === id);
       if (conv) {
         conv.messages = [];
         conv.page = 1;
         conv.total = 0;
       }
-      socket?.emit("get_messages", { conversationId: id, page: 1, limit: 50 });
-      // Mark as read both locally and on server
-      chatStore.markAsRead(id);
-      socket?.emit("mark_as_read", { conversationId: id });
+
+      // Small delay to ensure state updates
+      setTimeout(() => {
+        chatStore.setCurrentConversation(id);
+        socket?.emit("join_conversation", { conversationId: id });
+        socket?.emit("get_messages", {
+          conversationId: id,
+          page: 1,
+          limit: 50,
+        });
+        // Mark as read both locally and on server
+        chatStore.markAsRead(id);
+        socket?.emit("mark_as_read", { conversationId: id });
+      }, 50);
     }
   };
 
@@ -261,40 +280,69 @@ const ModernChatApp: React.FC = observer(() => {
         description: `"${groupName}" group chat has been created successfully.`,
       });
 
-      // Refresh conversations list
-      const conversationsRes = await conversationsAPI.getConversations();
-      if (conversationsRes.data) {
-        chatStore.setConversationsFromServer(conversationsRes.data);
-      }
-      
-      // Also request via socket
-      socket?.emit("get_conversations");
-      
       // Close dialog and reset
       setShowCreateGroup(false);
       setGroupName("");
       setSelectedParticipants([]);
-      
-      // Open the new conversation and clear any existing messages
-      if (res.data?.id) {
-        // Clear messages for the new conversation to ensure fresh start
-        const newConv = chatStore.conversations.find(c => c.id === res.data.id);
+
+      // Wait a bit for the backend to fully create the conversation
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Refresh conversations list from server
+      const conversationsRes = await conversationsAPI.getConversations();
+      if (conversationsRes.data) {
+        console.log(
+          "Refreshed conversations after group creation:",
+          conversationsRes.data
+        );
+        chatStore.setConversationsFromServer(conversationsRes.data);
+
+        // Log the newly created conversation
+        const newConv = conversationsRes.data.find(
+          (c: any) => c.id === res.data.id
+        );
         if (newConv) {
-          newConv.messages = [];
-          newConv.page = 1;
-          newConv.total = 0;
+          console.log("New group conversation data:", {
+            id: newConv.id,
+            name: newConv.name,
+            participants: newConv.participants,
+            participantCount: newConv.participants?.length,
+          });
         }
+      }
+
+      // Also request via socket
+      socket?.emit("get_conversations");
+
+      // Open the new conversation with completely fresh state
+      if (res.data?.id) {
+        // Force clear any cached data
+        const newConvId = res.data.id;
+
         setTimeout(() => {
-          handleSelectConversation(res.data.id);
-          // Request fresh messages for the new group
-          socket?.emit("get_messages", { conversationId: res.data.id, page: 1, limit: 50 });
-        }, 100);
+          // Find the conversation again after refresh
+          const newConv = chatStore.conversations.find(
+            (c) => c.id === newConvId
+          );
+          if (newConv) {
+            // Ensure it starts with empty messages
+            newConv.messages = [];
+            newConv.page = 1;
+            newConv.total = 0;
+          }
+
+          // Select and join the conversation
+          handleSelectConversation(newConvId);
+        }, 300);
       }
     } catch (error: any) {
       console.error("Error creating group chat:", error);
       toast({
         title: "Failed to create group",
-        description: error?.response?.data?.message || error?.message || "Please try again.",
+        description:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -390,7 +438,9 @@ const ModernChatApp: React.FC = observer(() => {
     const displayName = getConversationDisplayName(conv).toLowerCase();
     // Also search in the stored name as fallback
     const storedName = (conv.name || "").toLowerCase();
-    return displayName.includes(searchLower) || storedName.includes(searchLower);
+    return (
+      displayName.includes(searchLower) || storedName.includes(searchLower)
+    );
   });
 
   // Auto-select conversation if navigated from connections
@@ -419,11 +469,20 @@ const ModernChatApp: React.FC = observer(() => {
                   variant="secondary"
                   className="bg-blue-100 text-blue-700"
                 >
-                  {conversations.filter((c) => c.unreadCount > 0).length}
+                  {conversations.length}
                 </Badge>
+                {conversations.filter((c) => c.unreadCount > 0).length > 0 && (
+                  <Badge
+                    variant="default"
+                    className="bg-red-500 text-white ml-1"
+                  >
+                    {conversations.filter((c) => c.unreadCount > 0).length}{" "}
+                    unread
+                  </Badge>
+                )}
               </CardTitle>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => setShowCreateGroup(true)}
                 title="Create Group Chat"
@@ -547,7 +606,7 @@ const ModernChatApp: React.FC = observer(() => {
                   </Avatar>
                   <div>
                     {currentConversation.type === "group" ? (
-                      <h3 
+                      <h3
                         className="font-semibold cursor-pointer hover:text-blue-600 transition-colors"
                         onClick={() => setShowGroupMembers(true)}
                         title="Click to view group members"
@@ -560,8 +619,15 @@ const ModernChatApp: React.FC = observer(() => {
                       </h3>
                     )}
                     <p className="text-sm text-gray-600">
-                      {currentConversation.type === "group"
-                        ? `${currentConversation.participants?.length || 0} member${(currentConversation.participants?.length || 0) !== 1 ? 's' : ''}`
+                      {currentConversation.type === "group" &&
+                      currentConversation.participants
+                        ? (() => {
+                            const totalMembers =
+                              currentConversation.participants.length;
+                            return `${totalMembers} member${
+                              totalMembers !== 1 ? "s" : ""
+                            } • Click name to view`;
+                          })()
                         : ""}
                     </p>
                   </div>
@@ -709,23 +775,31 @@ const ModernChatApp: React.FC = observer(() => {
                       >
                         <Avatar className="w-10 h-10">
                           <AvatarFallback>
-                            {(user.name || user.username || "U").charAt(0).toUpperCase()}
+                            {(user.name || user.username || "U")
+                              .charAt(0)
+                              .toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className={cn(
-                            "font-medium text-sm truncate",
-                            selectedParticipants.includes(user.id) ? "text-white" : ""
-                          )}>
+                          <p
+                            className={cn(
+                              "font-medium text-sm truncate",
+                              selectedParticipants.includes(user.id)
+                                ? "text-white"
+                                : ""
+                            )}
+                          >
                             {user.name || user.username}
                           </p>
                           {user.name && (
-                            <p className={cn(
-                              "text-xs truncate",
-                              selectedParticipants.includes(user.id) 
-                                ? "text-blue-100" 
-                                : "text-muted-foreground"
-                            )}>
+                            <p
+                              className={cn(
+                                "text-xs truncate",
+                                selectedParticipants.includes(user.id)
+                                  ? "text-blue-100"
+                                  : "text-muted-foreground"
+                              )}
+                            >
                               @{user.username}
                             </p>
                           )}
@@ -763,7 +837,8 @@ const ModernChatApp: React.FC = observer(() => {
                 if (selectedParticipants.length < 2) {
                   toast({
                     title: "Not enough participants",
-                    description: "Please select at least 2 people for the group chat.",
+                    description:
+                      "Please select at least 2 people for the group chat.",
                     variant: "destructive",
                   });
                   return;
@@ -781,7 +856,7 @@ const ModernChatApp: React.FC = observer(() => {
               disabled={isCreatingGroup}
               className={cn(
                 "min-w-[120px]",
-                (selectedParticipants.length < 2 || !groupName.trim())
+                selectedParticipants.length < 2 || !groupName.trim()
                   ? "opacity-50"
                   : "bg-blue-600 hover:bg-blue-700 text-white"
               )}
@@ -800,15 +875,22 @@ const ModernChatApp: React.FC = observer(() => {
             <DialogHeader>
               <DialogTitle>Group Members</DialogTitle>
               <DialogDescription>
-                {currentConversation.participants?.length || 0} member{(currentConversation.participants?.length || 0) !== 1 ? 's' : ''} in this group
+                {currentConversation.participants?.length || 0} member
+                {(currentConversation.participants?.length || 0) !== 1
+                  ? "s"
+                  : ""}{" "}
+                in "{currentConversation.name || "this group"}"
               </DialogDescription>
             </DialogHeader>
 
             <ScrollArea className="h-[300px] border rounded-md p-4">
-              {currentConversation.participants && currentConversation.participants.length > 0 ? (
+              {currentConversation.participants &&
+              currentConversation.participants.length > 0 ? (
                 <div className="space-y-2">
                   {currentConversation.participants.map((participant: any) => {
-                    const isCurrentUser = participant.id === chatStore.currentUserId;
+                    const isCurrentUser =
+                      participant.id === chatStore.currentUserId ||
+                      participant.id === user?.id;
                     return (
                       <div
                         key={participant.id}
@@ -816,17 +898,21 @@ const ModernChatApp: React.FC = observer(() => {
                       >
                         <Avatar className="w-10 h-10">
                           <AvatarFallback>
-                            {(participant.name || participant.username || "U").charAt(0).toUpperCase()}
+                            {(participant.name || participant.username || "U")
+                              .charAt(0)
+                              .toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">
                             {participant.name || participant.username}
                             {isCurrentUser && (
-                              <span className="text-xs text-muted-foreground ml-2">(You)</span>
+                              <span className="text-xs text-muted-foreground ml-2">
+                                (You)
+                              </span>
                             )}
                           </p>
-                          {participant.name && (
+                          {participant.name && participant.username && (
                             <p className="text-xs text-muted-foreground truncate">
                               @{participant.username}
                             </p>
@@ -844,8 +930,52 @@ const ModernChatApp: React.FC = observer(() => {
               )}
             </ScrollArea>
 
-            <DialogFooter>
-              <Button onClick={() => setShowGroupMembers(false)}>
+            <DialogFooter className="flex justify-between items-center">
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  try {
+                    // API call to leave group
+                    await conversationsAPI.leaveConversation(
+                      currentConversation.id
+                    );
+
+                    toast({
+                      title: "Left group",
+                      description: `You have left "${
+                        currentConversation.name || "the group"
+                      }"`,
+                    });
+
+                    // Remove conversation from local state
+                    chatStore.conversations = chatStore.conversations.filter(
+                      (c) => c.id !== currentConversation.id
+                    );
+
+                    // Clear selection
+                    setSelectedConversation(null);
+                    chatStore.setCurrentConversation("");
+                    setShowGroupMembers(false);
+
+                    // Refresh conversations list
+                    socket?.emit("get_conversations");
+                  } catch (error: any) {
+                    toast({
+                      title: "Failed to leave group",
+                      description:
+                        error?.response?.data?.message || "Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="mr-auto"
+              >
+                Leave Group
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowGroupMembers(false)}
+              >
                 Close
               </Button>
             </DialogFooter>

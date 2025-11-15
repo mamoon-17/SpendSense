@@ -77,12 +77,28 @@ export class ConversationsService {
   }
 
   async getActiveConversationsForUser(userId: string): Promise<Conversation[]> {
+    // We need to load ALL participants, not just the current user
+    // First get the conversation IDs where the user is a participant
+    const conversationIds = await this.conversationRepository
+      .createQueryBuilder('conversation')
+      .leftJoin('conversation.participants', 'participant')
+      .where('participant.id = :userId', { userId })
+      .select('conversation.id')
+      .getMany();
+
+    if (conversationIds.length === 0) {
+      return [];
+    }
+
+    const ids = conversationIds.map((c) => c.id);
+
+    // Then fetch those conversations with ALL participants
     return this.conversationRepository
       .createQueryBuilder('conversation')
       .leftJoinAndSelect('conversation.participants', 'participant')
       .leftJoinAndSelect('conversation.last_message', 'last_message')
       .leftJoinAndSelect('last_message.sender', 'message_sender')
-      .where('participant.id = :userId', { userId })
+      .where('conversation.id IN (:...ids)', { ids })
       .orderBy('conversation.updated_at', 'DESC')
       .getMany();
   }
@@ -186,5 +202,48 @@ export class ConversationsService {
         );
       }
     }
+  }
+
+  async removeParticipant(
+    conversationId: string,
+    userId: string,
+  ): Promise<{ message: string }> {
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: conversationId },
+      relations: ['participants'],
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    // Check if user is a participant
+    const isParticipant = conversation.participants.some(
+      (p) => p.id === userId,
+    );
+    if (!isParticipant) {
+      throw new ForbiddenException(
+        'You are not a participant in this conversation',
+      );
+    }
+
+    // Cannot leave direct conversations
+    if (conversation.type === ConversationType.Direct) {
+      throw new BadRequestException('Cannot leave direct conversations');
+    }
+
+    // Remove user from participants
+    conversation.participants = conversation.participants.filter(
+      (p) => p.id !== userId,
+    );
+
+    // If no participants left, delete the conversation
+    if (conversation.participants.length === 0) {
+      await this.conversationRepository.remove(conversation);
+      return { message: 'Conversation deleted as no participants remain' };
+    }
+
+    await this.conversationRepository.save(conversation);
+    return { message: 'Successfully left the conversation' };
   }
 }

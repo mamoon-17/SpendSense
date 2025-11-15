@@ -70,17 +70,23 @@ class ChatStore {
       total: 0,
       limit: 20,
     }));
-    // Preserve existing messages and pagination if we already have a conversation cached
+    // Preserve existing messages and pagination ONLY if conversation already existed
+    // AND was not just created (check if it has any messages or activity)
     this.conversations = mapped.map((conv) => {
       const existing = this.conversations.find((c) => c.id === conv.id);
-      return existing
-        ? {
-            ...conv,
-            messages: existing.messages,
-            page: existing.page,
-            total: existing.total,
-          }
-        : conv;
+
+      // If existing conversation found AND it has messages loaded, preserve them
+      if (existing && existing.messages.length > 0) {
+        return {
+          ...conv,
+          messages: existing.messages,
+          page: existing.page,
+          total: existing.total,
+        };
+      }
+
+      // For new conversations or conversations without loaded messages, use fresh state
+      return conv;
     });
     // Sort by lastActivity descending
     this.sortConversations();
@@ -165,7 +171,7 @@ class ChatStore {
     // 2. The conversation is NOT currently open
     const isFromOtherUser = normalized.sender !== this.currentUserId;
     const isConversationOpen = this.currentConversationId === conversationId;
-    
+
     if (isFromOtherUser && !isConversationOpen) {
       conv.unreadCount = (conv.unreadCount || 0) + 1;
     } else if (isFromOtherUser && isConversationOpen) {
@@ -206,7 +212,11 @@ class ChatStore {
   }
 
   // Update message status (called when receiving status updates from server)
-  updateMessageStatus(conversationId: string, messageId: string, status: string) {
+  updateMessageStatus(
+    conversationId: string,
+    messageId: string,
+    status: string
+  ) {
     const conv = this.conversations.find((c) => c.id === conversationId);
     if (conv) {
       const message = conv.messages.find((m) => m.id === messageId);
@@ -230,10 +240,13 @@ class ChatStore {
 
   setOnlineUsers(userIds: string[]) {
     console.log("Setting online users in store:", userIds);
-    const normalizedIds = userIds.map(id => String(id).trim());
+    const normalizedIds = userIds.map((id) => String(id).trim());
     this.onlineUsers = new Set(normalizedIds);
     this._onlineUsersArray = normalizedIds; // Update observable array for MobX
-    console.log("Online users set updated. Current online users:", Array.from(this.onlineUsers));
+    console.log(
+      "Online users set updated. Current online users:",
+      Array.from(this.onlineUsers)
+    );
   }
 
   addOnlineUser(userId: string) {
@@ -257,29 +270,32 @@ class ChatStore {
     if (!conversation || conversation.type !== "direct") {
       return null;
     }
-    
-    if (!Array.isArray(conversation.participants) || conversation.participants.length === 0) {
+
+    if (
+      !Array.isArray(conversation.participants) ||
+      conversation.participants.length === 0
+    ) {
       return null;
     }
 
     // Always filter out the current user to get the OTHER participant
-    const currentUserIdStr = this.currentUserId ? String(this.currentUserId).trim() : null;
-    
+    const currentUserIdStr = this.currentUserId
+      ? String(this.currentUserId).trim()
+      : null;
+
     if (currentUserIdStr) {
       // Filter out the current user and get the other participant(s)
-      const others = conversation.participants.filter(
-        (p: Participant) => {
-          if (!p || !p.id) return false;
-          const participantIdStr = String(p.id).trim();
-          return participantIdStr !== currentUserIdStr;
-        }
-      );
-      
+      const others = conversation.participants.filter((p: Participant) => {
+        if (!p || !p.id) return false;
+        const participantIdStr = String(p.id).trim();
+        return participantIdStr !== currentUserIdStr;
+      });
+
       if (others.length > 0) {
         return others[0];
       }
     }
-    
+
     // Fallback: if currentUserId is not set, and there are exactly 2 participants,
     // we can't determine which one is the "other", so return null
     // This should not happen in normal operation, but we handle it gracefully
@@ -287,13 +303,13 @@ class ChatStore {
       // Can't determine which is "other" without currentUserId
       return null;
     }
-    
+
     // If only one participant and we have currentUserId, it means the other participant is missing
     // This is an edge case - return null
     if (conversation.participants.length === 1) {
       return null;
     }
-    
+
     return null;
   }
 
@@ -308,8 +324,9 @@ class ChatStore {
     }
     const otherId = String(other.id).trim();
     // Use the observable array to ensure MobX tracks this property
-    const isOnline = this._onlineUsersArray.includes(otherId) || this.onlineUsers.has(otherId);
-    
+    const isOnline =
+      this._onlineUsersArray.includes(otherId) || this.onlineUsers.has(otherId);
+
     // Debug logging in development
     if (process.env.NODE_ENV === "development") {
       console.log("Checking online status:", {
@@ -321,19 +338,21 @@ class ChatStore {
         isOnline,
       });
     }
-    
+
     return isOnline;
   }
 
   // Get display name for a conversation (shows other participant for direct, name for group)
   getConversationDisplayName(conversation: Conversation): string {
     if (!conversation) return "Conversation";
-    
+
     if (conversation.type === "direct") {
       const other = this.getOtherParticipant(conversation);
       if (other) {
         // Prefer name, then username, then fallback to conversation name
-        return other.name || other.username || conversation.name || "Unknown User";
+        return (
+          other.name || other.username || conversation.name || "Unknown User"
+        );
       }
       // Last resort: use conversation name if available, otherwise generic
       if (conversation.name && conversation.name !== "Direct Message") {
@@ -346,16 +365,19 @@ class ChatStore {
       }
       // Debug: Log when we can't find the other participant
       if (process.env.NODE_ENV === "development") {
-        console.warn("Could not find other participant for direct conversation:", {
-          conversationId: conversation.id,
-          participants: conversation.participants,
-          currentUserId: this.currentUserId,
-          conversationName: conversation.name,
-        });
+        console.warn(
+          "Could not find other participant for direct conversation:",
+          {
+            conversationId: conversation.id,
+            participants: conversation.participants,
+            currentUserId: this.currentUserId,
+            conversationName: conversation.name,
+          }
+        );
       }
       return "Direct Message";
     }
-    
+
     return conversation.name || "Group Conversation";
   }
 
