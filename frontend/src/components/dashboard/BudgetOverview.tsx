@@ -33,12 +33,21 @@ const COLORS = [
 export const BudgetOverview: React.FC<BudgetOverviewProps> = ({ 
   budgets = mockBudgets 
 }) => {
-  const chartData = budgets.map((budget) => ({
-    name: budget.name,
-    value: budget.spent,
-    total: budget.totalAmount,
-    percentage: ((budget.spent / budget.totalAmount) * 100).toFixed(1),
-  }));
+  const chartData = budgets.map((budget) => {
+    // Handle both camelCase and snake_case from API
+    const spent = budget.spent ?? (budget as any).spent_amount ?? 0;
+    const totalAmount = budget.totalAmount ?? (budget as any).total_amount ?? 0;
+    const spentNum = typeof spent === 'string' ? parseFloat(spent) : spent;
+    const totalNum = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
+    const percentage = totalNum > 0 ? ((spentNum / totalNum) * 100).toFixed(1) : '0.0';
+    
+    return {
+      name: budget.name,
+      value: spentNum,
+      total: totalNum,
+      percentage,
+    };
+  });
 
   return (
     <div className="space-y-4">
@@ -77,7 +86,12 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
       {/* Budget List */}
       <div className="space-y-3">
         {budgets.map((budget, index) => {
-          const percentage = (budget.spent / budget.totalAmount) * 100;
+          // Handle both camelCase and snake_case from API
+          const spent = budget.spent ?? (budget as any).spent_amount ?? 0;
+          const totalAmount = budget.totalAmount ?? (budget as any).total_amount ?? 0;
+          const spentNum = typeof spent === 'string' ? parseFloat(spent) : spent;
+          const totalNum = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
+          const percentage = totalNum > 0 ? (spentNum / totalNum) * 100 : 0;
           const isOverBudget = percentage > 100;
           
           return (
@@ -95,7 +109,7 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
                 <span className={`text-sm font-medium ${
                   isOverBudget ? 'text-destructive' : 'text-muted-foreground'
                 }`}>
-                  ${budget.spent.toLocaleString()} / ${budget.totalAmount.toLocaleString()}
+                  ${spentNum.toLocaleString()} / ${totalNum.toLocaleString()}
                 </span>
               </div>
               
@@ -116,7 +130,7 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
                 </span>
                 {isOverBudget && (
                   <span className="text-xs text-destructive font-medium">
-                    Over budget by ${(budget.spent - budget.totalAmount).toLocaleString()}
+                    Over budget by ${(spentNum - totalNum).toLocaleString()}
                   </span>
                 )}
               </div>

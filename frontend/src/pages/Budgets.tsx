@@ -98,7 +98,28 @@ export const Budgets: React.FC = () => {
   // Mock query - replace with real API call
   const { data: budgets = mockBudgets } = useQuery({
     queryKey: ["budgets"],
-    queryFn: () => budgetAPI.getBudgets().then((res) => res.data),
+    queryFn: () =>
+      budgetAPI.getBudgets().then((res) => {
+        // Transform snake_case API response to camelCase
+        return res.data.map((budget: any) => ({
+          ...budget,
+          totalAmount:
+            budget.totalAmount ??
+            (budget.total_amount ? parseFloat(budget.total_amount) : 0),
+          spent:
+            budget.spent ??
+            (budget.spent_amount ? parseFloat(budget.spent_amount) : 0),
+          remaining:
+            budget.remaining ??
+            (budget.total_amount && budget.spent_amount
+              ? parseFloat(budget.total_amount) -
+                parseFloat(budget.spent_amount)
+              : 0),
+          endDate: budget.endDate ?? budget.end_date,
+          category: budget.category?.name ?? budget.category ?? "Uncategorized",
+          participants: budget.participants ?? [],
+        }));
+      }),
   });
 
   const filteredBudgets = budgets.filter((budget) => {
@@ -113,17 +134,22 @@ export const Budgets: React.FC = () => {
   });
 
   const totalBudgetAmount = budgets.reduce(
-    (sum, budget) => sum + budget.totalAmount,
+    (sum, budget) => sum + (budget.totalAmount ?? 0),
     0
   );
-  const totalSpent = budgets.reduce((sum, budget) => sum + budget.spent, 0);
+  const totalSpent = budgets.reduce(
+    (sum, budget) => sum + (budget.spent ?? 0),
+    0
+  );
   const totalRemaining = budgets.reduce(
-    (sum, budget) => sum + budget.remaining,
+    (sum, budget) => sum + (budget.remaining ?? 0),
     0
   );
 
   const getBudgetStatus = (budget: Budget) => {
-    const percentage = (budget.spent / budget.totalAmount) * 100;
+    const spent = budget.spent ?? 0;
+    const totalAmount = budget.totalAmount ?? 0;
+    const percentage = totalAmount > 0 ? (spent / totalAmount) * 100 : 0;
     if (percentage >= 100) return "over";
     if (percentage >= 80) return "warning";
     return "good";
@@ -256,8 +282,12 @@ export const Budgets: React.FC = () => {
           {/* Budget Cards */}
           <div className="space-y-4">
             {filteredBudgets.map((budget) => {
+              const spent = budget.spent ?? 0;
+              const totalAmount = budget.totalAmount ?? 0;
+              const remaining = budget.remaining ?? 0;
               const status = getBudgetStatus(budget);
-              const percentage = (budget.spent / budget.totalAmount) * 100;
+              const percentage =
+                totalAmount > 0 ? (spent / totalAmount) * 100 : 0;
 
               return (
                 <Card key={budget.id} className="card-financial">
@@ -320,12 +350,12 @@ export const Budgets: React.FC = () => {
                   <CardContent className="space-y-4">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">
-                        ${budget.spent.toLocaleString()} spent
+                        ${spent.toLocaleString()} spent
                       </span>
                       <span
                         className={cn("font-medium", getBudgetColor(status))}
                       >
-                        ${budget.remaining.toLocaleString()} remaining
+                        ${remaining.toLocaleString()} remaining
                       </span>
                     </div>
 
@@ -348,7 +378,7 @@ export const Budgets: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <Badge variant="outline">{budget.category}</Badge>
                         <span className="text-lg font-semibold">
-                          ${budget.totalAmount.toLocaleString()}
+                          ${totalAmount.toLocaleString()}
                         </span>
                       </div>
                     </div>

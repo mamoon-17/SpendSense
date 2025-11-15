@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
   Request,
   Query,
@@ -16,6 +17,35 @@ import { UpdateUserDTO } from 'src/modules/users/dtos/updateUser.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from './users.entity';
+
+@Controller('user')
+export class UserController {
+  constructor(private readonly userService: UsersService) {}
+
+  @Get('profile')
+  @UseGuards(AuthGuard)
+  getUserProfile(@CurrentUser() user: User) {
+    return user;
+  }
+
+  @Put('profile')
+  @UseGuards(AuthGuard)
+  async updateUserProfile(
+    @CurrentUser() user: User,
+    @Body() payload: UpdateUserDTO,
+  ) {
+    return this.userService.updateUser(user.id, payload);
+  }
+
+  @Patch('profile')
+  @UseGuards(AuthGuard)
+  async patchUserProfile(
+    @CurrentUser() user: User,
+    @Body() payload: UpdateUserDTO,
+  ) {
+    return this.userService.updateUser(user.id, payload);
+  }
+}
 
 @Controller('users')
 export class UsersController {
@@ -33,6 +63,7 @@ export class UsersController {
   getCurrentUser(@CurrentUser() user: User) {
     return user;
   }
+
   @Get()
   @UseGuards(AuthGuard)
   async getAllUsers() {

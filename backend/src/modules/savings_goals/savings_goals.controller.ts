@@ -17,7 +17,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateSavingsGoalDTO } from './dtos/createSavingsGoal.dto';
 import { UpdateSavingsGoalDTO } from './dtos/updateSavingsGoal.dto';
 
-@Controller('savings-goals')
+@Controller('savings/goals')
 @UseGuards(AuthGuard)
 @UseInterceptors(CurrentUserInterceptor)
 export class SavingsGoalsController {
