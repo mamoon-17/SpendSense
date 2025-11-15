@@ -3,11 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Connection, ConnectionStatus } from './connections.entity';
 import { Repository } from 'typeorm';
 import { CreateConnectionDto } from './dtos/createConnection.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ConnectionsService {
   constructor(
     @InjectRepository(Connection) private readonly repo: Repository<Connection>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async createConnection(connection: CreateConnectionDto): Promise<Connection> {
@@ -32,8 +34,24 @@ export class ConnectionsService {
       requester: { id: connection.requester_id },
       receiver: { id: connection.receiver_id },
     });
-    await this.repo.save(new_connection);
-    return new_connection;
+    const savedConnection = await this.repo.save(new_connection);
+
+    // Load full user data to get names
+    const fullConnection = await this.repo.findOne({
+      where: { id: savedConnection.id },
+      relations: ['requester', 'receiver'],
+    });
+
+    // Send notification to receiver about new connection request
+    if (fullConnection && fullConnection.requester && fullConnection.receiver) {
+      await this.notificationsService.notifyConnectionRequest(
+        fullConnection.receiver.id,
+        fullConnection.requester.name || fullConnection.requester.username,
+        fullConnection.requester.id,
+      );
+    }
+
+    return savedConnection;
   }
 
   async acceptRequest(
@@ -56,6 +74,12 @@ export class ConnectionsService {
     connection.status = ConnectionStatus.Connected;
     connection.accepted_at = new Date();
     await this.repo.save(connection);
+
+    // Send notification to requester that their request was accepted
+    await this.notificationsService.notifyConnectionAccepted(
+      connection.requester.id,
+      connection.receiver.name || connection.receiver.username,
+    );
 
     return connection;
   }

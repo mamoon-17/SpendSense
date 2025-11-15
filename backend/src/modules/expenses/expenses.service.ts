@@ -9,6 +9,8 @@ import { Expense } from './expenses.entity';
 import { Category } from '../categories/categories.entity';
 import { CreateExpenseDTO } from './dtos/createExpense.dto';
 import { UpdateExpenseDTO } from './dtos/updateExpense.dto';
+import { BudgetsService } from '../budgets/budgets.service';
+import { Budget } from '../budgets/budgets.entity';
 
 @Injectable()
 export class ExpensesService {
@@ -17,6 +19,9 @@ export class ExpensesService {
     private readonly expensesRepo: Repository<Expense>,
     @InjectRepository(Category)
     private readonly categoriesRepo: Repository<Category>,
+    @InjectRepository(Budget)
+    private readonly budgetsRepo: Repository<Budget>,
+    private readonly budgetsService: BudgetsService,
   ) {}
 
   // Create a new expense
@@ -40,6 +45,21 @@ export class ExpensesService {
     });
 
     await this.expensesRepo.save(expense);
+
+    // Check if there's a budget for this category and trigger notifications if needed
+    const budgets = await this.budgetsRepo.find({
+      where: { category: { id: payload.category_id } },
+      relations: ['participants'],
+    });
+
+    // Check each budget that matches this category
+    for (const budget of budgets) {
+      // Only check if the user is a participant in this budget
+      const isParticipant = budget.participants?.some((p) => p.id === userId);
+      if (isParticipant) {
+        await this.budgetsService.checkBudgetAndNotify(budget.id, userId);
+      }
+    }
 
     return { msg: 'Expense created successfully', expense };
   }

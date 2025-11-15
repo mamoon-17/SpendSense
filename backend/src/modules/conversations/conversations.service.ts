@@ -11,6 +11,7 @@ import { CreateConversationDto } from './dtos/create-conversation.dto';
 import { ConnectionsService } from '../connections/connections.service';
 import { ConnectionStatus } from '../connections/connections.entity';
 import { UsersService } from '../users/users.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ConversationsService {
@@ -19,6 +20,7 @@ export class ConversationsService {
     private readonly conversationRepository: Repository<Conversation>,
     private readonly connectionsService: ConnectionsService,
     private readonly usersService: UsersService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async createConversation(
@@ -73,7 +75,26 @@ export class ConversationsService {
       unread_count: 0,
     });
 
-    return this.conversationRepository.save(conversation);
+    const savedConversation =
+      await this.conversationRepository.save(conversation);
+
+    // Send notifications for group chat creation (excluding the creator)
+    if (type === ConversationType.Group && name) {
+      const creator = participants.find((p) => p.id === creatorId);
+      const creatorName = creator?.name || creator?.username || 'Someone';
+
+      for (const participant of participants) {
+        if (participant.id !== creatorId) {
+          await this.notificationsService.notifyGroupAdded(
+            participant.id,
+            name,
+            creatorName,
+          );
+        }
+      }
+    }
+
+    return savedConversation;
   }
 
   async getActiveConversationsForUser(userId: string): Promise<Conversation[]> {

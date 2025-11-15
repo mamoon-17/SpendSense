@@ -12,12 +12,14 @@ import {
 } from './savings_goals.entity';
 import { CreateSavingsGoalDTO } from './dtos/createSavingsGoal.dto';
 import { UpdateSavingsGoalDTO } from './dtos/updateSavingsGoal.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class SavingsGoalsService {
   constructor(
     @InjectRepository(SavingsGoal)
     private readonly savingsGoalRepo: Repository<SavingsGoal>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // Create a new savings goal
@@ -115,13 +117,37 @@ export class SavingsGoalsService {
 
     const currentAmount = parseFloat(goal.current_amount);
     const targetAmount = parseFloat(goal.target_amount);
+    const oldPercentage = (currentAmount / targetAmount) * 100;
     const newAmount = currentAmount + amount;
+    const newPercentage = (newAmount / targetAmount) * 100;
 
     goal.current_amount = newAmount.toString();
 
     // Auto-update status if goal is reached
     if (newAmount >= targetAmount) {
       goal.status = SavingsGoalStatus.COMPLETED;
+
+      // Send goal achieved notification
+      await this.notificationsService.notifySavingsGoalAchieved(
+        userId,
+        goal.name,
+        targetAmount,
+      );
+    } else {
+      // Check for milestone notifications (at 25%, 50%, 75%)
+      const milestones = [25, 50, 75];
+      for (const milestone of milestones) {
+        if (oldPercentage < milestone && newPercentage >= milestone) {
+          await this.notificationsService.notifySavingsGoalMilestone(
+            userId,
+            goal.name,
+            Math.round(newPercentage),
+            newAmount,
+            targetAmount,
+          );
+          break; // Only send one notification
+        }
+      }
     }
 
     const updatedGoal = await this.savingsGoalRepo.save(goal);

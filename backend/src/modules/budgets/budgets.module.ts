@@ -1,11 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BudgetsController } from './budgets.controller';
 import { BudgetsService } from './budgets.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Budget } from './budgets.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
-@Module({   
-  imports: [TypeOrmModule.forFeature([Budget])],
+@Module({
+  imports: [TypeOrmModule.forFeature([Budget]), NotificationsModule],
   controllers: [BudgetsController],
   providers: [BudgetsService],
   exports: [BudgetsService],

@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Bell, Check, Clock, AlertCircle } from "lucide-react";
+import {
+  Bell,
+  Check,
+  Clock,
+  AlertCircle,
+  Users,
+  TrendingUp,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -8,56 +15,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { notificationsAPI } from "@/lib/api";
+import { formatDistanceToNow } from "date-fns";
 
 interface Notification {
   id: string;
-  type: "budget" | "expense" | "goal" | "collaboration";
   title: string;
   message: string;
-  timestamp: string;
-  read: boolean;
   priority: "high" | "medium" | "low";
+  read: boolean;
+  created_at: string;
+  data?: {
+    type?: string;
+    [key: string]: any;
+  };
 }
 
-// Mock notifications
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "budget",
-    title: "Budget Alert",
-    message: "You've spent 85% of your Groceries budget",
-    timestamp: "2 hours ago",
-    read: false,
-    priority: "high",
-  },
-  {
-    id: "2",
-    type: "goal",
-    title: "Savings Goal",
-    message: "Great job! You're 75% closer to your vacation goal",
-    timestamp: "1 day ago",
-    read: false,
-    priority: "medium",
-  },
-  {
-    id: "3",
-    type: "collaboration",
-    title: "New Collaborator",
-    message: 'Sarah joined your "House Budget" workspace',
-    timestamp: "2 days ago",
-    read: true,
-    priority: "low",
-  },
-];
-
-const getNotificationIcon = (type: string) => {
+const getNotificationIcon = (type?: string) => {
   switch (type) {
-    case "budget":
+    case "budget_alert":
+    case "budget_exceeded":
       return <AlertCircle className="w-4 h-4 text-warning" />;
-    case "goal":
-      return <Check className="w-4 h-4 text-success" />;
-    case "collaboration":
-      return <Clock className="w-4 h-4 text-primary" />;
+    case "savings_goal_milestone":
+    case "savings_goal_achieved":
+      return <TrendingUp className="w-4 h-4 text-success" />;
+    case "group_added":
+    case "collaborator_joined":
+      return <Users className="w-4 h-4 text-primary" />;
+    case "connection_request":
+    case "connection_accepted":
+      return <Users className="w-4 h-4 text-blue-500" />;
     default:
       return <Bell className="w-4 h-4 text-muted-foreground" />;
   }
@@ -66,7 +54,23 @@ const getNotificationIcon = (type: string) => {
 export const NotificationDropdown: React.FC = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const unreadCount = mockNotifications.filter((n) => !n.read).length;
+
+  // Fetch notifications
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => notificationsAPI.getNotifications().then((res) => res.data),
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const unreadCount = notifications.filter((n: Notification) => !n.read).length;
+
+  const formatTimestamp = (date: string) => {
+    try {
+      return formatDistanceToNow(new Date(date), { addSuffix: true });
+    } catch {
+      return "Unknown time";
+    }
+  };
 
   const handleViewAllNotifications = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -102,12 +106,12 @@ export const NotificationDropdown: React.FC = () => {
           </div>
         </div>
         <div className="max-h-96 overflow-y-auto">
-          {mockNotifications.length === 0 ? (
+          {notifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
               No notifications yet
             </div>
           ) : (
-            mockNotifications.map((notification) => (
+            notifications.slice(0, 5).map((notification: Notification) => (
               <div
                 key={notification.id}
                 className={`p-4 border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors ${
@@ -116,7 +120,7 @@ export const NotificationDropdown: React.FC = () => {
               >
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 mt-1">
-                    {getNotificationIcon(notification.type)}
+                    {getNotificationIcon(notification.data?.type)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
@@ -131,7 +135,7 @@ export const NotificationDropdown: React.FC = () => {
                       {notification.message}
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      {notification.timestamp}
+                      {formatTimestamp(notification.created_at)}
                     </p>
                   </div>
                 </div>
@@ -139,7 +143,7 @@ export const NotificationDropdown: React.FC = () => {
             ))
           )}
         </div>
-        {mockNotifications.length > 0 && (
+        {notifications.length > 0 && (
           <div className="p-4 border-t border-border">
             <Button
               variant="ghost"

@@ -1,84 +1,49 @@
 import React from "react";
-import { Bell, Check, Clock, AlertCircle, ArrowLeft } from "lucide-react";
+import {
+  Bell,
+  Check,
+  Clock,
+  AlertCircle,
+  ArrowLeft,
+  Users,
+  TrendingUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { notificationsAPI } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { formatDistanceToNow } from "date-fns";
 
 interface Notification {
   id: string;
-  type: "budget" | "expense" | "goal" | "collaboration";
   title: string;
   message: string;
-  timestamp: string;
-  read: boolean;
   priority: "high" | "medium" | "low";
+  read: boolean;
+  created_at: string;
+  data?: {
+    type?: string;
+    [key: string]: any;
+  };
 }
 
-// Mock notifications - same as in NotificationDropdown
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "budget",
-    title: "Budget Alert",
-    message:
-      "You've spent 85% of your Groceries budget. Consider reviewing your spending to stay within your monthly limit.",
-    timestamp: "2 hours ago",
-    read: false,
-    priority: "high",
-  },
-  {
-    id: "2",
-    type: "goal",
-    title: "Savings Goal Achieved",
-    message:
-      "Great job! You're 75% closer to your vacation goal. Keep up the excellent saving habits!",
-    timestamp: "1 day ago",
-    read: false,
-    priority: "medium",
-  },
-  {
-    id: "3",
-    type: "collaboration",
-    title: "New Collaborator Added",
-    message:
-      'Sarah joined your "House Budget" workspace. She can now view and contribute to shared expenses.',
-    timestamp: "2 days ago",
-    read: true,
-    priority: "low",
-  },
-  {
-    id: "4",
-    type: "expense",
-    title: "Large Expense Detected",
-    message:
-      "A transaction of $450 was recorded. This is higher than your usual spending pattern.",
-    timestamp: "3 days ago",
-    read: true,
-    priority: "medium",
-  },
-  {
-    id: "5",
-    type: "goal",
-    title: "Emergency Fund Goal",
-    message:
-      "Congratulations! You've reached your emergency fund target of $10,000.",
-    timestamp: "1 week ago",
-    read: true,
-    priority: "high",
-  },
-];
-
-const getNotificationIcon = (type: string) => {
+const getNotificationIcon = (type?: string) => {
   switch (type) {
-    case "budget":
+    case "budget_alert":
+    case "budget_exceeded":
       return <AlertCircle className="w-5 h-5 text-warning" />;
-    case "goal":
-      return <Check className="w-5 h-5 text-success" />;
-    case "collaboration":
-      return <Clock className="w-5 h-5 text-primary" />;
-    case "expense":
-      return <AlertCircle className="w-5 h-5 text-destructive" />;
+    case "savings_goal_milestone":
+    case "savings_goal_achieved":
+      return <TrendingUp className="w-5 h-5 text-success" />;
+    case "group_added":
+    case "collaborator_joined":
+      return <Users className="w-5 h-5 text-primary" />;
+    case "connection_request":
+    case "connection_accepted":
+      return <Users className="w-5 h-5 text-blue-500" />;
     default:
       return <Bell className="w-5 h-5 text-muted-foreground" />;
   }
@@ -99,7 +64,44 @@ const getPriorityColor = (priority: string) => {
 
 export const Notifications: React.FC = () => {
   const navigate = useNavigate();
-  const unreadCount = mockNotifications.filter((n) => !n.read).length;
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch notifications
+  const { data: notifications = [], isLoading } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => notificationsAPI.getNotifications().then((res) => res.data),
+  });
+
+  // Mark as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: (id: string) => notificationsAPI.markAsRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
+  // Mark all as read mutation
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => notificationsAPI.markAllAsRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast({
+        title: "Success",
+        description: "All notifications marked as read",
+      });
+    },
+  });
+
+  const unreadCount = notifications.filter((n: Notification) => !n.read).length;
+
+  const formatTimestamp = (date: string) => {
+    try {
+      return formatDistanceToNow(new Date(date), { addSuffix: true });
+    } catch {
+      return "Unknown time";
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -124,15 +126,28 @@ export const Notifications: React.FC = () => {
           </div>
         </div>
         {unreadCount > 0 && (
-          <Button variant="outline" className="text-sm">
-            Mark all as read
+          <Button
+            variant="outline"
+            className="text-sm"
+            onClick={() => markAllAsReadMutation.mutate()}
+            disabled={markAllAsReadMutation.isPending}
+          >
+            {markAllAsReadMutation.isPending
+              ? "Marking..."
+              : "Mark all as read"}
           </Button>
         )}
       </div>
 
       {/* Notifications List */}
       <div className="space-y-4">
-        {mockNotifications.length === 0 ? (
+        {isLoading ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">Loading notifications...</p>
+            </CardContent>
+          </Card>
+        ) : notifications.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -145,7 +160,7 @@ export const Notifications: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          mockNotifications.map((notification) => (
+          notifications.map((notification: Notification) => (
             <Card
               key={notification.id}
               className={`transition-all hover:shadow-md ${
@@ -155,7 +170,7 @@ export const Notifications: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 mt-1">
-                    {getNotificationIcon(notification.type)}
+                    {getNotificationIcon(notification.data?.type)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
@@ -177,9 +192,24 @@ export const Notifications: React.FC = () => {
                         <p className="text-muted-foreground leading-relaxed">
                           {notification.message}
                         </p>
-                        <p className="text-sm text-muted-foreground mt-3">
-                          {notification.timestamp}
-                        </p>
+                        <div className="flex items-center gap-3 mt-3">
+                          <p className="text-sm text-muted-foreground">
+                            {formatTimestamp(notification.created_at)}
+                          </p>
+                          {!notification.read && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                markAsReadMutation.mutate(notification.id)
+                              }
+                              disabled={markAsReadMutation.isPending}
+                              className="h-7 text-xs"
+                            >
+                              Mark as read
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

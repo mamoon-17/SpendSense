@@ -150,3 +150,11 @@ export const conversationsAPI = {
   getConversation: (id: string) => api.get(`/conversations/${id}`),
   leaveConversation: (id: string) => api.post(`/conversations/${id}/leave`),
 };
+
+export const notificationsAPI = {
+  getNotifications: () => api.get("/notifications"),
+  getUnreadCount: () => api.get("/notifications/unread-count"),
+  markAsRead: (id: string) => api.patch(`/notifications/${id}/read`),
+  markAllAsRead: () => api.patch("/notifications/mark-all-read"),
+  deleteNotification: (id: string) => api.delete(`/notifications/${id}`),
+};

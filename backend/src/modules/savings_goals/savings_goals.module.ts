@@ -4,9 +4,14 @@ import { SavingsGoalsController } from './savings_goals.controller';
 import { SavingsGoalsService } from './savings_goals.service';
 import { SavingsGoal } from './savings_goals.entity';
 import { UsersModule } from '../users/users.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SavingsGoal]), UsersModule],
+  imports: [
+    TypeOrmModule.forFeature([SavingsGoal]),
+    UsersModule,
+    NotificationsModule,
+  ],
   controllers: [SavingsGoalsController],
   providers: [SavingsGoalsService],
   exports: [SavingsGoalsService],
