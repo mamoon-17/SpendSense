@@ -54,12 +54,16 @@ export const Dashboard: React.FC = () => {
   // Calculate summary stats
   const totalBudget =
     budgets?.reduce(
-      (sum: number, budget: any) => sum + budget.totalAmount,
+      (sum: number, budget: any) =>
+        sum + parseFloat(budget.total_amount || "0"),
       0
     ) || 0;
   const totalSpent =
-    expenses?.reduce((sum: number, expense: any) => sum + expense.amount, 0) ||
-    0;
+    budgets?.reduce(
+      (sum: number, budget: any) =>
+        sum + parseFloat(budget.spent_amount || "0"),
+      0
+    ) || 0;
   const remainingBudget = totalBudget - totalSpent;
   const spendingProgress =
     totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
@@ -76,16 +80,6 @@ export const Dashboard: React.FC = () => {
             Here's your financial overview for this month
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button className="btn-primary">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Expense
-          </Button>
-          <Button variant="outline">
-            <Target className="w-4 h-4 mr-2" />
-            New Goal
-          </Button>
-        </div>
       </div>
 
       {/* Summary Cards */}
@@ -98,7 +92,7 @@ export const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              ${totalBudget.toLocaleString()}
+              ${totalBudget.toFixed(0)}
             </div>
             <p className="text-xs text-muted-foreground">
               Across {budgets?.length || 0} budgets
@@ -114,7 +108,7 @@ export const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              ${totalSpent.toLocaleString()}
+              ${totalSpent.toFixed(0)}
             </div>
             <Progress value={spendingProgress} className="mt-2" />
             <p className="text-xs text-muted-foreground mt-2">
@@ -139,7 +133,7 @@ export const Dashboard: React.FC = () => {
                 remainingBudget >= 0 ? "text-success" : "text-destructive"
               }`}
             >
-              ${Math.abs(remainingBudget).toLocaleString()}
+              ${Math.abs(remainingBudget).toFixed(0)}
             </div>
             <p className="text-xs text-muted-foreground">
               {remainingBudget >= 0 ? "Under budget" : "Over budget"}
@@ -191,7 +185,7 @@ export const Dashboard: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SpendingChart />
+            <SpendingChart expenses={expenses} budgets={budgets} />
           </CardContent>
         </Card>
 

@@ -22,7 +22,8 @@ import { Notifications } from "@/pages/Notifications";
 import NotFound from "./pages/NotFound";
 import { Messages } from "./pages/Messages";
 
-const queryClient = new QueryClient({
+// Export queryClient so it can be used to clear cache on logout
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes

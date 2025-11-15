@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -8,18 +8,60 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { subMonths, format, startOfMonth, endOfMonth } from "date-fns";
 
-// Mock data for spending chart
-const spendingData = [
-  { month: "Jan", spent: 2400, budget: 3000 },
-  { month: "Feb", spent: 2800, budget: 3000 },
-  { month: "Mar", spent: 2200, budget: 3000 },
-  { month: "Apr", spent: 3200, budget: 3000 },
-  { month: "May", spent: 2600, budget: 3000 },
-  { month: "Jun", spent: 2900, budget: 3000 },
-];
+interface SpendingChartProps {
+  expenses?: any[];
+  budgets?: any[];
+}
 
-export const SpendingChart: React.FC = () => {
+export const SpendingChart: React.FC<SpendingChartProps> = ({
+  expenses = [],
+  budgets = [],
+}) => {
+  const spendingData = useMemo(() => {
+    // Generate last 6 months
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = subMonths(new Date(), i);
+      const monthStart = startOfMonth(date);
+      const monthEnd = endOfMonth(date);
+      const monthKey = format(date, "MMM");
+
+      // Calculate spent amount for this month from expenses
+      const monthSpent =
+        expenses
+          ?.filter((expense: any) => {
+            const expenseDate = new Date(expense.date);
+            return expenseDate >= monthStart && expenseDate <= monthEnd;
+          })
+          .reduce((sum: number, expense: any) => {
+            return sum + parseFloat(expense.amount || "0");
+          }, 0) || 0;
+
+      // Calculate budget for this month
+      const monthBudget =
+        budgets
+          ?.filter((budget: any) => {
+            const budgetStart = new Date(budget.start_date);
+            const budgetEnd = new Date(budget.end_date);
+            // Budget overlaps with this month
+            return budgetStart <= monthEnd && budgetEnd >= monthStart;
+          })
+          .reduce((sum: number, budget: any) => {
+            return sum + parseFloat(budget.total_amount || "0");
+          }, 0) || 0;
+
+      months.push({
+        month: monthKey,
+        spent: Math.round(monthSpent * 100) / 100,
+        budget: Math.round(monthBudget * 100) / 100,
+      });
+    }
+
+    return months;
+  }, [expenses, budgets]);
+
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">

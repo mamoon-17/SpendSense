@@ -11,13 +11,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "./ThemeProvider";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const ProfileDropdown: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { theme, setTheme } = useTheme();
+  const queryClient = useQueryClient();
 
   const handleLogout = () => {
+    // Clear all cached queries to prevent data leakage between users
+    queryClient.clear();
     logout();
     navigate("/login");
   };

@@ -1,5 +1,5 @@
-import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import React from "react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 interface Budget {
   id: string;
@@ -13,27 +13,66 @@ interface BudgetOverviewProps {
   budgets?: Budget[];
 }
 
-// Mock data for demonstration
-const mockBudgets: Budget[] = [
-  { id: '1', name: 'Food & Dining', totalAmount: 800, spent: 650, category: 'food' },
-  { id: '2', name: 'Transportation', totalAmount: 400, spent: 320, category: 'transport' },
-  { id: '3', name: 'Entertainment', totalAmount: 300, spent: 180, category: 'entertainment' },
-  { id: '4', name: 'Shopping', totalAmount: 500, spent: 420, category: 'shopping' },
-  { id: '5', name: 'Housing', totalAmount: 1200, spent: 1200, category: 'housing' },
-];
-
 const COLORS = [
-  'hsl(var(--primary))',
-  'hsl(var(--success))',
-  'hsl(var(--warning))',
-  'hsl(142 76% 55%)',
-  'hsl(218 85% 60%)',
+  "hsl(var(--primary))",
+  "hsl(var(--success))",
+  "hsl(var(--warning))",
+  "hsl(142 76% 55%)",
+  "hsl(218 85% 60%)",
 ];
 
-export const BudgetOverview: React.FC<BudgetOverviewProps> = ({ 
-  budgets = mockBudgets 
-}) => {
-  const chartData = budgets.map((budget) => ({
+export const BudgetOverview: React.FC<BudgetOverviewProps> = ({ budgets }) => {
+  // Custom tooltip for better visibility
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
+          <p className="text-sm font-semibold text-foreground mb-1">
+            {payload[0].name}
+          </p>
+          <p className="text-sm text-foreground">
+            <span className="font-medium">Spent:</span>{" "}
+            <span className="text-primary font-bold">
+              ${payload[0].value.toLocaleString()}
+            </span>
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {payload[0].payload.percentage}% of budget
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Don't render anything if no data yet
+  if (!budgets || budgets.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>No budgets yet</p>
+        <p className="text-sm">Create a budget to see the overview</p>
+      </div>
+    );
+  }
+
+  // Transform API data to expected format
+  const transformedBudgets = budgets.map((budget: any) => ({
+    id: budget.id,
+    name: budget.name,
+    totalAmount: parseFloat(budget.total_amount || "0"),
+    spent: parseFloat(budget.spent_amount || "0"),
+    category: budget.category?.name || "Other",
+  }));
+
+  // Safety check: filter out invalid budgets
+  const validBudgets = transformedBudgets.filter(
+    (budget) =>
+      budget &&
+      typeof budget.spent === "number" &&
+      typeof budget.totalAmount === "number"
+  );
+
+  const chartData = validBudgets.map((budget) => ({
     name: budget.name,
     value: budget.spent,
     total: budget.totalAmount,
@@ -56,35 +95,28 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
               dataKey="value"
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={COLORS[index % COLORS.length]}
+                />
               ))}
             </Pie>
-            <Tooltip 
-              contentStyle={{
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: 'calc(var(--radius) - 2px)',
-              }}
-              formatter={(value: number, name: string) => [
-                `$${value.toLocaleString()}`,
-                'Spent'
-              ]}
-            />
+            <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
 
       {/* Budget List */}
       <div className="space-y-3">
-        {budgets.map((budget, index) => {
+        {validBudgets.map((budget, index) => {
           const percentage = (budget.spent / budget.totalAmount) * 100;
           const isOverBudget = percentage > 100;
-          
+
           return (
             <div key={budget.id} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <div 
+                  <div
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: COLORS[index % COLORS.length] }}
                   />
@@ -92,31 +124,37 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
                     {budget.name}
                   </span>
                 </div>
-                <span className={`text-sm font-medium ${
-                  isOverBudget ? 'text-destructive' : 'text-muted-foreground'
-                }`}>
-                  ${budget.spent.toLocaleString()} / ${budget.totalAmount.toLocaleString()}
+                <span
+                  className={`text-sm font-medium ${
+                    isOverBudget ? "text-destructive" : "text-foreground"
+                  }`}
+                >
+                  ${(budget.spent || 0).toLocaleString()} / $
+                  {(budget.totalAmount || 0).toLocaleString()}
                 </span>
               </div>
-              
+
               <div className="w-full bg-muted rounded-full h-2">
-                <div 
+                <div
                   className={`h-2 rounded-full transition-all ${
-                    isOverBudget ? 'bg-destructive' : 'bg-primary'
+                    isOverBudget ? "bg-destructive" : "bg-primary"
                   }`}
-                  style={{ 
+                  style={{
                     width: `${Math.min(percentage, 100)}%`,
                   }}
                 />
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">
                   {percentage.toFixed(1)}% used
                 </span>
                 {isOverBudget && (
                   <span className="text-xs text-destructive font-medium">
-                    Over budget by ${(budget.spent - budget.totalAmount).toLocaleString()}
+                    Over budget by $
+                    {(
+                      (budget.spent || 0) - (budget.totalAmount || 0)
+                    ).toLocaleString()}
                   </span>
                 )}
               </div>
@@ -125,10 +163,12 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
         })}
       </div>
 
-      {budgets.length === 0 && (
+      {validBudgets.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
           <p>No budgets created</p>
-          <p className="text-sm">Create your first budget to see an overview here</p>
+          <p className="text-sm">
+            Create your first budget to see an overview here
+          </p>
         </div>
       )}
     </div>

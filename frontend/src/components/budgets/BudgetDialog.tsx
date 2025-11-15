@@ -115,6 +115,22 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
       return;
     }
 
+    // Validate end_date is not in the past when creating new budget
+    if (!budget) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endDate = new Date(formData.end_date);
+      if (endDate < today) {
+        toast({
+          title: "Validation Error",
+          description:
+            "End date cannot be in the past. Please select a current or future date.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     if (!user?.id) {
       toast({
         title: "Error",
@@ -197,33 +213,103 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
               <Label htmlFor="total_amount">
                 Total Amount <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="total_amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.total_amount}
-                onChange={(e) =>
-                  setFormData({ ...formData, total_amount: e.target.value })
-                }
-                placeholder="0.00"
-                required
-              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 font-semibold text-lg"
+                  onClick={() => {
+                    const current = parseFloat(formData.total_amount) || 0;
+                    const newValue = Math.max(0, current - 10);
+                    setFormData({
+                      ...formData,
+                      total_amount: newValue.toString(),
+                    });
+                  }}
+                >
+                  −
+                </Button>
+                <Input
+                  id="total_amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.total_amount}
+                  onChange={(e) =>
+                    setFormData({ ...formData, total_amount: e.target.value })
+                  }
+                  placeholder="0.00"
+                  className="text-center"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 font-semibold text-lg"
+                  onClick={() => {
+                    const current = parseFloat(formData.total_amount) || 0;
+                    const newValue = current + 10;
+                    setFormData({
+                      ...formData,
+                      total_amount: newValue.toString(),
+                    });
+                  }}
+                >
+                  +
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="spent_amount">Spent Amount</Label>
-              <Input
-                id="spent_amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.spent_amount}
-                onChange={(e) =>
-                  setFormData({ ...formData, spent_amount: e.target.value })
-                }
-                placeholder="0.00"
-              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 font-semibold text-lg"
+                  onClick={() => {
+                    const current = parseFloat(formData.spent_amount) || 0;
+                    const newValue = Math.max(0, current - 10);
+                    setFormData({
+                      ...formData,
+                      spent_amount: newValue.toString(),
+                    });
+                  }}
+                >
+                  −
+                </Button>
+                <Input
+                  id="spent_amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.spent_amount}
+                  onChange={(e) =>
+                    setFormData({ ...formData, spent_amount: e.target.value })
+                  }
+                  placeholder="0.00"
+                  className="text-center"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 font-semibold text-lg"
+                  onClick={() => {
+                    const current = parseFloat(formData.spent_amount) || 0;
+                    const newValue = current + 10;
+                    setFormData({
+                      ...formData,
+                      spent_amount: newValue.toString(),
+                    });
+                  }}
+                >
+                  +
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -286,6 +372,7 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, start_date: e.target.value })
                 }
+                className="[&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                 required
               />
             </div>
@@ -301,6 +388,7 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, end_date: e.target.value })
                 }
+                className="[&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                 required
               />
             </div>

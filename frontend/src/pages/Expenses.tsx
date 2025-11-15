@@ -15,6 +15,10 @@ import {
   BarChart3,
   ArrowUpRight,
   ArrowDownRight,
+  Upload,
+  Download,
+  FileUp,
+  Tags,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +58,8 @@ import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
 import { expenseAPI, categoriesAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Backend Expense interface
 interface BackendExpense {
@@ -193,6 +199,126 @@ export const Expenses: React.FC = () => {
     if (expenseToDelete) {
       deleteMutation.mutate(expenseToDelete);
     }
+  };
+
+  // Export expenses to PDF
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // Header
+    doc.setFillColor(15, 23, 42); // Dark background
+    doc.rect(0, 0, pageWidth, 40, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("Expense Report", pageWidth / 2, 20, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      `Generated on ${format(new Date(), "MMMM dd, yyyy")}`,
+      pageWidth / 2,
+      30,
+      { align: "center" }
+    );
+
+    // Summary Section
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Summary", 14, 55);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    const summaryY = 65;
+    doc.text(
+      `Period: ${
+        filterPeriod === "month"
+          ? "This Month"
+          : filterPeriod === "week"
+          ? "This Week"
+          : filterPeriod === "year"
+          ? "This Year"
+          : "All Time"
+      }`,
+      14,
+      summaryY
+    );
+    doc.text(`Total Expenses: $${totalExpenses.toFixed(2)}`, 14, summaryY + 7);
+    doc.text(
+      `Total Transactions: ${filteredExpenses.length}`,
+      14,
+      summaryY + 14
+    );
+    doc.text(
+      `Average per Transaction: $${avgExpense.toFixed(2)}`,
+      14,
+      summaryY + 21
+    );
+    if (topCategory) {
+      doc.text(
+        `Top Category: ${topCategory[0]} ($${(topCategory[1] as number).toFixed(
+          2
+        )})`,
+        14,
+        summaryY + 28
+      );
+    }
+
+    // Expenses Table
+    const tableData = sortedExpenses.map((expense) => [
+      format(new Date(expense.date), "MMM dd, yyyy"),
+      expense.description,
+      expense.category,
+      expense.payment_method || "N/A",
+      `$${expense.amount.toFixed(2)}`,
+    ]);
+
+    autoTable(doc, {
+      startY: summaryY + 40,
+      head: [["Date", "Description", "Category", "Payment Method", "Amount"]],
+      body: tableData,
+      theme: "grid",
+      headStyles: {
+        fillColor: [15, 23, 42],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 10,
+      },
+      bodyStyles: {
+        fontSize: 9,
+      },
+      alternateRowStyles: {
+        fillColor: [249, 250, 251],
+      },
+      columnStyles: {
+        0: { cellWidth: 28 },
+        1: { cellWidth: 60 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 35 },
+        4: { cellWidth: 25, halign: "right" },
+      },
+      margin: { left: 14, right: 14 },
+      didDrawPage: (data) => {
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Page ${data.pageNumber}`, pageWidth / 2, pageHeight - 10, {
+          align: "center",
+        });
+      },
+    });
+
+    // Save the PDF
+    doc.save(`expense-report-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+
+    toast({
+      title: "Success",
+      description: "Expense report exported successfully.",
+    });
   };
 
   // Check if filters are active
@@ -407,9 +533,7 @@ export const Expenses: React.FC = () => {
                 </div>
                 <TrendingUp className="w-8 h-8 text-primary" />
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                This {filterPeriod}
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">This Month</p>
             </CardContent>
           </Card>
 
@@ -424,9 +548,7 @@ export const Expenses: React.FC = () => {
                 </div>
                 <Receipt className="w-8 h-8 text-success" />
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Per transaction
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">This Month</p>
             </CardContent>
           </Card>
 
@@ -443,9 +565,7 @@ export const Expenses: React.FC = () => {
                 </div>
                 <Tag className="w-8 h-8 text-warning" />
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {filterPeriod === "all" ? "All time" : `This ${filterPeriod}`}
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">This Month</p>
             </CardContent>
           </Card>
 
@@ -479,6 +599,16 @@ export const Expenses: React.FC = () => {
                   <TabsTrigger value="categories">Categories</TabsTrigger>
                   <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 </TabsList>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Import
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
               </div>
 
               {/* Filters */}
@@ -945,6 +1075,51 @@ export const Expenses: React.FC = () => {
                 </div>
               </TabsContent>
             </Tabs>
+          </div>
+
+          {/* Quick Actions Sidebar */}
+          <div className="space-y-6">
+            <Card className="card-financial">
+              <CardHeader>
+                <CardTitle className="text-sm">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={handleExportPDF}
+                >
+                  <Download className="w-4 h-4" />
+                  Export Report
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() =>
+                    toast({
+                      title: "Bulk Import",
+                      description: "Bulk import feature coming soon.",
+                    })
+                  }
+                >
+                  <FileUp className="w-4 h-4" />
+                  Bulk Import
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() =>
+                    toast({
+                      title: "Manage Tags",
+                      description: "Tag management feature coming soon.",
+                    })
+                  }
+                >
+                  <Tags className="w-4 h-4" />
+                  Manage Tags
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
 

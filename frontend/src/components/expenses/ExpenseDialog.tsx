@@ -116,6 +116,20 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
       return;
     }
 
+    // Validate date is not in the future
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const expenseDate = new Date(formData.date);
+    if (expenseDate > today) {
+      toast({
+        title: "Validation Error",
+        description:
+          "Expense date cannot be in the future. Please select today or a past date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -194,18 +208,47 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
               <Label htmlFor="amount">
                 Amount <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.amount}
-                onChange={(e) =>
-                  setFormData({ ...formData, amount: e.target.value })
-                }
-                placeholder="0.00"
-                required
-              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 font-semibold text-lg"
+                  onClick={() => {
+                    const current = parseFloat(formData.amount) || 0;
+                    const newValue = Math.max(0, current - 10);
+                    setFormData({ ...formData, amount: newValue.toString() });
+                  }}
+                >
+                  −
+                </Button>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.amount}
+                  onChange={(e) =>
+                    setFormData({ ...formData, amount: e.target.value })
+                  }
+                  placeholder="0.00"
+                  className="text-center"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 font-semibold text-lg"
+                  onClick={() => {
+                    const current = parseFloat(formData.amount) || 0;
+                    const newValue = current + 10;
+                    setFormData({ ...formData, amount: newValue.toString() });
+                  }}
+                >
+                  +
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -219,6 +262,7 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, date: e.target.value })
                 }
+                className="[&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                 required
               />
             </div>

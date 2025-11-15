@@ -114,10 +114,20 @@ export const expenseAPI = {
 };
 
 export const savingsAPI = {
-  getGoals: () => api.get("/savings/goals"),
-  createGoal: (data: any) => api.post("/savings/goals", data),
-  updateGoal: (id: string, data: any) => api.put(`/savings/goals/${id}`, data),
-  deleteGoal: (id: string) => api.delete(`/savings/goals/${id}`),
+  getGoals: () => api.get("/savings-goals"),
+  getGoal: (id: string) => api.get(`/savings-goals/${id}`),
+  createGoal: (data: any) => api.post("/savings-goals", data),
+  updateGoal: (id: string, data: any) =>
+    api.patch(`/savings-goals/${id}`, data),
+  deleteGoal: (id: string) => api.delete(`/savings-goals/${id}`),
+  addToGoal: (id: string, amount: number) =>
+    api.patch(`/savings-goals/${id}/add`, { amount }),
+  withdrawFromGoal: (id: string, amount: number) =>
+    api.patch(`/savings-goals/${id}/withdraw`, { amount }),
+  getSummary: () => api.get("/savings-goals/summary"),
+  getByStatus: (status: string) => api.get(`/savings-goals/status/${status}`),
+  getByPriority: (priority: string) =>
+    api.get(`/savings-goals/priority/${priority}`),
 };
 
 export const reportsAPI = {
