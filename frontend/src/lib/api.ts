@@ -27,7 +27,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const authStore = useAuthStore.getState();
-    
+
     // Only log out if the user is already logged in
     if (error.response?.status === 401 && authStore.isAuthenticated) {
       authStore.logout();
@@ -37,7 +37,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
 
 // API endpoints
 export const authAPI = {
@@ -68,34 +67,50 @@ export const userProfilesAPI = {
   getUserProfiles: () => api.get("/user-profiles"),
   getUserProfileById: (id: string) => api.get(`/user-profiles/${id}`),
   createUserProfile: (data: any) => api.post("/user-profiles", data),
-  updateUserProfile: (id: string, data: any) => api.patch(`/user-profiles/${id}`, data),
+  updateUserProfile: (id: string, data: any) =>
+    api.patch(`/user-profiles/${id}`, data),
   deleteUserProfile: (id: string) => api.delete(`/user-profiles/${id}`),
   updateUserPreferences: (id: string, preferences: Record<string, unknown>) =>
     api.patch(`/user-profiles/${id}`, { preferences }),
-  
+
   updateUserSettings: (id: string, settings: any) =>
     api.patch(`/user-profiles/${id}`, settings),
+};
+
+export const categoriesAPI = {
+  getCategories: () => api.get("/categories"),
+  getCategoryById: (id: string) => api.get(`/categories/${id}`),
+  getCategoriesByType: (type: string) => api.get(`/categories/type/${type}`),
+  createCategory: (data: { name: string; type: string; icon?: string }) =>
+    api.post("/categories", data),
 };
 
 export const budgetAPI = {
   getBudgets: () => api.get("/budgets"),
   getBudget: (id: string) => api.get(`/budgets/${id}`),
   createBudget: (data: any) => api.post("/budgets", data),
-  updateBudget: (id: string, data: any) => api.put(`/budgets/${id}`, data),
+  updateBudget: (id: string, data: any) => api.patch(`/budgets/${id}`, data),
   deleteBudget: (id: string) => api.delete(`/budgets/${id}`),
   inviteUser: (budgetId: string, email: string) =>
     api.post(`/budgets/${budgetId}/invite`, { email }),
 };
 
 export const expenseAPI = {
-  getExpenses: (budgetId?: string) =>
-    api.get("/expenses", { params: { budgetId } }),
-
+  getExpenses: () => api.get("/expenses"),
   getExpense: (id: string) => api.get(`/expenses/${id}`),
   createExpense: (data: any) => api.post("/expenses", data),
-  updateExpense: (id: string, data: any) => api.put(`/expenses/${id}`, data),
+  updateExpense: (id: string, data: any) => api.patch(`/expenses/${id}`, data),
   deleteExpense: (id: string) => api.delete(`/expenses/${id}`),
-  categorizeExpense: (id: string) => api.post(`/expenses/${id}/categorize`),
+  getExpensesSummary: (period?: string) =>
+    api.get("/expenses/summary", { params: { period } }),
+  searchExpenses: (query: string) =>
+    api.get("/expenses/search", { params: { q: query } }),
+  getExpensesByCategory: (categoryId: string) =>
+    api.get(`/expenses/category/${categoryId}`),
+  getExpensesByDateRange: (startDate: string, endDate: string) =>
+    api.get("/expenses/date-range", {
+      params: { start: startDate, end: endDate },
+    }),
 };
 
 export const savingsAPI = {
