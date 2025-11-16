@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   DollarSign,
@@ -29,6 +29,10 @@ import { useAuthStore } from "@/stores/authStore";
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuthStore();
+
+  useEffect(() => {
+    document.title = "Dashboard - SpendSense";
+  }, []);
 
   // Fetch dashboard data
   const { data: profile } = useQuery({

@@ -174,3 +174,30 @@ export const conversationsAPI = {
   createConversation: (data: any) => api.post("/conversations", data),
   getConversation: (id: string) => api.get(`/conversations/${id}`),
 };
+
+export const billsAPI = {
+  getBills: () => api.get("/bills"),
+  getBillById: (id: string) => api.get(`/bills/${id}`),
+  createBill: (data: {
+    name: string;
+    description?: string;
+    total_amount: number;
+    split_type: string;
+    due_date: string;
+    category_id: string;
+    participant_ids: string[];
+  }) => api.post("/bills", data),
+  updateBill: (id: string, data: any) => api.patch(`/bills/${id}`, data),
+  updateBillStatus: (
+    id: string,
+    data: { status: string; participant_id?: string }
+  ) => api.patch(`/bills/${id}/status`, data),
+  deleteBill: (id: string) => api.delete(`/bills/${id}`),
+  getBillsSummary: () => api.get("/bills/summary/dashboard"),
+  getBillsByStatus: (status: string) => api.get(`/bills/status/${status}`),
+  getBillsByCategory: (categoryId: string) =>
+    api.get(`/bills/category/${categoryId}`),
+  getBillWithPaymentDetails: (id: string) => api.get(`/bills/${id}/details`),
+  markPaymentAsPaid: (billId: string, participantId: string) =>
+    api.patch(`/bills/${billId}/payment/${participantId}/mark-paid`),
+};

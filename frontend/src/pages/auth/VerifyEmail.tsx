@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Mail, CheckCircle, RotateCcw, TrendingUp, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { authAPI } from '@/lib/api';
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  Mail,
+  CheckCircle,
+  RotateCcw,
+  TrendingUp,
+  Loader2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { authAPI } from "@/lib/api";
 
 export const VerifyEmail: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,9 +17,13 @@ export const VerifyEmail: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const email = location.state?.email || 'your email';
-  const token = new URLSearchParams(location.search).get('token');
+
+  const email = location.state?.email || "your email";
+  const token = new URLSearchParams(location.search).get("token");
+
+  useEffect(() => {
+    document.title = "Verify Email - SpendSense";
+  }, []);
 
   useEffect(() => {
     if (token) {
@@ -27,18 +37,20 @@ export const VerifyEmail: React.FC = () => {
       await authAPI.verifyEmail(verificationToken);
       setIsVerified(true);
       toast({
-        title: 'Email verified successfully!',
-        description: 'Your account has been activated. You can now sign in.',
+        title: "Email verified successfully!",
+        description: "Your account has been activated. You can now sign in.",
       });
-      
+
       setTimeout(() => {
-        navigate('/login');
+        navigate("/login");
       }, 3000);
     } catch (error: any) {
       toast({
-        title: 'Verification failed',
-        description: error.response?.data?.message || 'Invalid or expired verification token.',
-        variant: 'destructive',
+        title: "Verification failed",
+        description:
+          error.response?.data?.message ||
+          "Invalid or expired verification token.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -46,11 +58,11 @@ export const VerifyEmail: React.FC = () => {
   };
 
   const resendVerification = async () => {
-    if (typeof email !== 'string' || !email.includes('@')) {
+    if (typeof email !== "string" || !email.includes("@")) {
       toast({
-        title: 'Cannot resend',
-        description: 'Email address not found. Please try registering again.',
-        variant: 'destructive',
+        title: "Cannot resend",
+        description: "Email address not found. Please try registering again.",
+        variant: "destructive",
       });
       return;
     }
@@ -58,16 +70,22 @@ export const VerifyEmail: React.FC = () => {
     setIsLoading(true);
     try {
       // Use the registration endpoint shape (username) since there's no dedicated resend endpoint
-      await authAPI.register({ name: '', username: email as string, password: '' }); // This triggers resend behavior using 'username'
+      await authAPI.register({
+        name: "",
+        username: email as string,
+        password: "",
+      }); // This triggers resend behavior using 'username'
       toast({
-        title: 'Verification email sent',
-        description: 'Please check your email for a new verification link.',
+        title: "Verification email sent",
+        description: "Please check your email for a new verification link.",
       });
     } catch (error: any) {
       toast({
-        title: 'Failed to resend',
-        description: error.response?.data?.message || 'Could not resend verification email.',
-        variant: 'destructive',
+        title: "Failed to resend",
+        description:
+          error.response?.data?.message ||
+          "Could not resend verification email.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -95,18 +113,18 @@ export const VerifyEmail: React.FC = () => {
               <div className="w-16 h-16 bg-success-light rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle className="w-8 h-8 text-success" />
               </div>
-              
+
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold text-foreground">
                   Email Verified!
                 </h2>
                 <p className="text-muted-foreground">
-                  Your account has been successfully verified. 
+                  Your account has been successfully verified.
                   <br />
                   Redirecting you to sign in...
                 </p>
               </div>
-              
+
               <div className="flex items-center justify-center">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
               </div>
@@ -117,7 +135,7 @@ export const VerifyEmail: React.FC = () => {
               <div className="w-16 h-16 bg-primary-light rounded-full flex items-center justify-center mx-auto">
                 <Mail className="w-8 h-8 text-primary" />
               </div>
-              
+
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold text-foreground">
                   Check Your Email
@@ -131,7 +149,8 @@ export const VerifyEmail: React.FC = () => {
 
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Click the link in the email to verify your account and get started with FinanceFlow.
+                  Click the link in the email to verify your account and get
+                  started with FinanceFlow.
                 </p>
 
                 {/* Resend Button */}
@@ -149,9 +168,10 @@ export const VerifyEmail: React.FC = () => {
                     )}
                     Resend Verification Email
                   </Button>
-                  
+
                   <p className="text-xs text-muted-foreground">
-                    Didn't receive the email? Check your spam folder or try resending.
+                    Didn't receive the email? Check your spam folder or try
+                    resending.
                   </p>
                 </div>
               </div>

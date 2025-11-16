@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -127,6 +127,10 @@ export const Expenses: React.FC = () => {
   >();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.title = "Expenses - SpendSense";
+  }, []);
 
   // Fetch expenses
   const { data: expensesData = [], isLoading } = useQuery({

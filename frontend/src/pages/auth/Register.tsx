@@ -50,6 +50,7 @@ export const Register: React.FC = () => {
 
   // Force light mode for auth pages
   useEffect(() => {
+    document.title = "Register - SpendSense";
     const html = document.documentElement;
     const originalTheme = html.className;
     html.className = "light";
@@ -91,13 +92,13 @@ export const Register: React.FC = () => {
       console.log("Registration error:", error);
       console.log("Error response:", error.response);
       console.log("Error data:", error.response?.data);
-      
-      const errorMessage = 
-        error.response?.data?.message || 
+
+      const errorMessage =
+        error.response?.data?.message ||
         error.response?.data?.error ||
         error.message ||
         "An error occurred during registration.";
-      
+
       toast({
         title: "Registration failed",
         description: errorMessage,

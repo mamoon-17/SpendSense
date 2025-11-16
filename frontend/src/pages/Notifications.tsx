@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Bell, Check, Clock, AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,6 +99,10 @@ const getPriorityColor = (priority: string) => {
 
 export const Notifications: React.FC = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Notifications - SpendSense";
+  }, []);
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
 
   return (

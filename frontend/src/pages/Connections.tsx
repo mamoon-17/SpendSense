@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -100,6 +100,10 @@ export const Connections: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+
+  useEffect(() => {
+    document.title = "Connections - SpendSense";
+  }, []);
 
   // Real API queries (no mock data)
   const { data: connections = [], refetch: refetchConnections } = useQuery({

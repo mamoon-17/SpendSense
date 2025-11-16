@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -113,6 +113,10 @@ export const SavingsGoals: React.FC = () => {
     null
   );
   const [transactionAmount, setTransactionAmount] = useState("");
+
+  useEffect(() => {
+    document.title = "Savings Goals - SpendSense";
+  }, []);
 
   const [formData, setFormData] = useState<GoalFormData>({
     name: "",
