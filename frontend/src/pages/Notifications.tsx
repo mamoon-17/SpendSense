@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React from "react";
 import {
   Bell,
@@ -9,10 +8,6 @@ import {
   Users,
   TrendingUp,
 } from "lucide-react";
-=======
-import React, { useEffect } from "react";
-import { Bell, Check, Clock, AlertCircle, ArrowLeft } from "lucide-react";
->>>>>>> origin/feature1
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -69,7 +64,6 @@ const getPriorityColor = (priority: string) => {
 
 export const Notifications: React.FC = () => {
   const navigate = useNavigate();
-<<<<<<< HEAD
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -108,14 +102,6 @@ export const Notifications: React.FC = () => {
       return "Unknown time";
     }
   };
-=======
-
-  useEffect(() => {
-    document.title = "Notifications - SpendSense";
-  }, []);
-  const unreadCount = mockNotifications.filter((n) => !n.read).length;
->>>>>>> origin/feature1
-
   return (
     <div className="space-y-6">
       {/* Header */}
