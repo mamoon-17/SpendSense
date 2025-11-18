@@ -4,9 +4,14 @@ import { BudgetsService } from './budgets.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Budget } from './budgets.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Budget]), NotificationsModule],
+  imports: [
+    TypeOrmModule.forFeature([Budget]),
+    NotificationsModule,
+    UsersModule,
+  ],
   controllers: [BudgetsController],
   providers: [BudgetsService],
   exports: [BudgetsService],

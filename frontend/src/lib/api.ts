@@ -77,32 +77,57 @@ export const userProfilesAPI = {
     api.patch(`/user-profiles/${id}`, settings),
 };
 
+export const categoriesAPI = {
+  getCategories: () => api.get("/categories"),
+  getCategoryById: (id: string) => api.get(`/categories/${id}`),
+  getCategoriesByType: (type: string) => api.get(`/categories/type/${type}`),
+  createCategory: (data: { name: string; type: string; icon?: string }) =>
+    api.post("/categories", data),
+};
+
 export const budgetAPI = {
   getBudgets: () => api.get("/budgets"),
   getBudget: (id: string) => api.get(`/budgets/${id}`),
   createBudget: (data: any) => api.post("/budgets", data),
-  updateBudget: (id: string, data: any) => api.put(`/budgets/${id}`, data),
+  updateBudget: (id: string, data: any) => api.patch(`/budgets/${id}`, data),
   deleteBudget: (id: string) => api.delete(`/budgets/${id}`),
   inviteUser: (budgetId: string, email: string) =>
     api.post(`/budgets/${budgetId}/invite`, { email }),
 };
 
 export const expenseAPI = {
-  getExpenses: (budgetId?: string) =>
-    api.get("/expenses", { params: { budgetId } }),
-
+  getExpenses: () => api.get("/expenses"),
   getExpense: (id: string) => api.get(`/expenses/${id}`),
   createExpense: (data: any) => api.post("/expenses", data),
-  updateExpense: (id: string, data: any) => api.put(`/expenses/${id}`, data),
+  updateExpense: (id: string, data: any) => api.patch(`/expenses/${id}`, data),
   deleteExpense: (id: string) => api.delete(`/expenses/${id}`),
-  categorizeExpense: (id: string) => api.post(`/expenses/${id}/categorize`),
+  getExpensesSummary: (period?: string) =>
+    api.get("/expenses/summary", { params: { period } }),
+  searchExpenses: (query: string) =>
+    api.get("/expenses/search", { params: { q: query } }),
+  getExpensesByCategory: (categoryId: string) =>
+    api.get(`/expenses/category/${categoryId}`),
+  getExpensesByDateRange: (startDate: string, endDate: string) =>
+    api.get("/expenses/date-range", {
+      params: { start: startDate, end: endDate },
+    }),
 };
 
 export const savingsAPI = {
-  getGoals: () => api.get("/savings/goals"),
-  createGoal: (data: any) => api.post("/savings/goals", data),
-  updateGoal: (id: string, data: any) => api.put(`/savings/goals/${id}`, data),
-  deleteGoal: (id: string) => api.delete(`/savings/goals/${id}`),
+  getGoals: () => api.get("/savings-goals"),
+  getGoal: (id: string) => api.get(`/savings-goals/${id}`),
+  createGoal: (data: any) => api.post("/savings-goals", data),
+  updateGoal: (id: string, data: any) =>
+    api.patch(`/savings-goals/${id}`, data),
+  deleteGoal: (id: string) => api.delete(`/savings-goals/${id}`),
+  addToGoal: (id: string, amount: number) =>
+    api.patch(`/savings-goals/${id}/add`, { amount }),
+  withdrawFromGoal: (id: string, amount: number) =>
+    api.patch(`/savings-goals/${id}/withdraw`, { amount }),
+  getSummary: () => api.get("/savings-goals/summary"),
+  getByStatus: (status: string) => api.get(`/savings-goals/status/${status}`),
+  getByPriority: (priority: string) =>
+    api.get(`/savings-goals/priority/${priority}`),
 };
 
 export const reportsAPI = {
@@ -157,4 +182,31 @@ export const notificationsAPI = {
   markAsRead: (id: string) => api.patch(`/notifications/${id}/read`),
   markAllAsRead: () => api.patch("/notifications/mark-all-read"),
   deleteNotification: (id: string) => api.delete(`/notifications/${id}`),
+};
+
+export const billsAPI = {
+  getBills: () => api.get("/bills"),
+  getBillById: (id: string) => api.get(`/bills/${id}`),
+  createBill: (data: {
+    name: string;
+    description?: string;
+    total_amount: number;
+    split_type: string;
+    due_date: string;
+    category_id: string;
+    participant_ids: string[];
+  }) => api.post("/bills", data),
+  updateBill: (id: string, data: any) => api.patch(`/bills/${id}`, data),
+  updateBillStatus: (
+    id: string,
+    data: { status: string; participant_id?: string }
+  ) => api.patch(`/bills/${id}/status`, data),
+  deleteBill: (id: string) => api.delete(`/bills/${id}`),
+  getBillsSummary: () => api.get("/bills/summary/dashboard"),
+  getBillsByStatus: (status: string) => api.get(`/bills/status/${status}`),
+  getBillsByCategory: (categoryId: string) =>
+    api.get(`/bills/category/${categoryId}`),
+  getBillWithPaymentDetails: (id: string) => api.get(`/bills/${id}/details`),
+  markPaymentAsPaid: (billId: string, participantId: string) =>
+    api.patch(`/bills/${billId}/payment/${participantId}/mark-paid`),
 };

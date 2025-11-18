@@ -36,6 +36,7 @@ export const Login: React.FC = () => {
 
   // Force light mode for auth pages
   useEffect(() => {
+    document.title = "Login - SpendSense";
     const html = document.documentElement;
     const originalTheme = html.className;
     html.className = "light";
@@ -80,13 +81,13 @@ export const Login: React.FC = () => {
       console.log("Login error:", error);
       console.log("Error response:", error.response);
       console.log("Error data:", error.response?.data);
-      
-      const errorMessage = 
-        error.response?.data?.message || 
+
+      const errorMessage =
+        error.response?.data?.message ||
         error.response?.data?.error ||
         error.message ||
         "Please check your credentials and try again.";
-      
+
       toast({
         title: "Login failed",
         description: errorMessage,

@@ -1,11 +1,11 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'user';
+  role: "admin" | "user";
   profileComplete: boolean;
   emailVerified: boolean;
   createdAt: string;
@@ -17,7 +17,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   setUser: (user: User) => void;
   setToken: (token: string) => void;
@@ -38,36 +38,51 @@ export const useAuthStore = create<AuthState>()(
       error: null,
 
       setUser: (user) => set({ user }),
-      
+
       setToken: (token) => set({ token }),
-      
+
       setLoading: (isLoading) => set({ isLoading }),
-      
+
       setError: (error) => set({ error }),
-      
-      login: (user, token) => set({ 
-        user, 
-        token, 
-        isAuthenticated: true, 
-        error: null 
-      }),
-      
-      logout: () => set({ 
-        user: null, 
-        token: null, 
-        isAuthenticated: false, 
-        error: null 
-      }),
-      
+
+      login: (user, token) => {
+        // Clear query cache to ensure fresh data for the new user session
+        import("../App").then(({ queryClient }) => {
+          queryClient.clear();
+        });
+
+        set({
+          user,
+          token,
+          isAuthenticated: true,
+          error: null,
+        });
+      },
+
+      logout: () => {
+        // Clear query cache to prevent data leakage between users
+        // Import queryClient dynamically to avoid circular dependencies
+        import("../App").then(({ queryClient }) => {
+          queryClient.clear();
+        });
+
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          error: null,
+        });
+      },
+
       clearError: () => set({ error: null }),
     }),
     {
-      name: 'auth-storage',
+      name: "auth-storage",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ 
-        user: state.user, 
-        token: state.token, 
-        isAuthenticated: state.isAuthenticated 
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
       }),
     }
   )

@@ -2,7 +2,59 @@
 GET http://localhost:3000/users
 Accept: application/json
 
+### Create a new user - November 15, 2025
+POST http://localhost:3000/users
+Content-Type: application/json
 
+{
+  "name": "Test User",
+  "username": "testuser_nov15_2025",
+  "password": "password123"
+}
+
+### Create a new user via Signup
+POST http://localhost:3000/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Test User Nov 15",
+  "username": "testuser_nov15_new",
+  "password": "password123"
+}
+### Create a new user - November 15, 2025
+POST http://localhost:3000/api/users
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "username": "testuser_nov15_2025",
+  "password": "password123"
+}
+### Test if server is responding
+
+GET http://localhost:3000/api/users
+Accept: application/json
+### Test if server is responding
+GET http://localhost:3000
+Accept: application/json
+### Create a new user - Example 1
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "name": "Alice Johnson",
+  "username": "alice_msg",
+  "password": "test123"
+}
+### Create a new user - Example 1
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "name": "Alice Johnson",
+  "username": "alice_msgg",
+  "password": "test1234"
+}
 ### Create a new user
 POST http://localhost:3000/users
 Content-Type: application/json

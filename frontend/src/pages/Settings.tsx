@@ -1,30 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  User, 
-  Bell, 
-  Shield, 
-  Palette, 
-  Bot, 
+import React, { useState, useEffect } from "react";
+import {
+  User,
+  Bell,
+  Shield,
+  Palette,
+  Bot,
   CreditCard,
   Download,
   Trash2,
   Eye,
   EyeOff,
   Check,
-  X
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { useAuthStore } from '@/stores/authStore';
-import { useTheme } from '@/components/layout/ThemeProvider';
-import { toast } from '@/hooks/use-toast';
+  X,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useAuthStore } from "@/stores/authStore";
+import { useTheme } from "@/components/layout/ThemeProvider";
+import { toast } from "@/hooks/use-toast";
 
 export const Settings: React.FC = () => {
   const { user } = useAuthStore();
@@ -33,16 +45,20 @@ export const Settings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
+  useEffect(() => {
+    document.title = "Settings - SpendSense";
+  }, []);
+
   // Profile settings
   const [profile, setProfile] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    avatar: '',
-    timezone: '',
-    currency: '',
-    dateFormat: ''
+    name: user?.name || "",
+    email: user?.email || "",
+    avatar: "",
+    timezone: "",
+    currency: "",
+    dateFormat: "",
   });
-  
+
   // Notification settings
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
@@ -51,14 +67,14 @@ export const Settings: React.FC = () => {
     weeklyReports: true,
     monthlyReports: true,
     collaboratorActivity: true,
-    aiInsights: true
+    aiInsights: true,
   });
 
   // Security settings
   const [security, setSecurity] = useState({
     twoFactorEnabled: false,
     emailAlerts: true,
-    sessionTimeout: '30'
+    sessionTimeout: "30",
   });
 
   // AI Assistant settings
@@ -67,23 +83,23 @@ export const Settings: React.FC = () => {
     autoCategorizationEnabled: true,
     spendingInsightsEnabled: true,
     budgetSuggestionsEnabled: true,
-    insightFrequency: 'daily'
+    insightFrequency: "daily",
   });
 
   const handleSaveProfile = async () => {
     setIsLoading(true);
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       toast({
-        title: 'Profile updated',
-        description: 'Your profile has been updated successfully.',
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
       });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to update profile.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to update profile.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -92,16 +108,16 @@ export const Settings: React.FC = () => {
 
   const handleExportData = () => {
     toast({
-      title: 'Export started',
-      description: 'Your data export will be ready in a few minutes.',
+      title: "Export started",
+      description: "Your data export will be ready in a few minutes.",
     });
   };
 
   const handleDeleteAccount = () => {
     toast({
-      title: 'Account deletion',
-      description: 'This feature requires additional confirmation.',
-      variant: 'destructive',
+      title: "Account deletion",
+      description: "This feature requires additional confirmation.",
+      variant: "destructive",
     });
   };
 
@@ -121,7 +137,10 @@ export const Settings: React.FC = () => {
             <User className="w-4 h-4" />
             Profile
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+          <TabsTrigger
+            value="notifications"
+            className="flex items-center gap-2"
+          >
             <Bell className="w-4 h-4" />
             Notifications
           </TabsTrigger>
@@ -154,7 +173,10 @@ export const Settings: React.FC = () => {
                 <Avatar className="w-20 h-20">
                   <AvatarImage src={profile.avatar} />
                   <AvatarFallback className="text-lg">
-                    {profile.name.split(' ').map(n => n[0]).join('')}
+                    {profile.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
@@ -163,7 +185,11 @@ export const Settings: React.FC = () => {
                     <Button variant="outline" size="sm">
                       Upload New
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                    >
                       Remove
                     </Button>
                   </div>
@@ -176,7 +202,9 @@ export const Settings: React.FC = () => {
                   <Input
                     id="name"
                     value={profile.name}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                    onChange={(e) =>
+                      setProfile({ ...profile, name: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -185,26 +213,46 @@ export const Settings: React.FC = () => {
                     id="email"
                     type="email"
                     value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                    onChange={(e) =>
+                      setProfile({ ...profile, email: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
-                  <Select value={profile.timezone} onValueChange={(value) => setProfile({ ...profile, timezone: value })}>
+                  <Select
+                    value={profile.timezone}
+                    onValueChange={(value) =>
+                      setProfile({ ...profile, timezone: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="UTC-8">Pacific Time (UTC-8)</SelectItem>
-                      <SelectItem value="UTC-7">Mountain Time (UTC-7)</SelectItem>
-                      <SelectItem value="UTC-6">Central Time (UTC-6)</SelectItem>
-                      <SelectItem value="UTC-5">Eastern Time (UTC-5)</SelectItem>
+                      <SelectItem value="UTC-8">
+                        Pacific Time (UTC-8)
+                      </SelectItem>
+                      <SelectItem value="UTC-7">
+                        Mountain Time (UTC-7)
+                      </SelectItem>
+                      <SelectItem value="UTC-6">
+                        Central Time (UTC-6)
+                      </SelectItem>
+                      <SelectItem value="UTC-5">
+                        Eastern Time (UTC-5)
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">Default Currency</Label>
-                  <Select value={profile.currency} onValueChange={(value) => setProfile({ ...profile, currency: value })}>
+                  <Select
+                    value={profile.currency}
+                    onValueChange={(value) =>
+                      setProfile({ ...profile, currency: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -219,7 +267,12 @@ export const Settings: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dateFormat">Date Format</Label>
-                  <Select value={profile.dateFormat} onValueChange={(value) => setProfile({ ...profile, dateFormat: value })}>
+                  <Select
+                    value={profile.dateFormat}
+                    onValueChange={(value) =>
+                      setProfile({ ...profile, dateFormat: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -232,7 +285,7 @@ export const Settings: React.FC = () => {
               </div>
 
               <Button onClick={handleSaveProfile} disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save Changes'}
+                {isLoading ? "Saving..." : "Save Changes"}
               </Button>
             </CardContent>
           </Card>
@@ -253,7 +306,7 @@ export const Settings: React.FC = () => {
                   <div key={key} className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label className="text-sm font-medium capitalize">
-                        {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                        {key.replace(/([A-Z])/g, " $1").toLowerCase()}
                       </Label>
                       <p className="text-xs text-muted-foreground">
                         {getNotificationDescription(key)}
@@ -285,7 +338,9 @@ export const Settings: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">Two-Factor Authentication</Label>
+                    <Label className="text-sm font-medium">
+                      Two-Factor Authentication
+                    </Label>
                     <p className="text-xs text-muted-foreground">
                       Add an extra layer of security to your account
                     </p>
@@ -322,8 +377,15 @@ export const Settings: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
-                  <Select value={security.sessionTimeout} onValueChange={(value) => setSecurity({ ...security, sessionTimeout: value })}>
+                  <Label htmlFor="sessionTimeout">
+                    Session Timeout (minutes)
+                  </Label>
+                  <Select
+                    value={security.sessionTimeout}
+                    onValueChange={(value) =>
+                      setSecurity({ ...security, sessionTimeout: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -345,7 +407,7 @@ export const Settings: React.FC = () => {
                     <div className="relative">
                       <Input
                         id="currentPassword"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? "text" : "password"}
                         placeholder="Enter current password"
                       />
                       <button
@@ -353,7 +415,11 @@ export const Settings: React.FC = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -366,7 +432,9 @@ export const Settings: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Label htmlFor="confirmPassword">
+                      Confirm New Password
+                    </Label>
                     <Input
                       id="confirmPassword"
                       type="password"
@@ -391,30 +459,40 @@ export const Settings: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                {Object.entries(aiSettings).slice(0, -1).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-medium capitalize">
-                        {key.replace(/([A-Z])/g, ' $1').replace('Enabled', '').toLowerCase()}
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {getAiSettingDescription(key)}
-                      </p>
+                {Object.entries(aiSettings)
+                  .slice(0, -1)
+                  .map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="space-y-0.5">
+                        <Label className="text-sm font-medium capitalize">
+                          {key
+                            .replace(/([A-Z])/g, " $1")
+                            .replace("Enabled", "")
+                            .toLowerCase()}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {getAiSettingDescription(key)}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={value as boolean}
+                        onCheckedChange={(checked) =>
+                          setAiSettings({ ...aiSettings, [key]: checked })
+                        }
+                      />
                     </div>
-                    <Switch
-                      checked={value as boolean}
-                      onCheckedChange={(checked) =>
-                        setAiSettings({ ...aiSettings, [key]: checked })
-                      }
-                    />
-                  </div>
-                ))}
+                  ))}
 
                 <div className="space-y-2">
                   <Label htmlFor="insightFrequency">Insight Frequency</Label>
-                  <Select 
-                    value={aiSettings.insightFrequency} 
-                    onValueChange={(value) => setAiSettings({ ...aiSettings, insightFrequency: value })}
+                  <Select
+                    value={aiSettings.insightFrequency}
+                    onValueChange={(value) =>
+                      setAiSettings({ ...aiSettings, insightFrequency: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -445,7 +523,8 @@ export const Settings: React.FC = () => {
                 <div className="p-4 bg-muted rounded-lg">
                   <h4 className="text-sm font-medium mb-2">Export Your Data</h4>
                   <p className="text-xs text-muted-foreground mb-4">
-                    Download all your financial data including budgets, expenses, and reports.
+                    Download all your financial data including budgets,
+                    expenses, and reports.
                   </p>
                   <Button onClick={handleExportData} variant="outline">
                     <Download className="w-4 h-4 mr-2" />
@@ -454,9 +533,12 @@ export const Settings: React.FC = () => {
                 </div>
 
                 <div className="p-4 bg-destructive-light rounded-lg border border-destructive/20">
-                  <h4 className="text-sm font-medium mb-2 text-destructive">Danger Zone</h4>
+                  <h4 className="text-sm font-medium mb-2 text-destructive">
+                    Danger Zone
+                  </h4>
                   <p className="text-xs text-muted-foreground mb-4">
-                    Once you delete your account, there is no going back. Please be certain.
+                    Once you delete your account, there is no going back. Please
+                    be certain.
                   </p>
                   <Button onClick={handleDeleteAccount} variant="destructive">
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -475,23 +557,23 @@ export const Settings: React.FC = () => {
 // Helper functions
 const getNotificationDescription = (key: string) => {
   const descriptions: Record<string, string> = {
-    emailNotifications: 'Receive email notifications for important updates',
-    budgetAlerts: 'Get notified when you exceed budget limits',
-    expenseReminders: 'Receive reminders to log your expenses',
-    weeklyReports: 'Get weekly spending summaries',
-    monthlyReports: 'Receive monthly financial reports',
-    collaboratorActivity: 'Get notified of collaborator changes',
-    aiInsights: 'Receive AI-powered financial insights'
+    emailNotifications: "Receive email notifications for important updates",
+    budgetAlerts: "Get notified when you exceed budget limits",
+    expenseReminders: "Receive reminders to log your expenses",
+    weeklyReports: "Get weekly spending summaries",
+    monthlyReports: "Receive monthly financial reports",
+    collaboratorActivity: "Get notified of collaborator changes",
+    aiInsights: "Receive AI-powered financial insights",
   };
-  return descriptions[key] || '';
+  return descriptions[key] || "";
 };
 
 const getAiSettingDescription = (key: string) => {
   const descriptions: Record<string, string> = {
-    aiEnabled: 'Enable AI assistant features across the app',
-    autoCategorizationEnabled: 'Automatically categorize expenses using AI',
-    spendingInsightsEnabled: 'Get AI-powered spending pattern insights',
-    budgetSuggestionsEnabled: 'Receive AI suggestions for budget optimization'
+    aiEnabled: "Enable AI assistant features across the app",
+    autoCategorizationEnabled: "Automatically categorize expenses using AI",
+    spendingInsightsEnabled: "Get AI-powered spending pattern insights",
+    budgetSuggestionsEnabled: "Receive AI suggestions for budget optimization",
   };
-  return descriptions[key] || '';
+  return descriptions[key] || "";
 };
