@@ -45,6 +45,9 @@ export class Expense {
   @Column({ type: 'varchar', length: 255, nullable: true })
   location: string | null;
 
+  @Column({ type: 'varchar', length: 10, default: 'USD' })
+  currency: string;
+
   @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;

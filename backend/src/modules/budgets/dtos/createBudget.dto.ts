@@ -1,4 +1,10 @@
-import { IsString, IsEnum, IsDateString, IsOptional, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsDateString,
+  IsOptional,
+  IsArray,
+} from 'class-validator';
 import { BudgetPeriod } from '../budgets.entity';
 
 export class CreateBudgetDTO {
@@ -31,4 +37,8 @@ export class CreateBudgetDTO {
   @IsArray()
   @IsString({ each: true })
   participants?: string[]; // Array of User IDs
+
+  @IsOptional()
+  @IsString()
+  currency?: string; // Currency code (USD, EUR, GBP, CAD, PKR)
 }

@@ -21,6 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { expenseAPI, categoriesAPI } from "@/lib/api";
+import { useUserSettings } from "@/hooks/useUserSettings";
 
 interface ExpenseDialogProps {
   open: boolean;
@@ -47,6 +48,7 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { getCurrencySymbol, settings } = useUserSettings();
   const [formData, setFormData] = useState({
     description: "",
     amount: "",
@@ -146,6 +148,7 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
               .filter(Boolean)
           : undefined,
         location: formData.location || undefined,
+        currency: settings.currency,
       };
 
       if (expense) {
@@ -206,7 +209,8 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">
-                Amount <span className="text-destructive">*</span>
+                Amount ({getCurrencySymbol()}){" "}
+                <span className="text-destructive">*</span>
               </Label>
               <div className="flex gap-2">
                 <Button

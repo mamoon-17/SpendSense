@@ -47,6 +47,9 @@ export class Bill {
   @Column({ type: 'enum', enum: BillStatus, default: BillStatus.PENDING })
   status: BillStatus;
 
+  @Column({ type: 'varchar', length: 10, default: 'USD' })
+  currency: string;
+
   @ManyToOne(() => Category, {
     nullable: false,
     onDelete: 'CASCADE',

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { observer } from "mobx-react-lite";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import {
   Search,
   MoreVertical,
@@ -7,7 +8,6 @@ import {
   MessageSquare,
   Phone,
   Video,
-  Paperclip,
   Smile,
   Check,
   CheckCheck,
@@ -41,16 +41,19 @@ import { useQuery } from "@tanstack/react-query";
 import { connectionsAPI, conversationsAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/stores/authStore";
+import { useTheme } from "@/components/layout/ThemeProvider";
 
 const ModernChatApp: React.FC = observer(() => {
   const { chatStore, socket } = useChat();
   const location = useLocation();
+  const { theme } = useTheme();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedConversation, setSelectedConversation] = useState<
     string | null
   >(chatStore.currentConversationId || null);
   const [messageText, setMessageText] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -61,6 +64,7 @@ const ModernChatApp: React.FC = observer(() => {
     []
   );
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuthStore();
   const conversations: any[] = chatStore.conversations;
@@ -231,6 +235,11 @@ const ModernChatApp: React.FC = observer(() => {
     }
   };
 
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setMessageText((prev) => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
   const handleToggleParticipant = (userId: string) => {
     setSelectedParticipants((prev) =>
       prev.includes(userId)
@@ -380,10 +389,10 @@ const ModernChatApp: React.FC = observer(() => {
             className={cn(
               "rounded-2xl px-4 py-2",
               isOwn
-                ? "bg-white text-gray-900"
+                ? "bg-primary text-primary-foreground"
                 : isSystem
-                ? "bg-blue-50 border border-blue-200 text-blue-900"
-                : "bg-gray-100 text-gray-900"
+                ? "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100"
+                : "bg-muted text-foreground"
             )}
           >
             {isSystem && message.budgetData && (
@@ -445,21 +454,80 @@ const ModernChatApp: React.FC = observer(() => {
 
   // Auto-select conversation if navigated from connections
   useEffect(() => {
-    const navConvId = (location.state as any)?.conversationId as
-      | string
-      | undefined;
+    const state = location.state as any;
+    const navConvId = state?.conversationId as string | undefined;
+    const userId = state?.userId as string | undefined;
+
     if (navConvId) {
-      handleSelectConversation(navConvId);
+      setTimeout(() => {
+        handleSelectConversation(navConvId);
+        setSelectedConversation(navConvId);
+      }, 150);
+    } else if (userId) {
+      // Store userId to find conversation when it loads
+      setPendingUserId(userId);
+
+      // Try to find existing conversation immediately if already loaded
+      if (conversations.length > 0) {
+        const existingConv = conversations.find((conv) => {
+          if (conv.type !== "direct") return false;
+          const participants = conv.participants || [];
+          return participants.some(
+            (p: any) => p.id === userId || p.user_id === userId
+          );
+        });
+
+        if (existingConv) {
+          setTimeout(() => {
+            handleSelectConversation(existingConv.id);
+            setSelectedConversation(existingConv.id);
+            setPendingUserId(null);
+          }, 150);
+        }
+      }
     }
+
     // Also fetch list via socket (optional, REST also used in hook)
     socket?.emit("get_conversations");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Auto-select conversation when conversations list is updated and we have a pending selection from navigation
+  useEffect(() => {
+    if (!pendingUserId || conversations.length === 0) return;
+
+    // Find conversation with the pending user
+    const existingConv = conversations.find((conv) => {
+      if (conv.type !== "direct") return false;
+      const participants = conv.participants || [];
+      return participants.some(
+        (p: any) => p.id === pendingUserId || p.user_id === pendingUserId
+      );
+    });
+
+    if (existingConv) {
+      // Use a slight delay to ensure the conversation is fully loaded in chatStore
+      setTimeout(() => {
+        handleSelectConversation(existingConv.id);
+        setSelectedConversation(existingConv.id);
+
+        // Force message fetch
+        if (socket) {
+          socket.emit("get_messages", {
+            conversationId: existingConv.id,
+            page: 1,
+            limit: 50,
+          });
+        }
+
+        setPendingUserId(null);
+      }, 200);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversations, pendingUserId]);
 
   return (
-    <div className="h-full flex bg-gray-50">
+    <div className="h-full flex bg-background">
       {/* Conversations Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+      <div className="w-80 bg-card border-r border-border flex flex-col">
         <Card className="rounded-none border-0 shadow-none">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
@@ -504,7 +572,7 @@ const ModernChatApp: React.FC = observer(() => {
 
           <CardContent className="p-0">
             <ScrollArea className="h-[calc(100vh-12rem)] max-h-[600px]">
-              <div className="space-y-2 p-4">
+              <div className="space-y-1 px-3 py-2">
                 {filteredConversations.length === 0 ? (
                   <div className="text-center text-muted-foreground py-8">
                     No conversations found.
@@ -515,15 +583,15 @@ const ModernChatApp: React.FC = observer(() => {
                       key={conversation.id}
                       onClick={() => handleSelectConversation(conversation.id)}
                       className={cn(
-                        "p-4 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800",
+                        "px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 hover:bg-accent/50",
                         selectedConversation === conversation.id &&
-                          "bg-blue-50 border border-blue-200 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-100"
+                          "bg-primary/10 border border-primary/20 shadow-sm"
                       )}
                     >
-                      <div className="flex items-start space-x-3 w-full">
-                        <div className="relative">
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback>
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="relative flex-shrink-0">
+                          <Avatar className="w-11 h-11 border-2 border-background shadow-sm">
+                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold">
                               {conversation.type === "group" ? (
                                 <Users className="w-5 h-5" />
                               ) : conversation.name ===
@@ -533,41 +601,36 @@ const ModernChatApp: React.FC = observer(() => {
                                 (
                                   getConversationDisplayName(conversation) ||
                                   "?"
-                                ).charAt(0)
+                                )
+                                  .charAt(0)
+                                  .toUpperCase()
                               )}
                             </AvatarFallback>
                           </Avatar>
+                          {conversation.unreadCount > 0 && (
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-md">
+                              <span className="text-[10px] font-bold text-primary-foreground">
+                                {conversation.unreadCount > 9
+                                  ? "9+"
+                                  : conversation.unreadCount}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <h4 className="font-medium text-sm leading-tight truncate flex-1 mr-2">
+                            <h4 className="font-semibold text-sm truncate flex-1 pr-2">
                               {getConversationDisplayName(conversation)}
                             </h4>
-                            {conversation.unreadCount > 0 && (
-                              <Badge className="bg-blue-600 text-white text-xs flex-shrink-0">
-                                {conversation.unreadCount}
-                              </Badge>
-                            )}
                           </div>
 
                           {conversation.lastMessage && (
-                            <div className="flex items-start space-x-2">
-                              <div className="flex-1 min-w-0">
-                                <p
-                                  className="text-xs text-gray-600 overflow-hidden"
-                                  style={{
-                                    display: "-webkit-box",
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: "vertical",
-                                    lineHeight: "1.2em",
-                                    maxHeight: "2.4em",
-                                  }}
-                                >
-                                  {conversation.lastMessage.content}
-                                </p>
-                              </div>
-                              <span className="text-xs text-gray-500 flex-shrink-0 mt-0.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs text-muted-foreground truncate flex-1">
+                                {conversation.lastMessage.content}
+                              </p>
+                              <span className="text-[10px] text-muted-foreground flex-shrink-0 font-medium">
                                 {formatMessageTime(
                                   conversation.lastMessage.timestamp
                                 )}
@@ -663,9 +726,6 @@ const ModernChatApp: React.FC = observer(() => {
               {/* Message Input */}
               <div className="p-2 border-t border-gray-200">
                 <div className="flex items-end space-x-2">
-                  <Button variant="ghost" size="sm">
-                    <Paperclip className="w-4 h-4" />
-                  </Button>
                   <div className="flex-1">
                     <Input
                       value={messageText}
@@ -675,9 +735,32 @@ const ModernChatApp: React.FC = observer(() => {
                       className="resize-none"
                     />
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <Smile className="w-4 h-4" />
-                  </Button>
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    >
+                      <Smile className="w-4 h-4" />
+                    </Button>
+                    {showEmojiPicker && (
+                      <div className="absolute bottom-12 right-0 z-50">
+                        <EmojiPicker
+                          onEmojiClick={handleEmojiClick}
+                          theme={
+                            theme === "dark" ||
+                            (theme === "system" &&
+                              window.matchMedia("(prefers-color-scheme: dark)")
+                                .matches)
+                              ? "dark"
+                              : "light"
+                          }
+                          searchDisabled
+                          previewConfig={{ showPreview: false }}
+                        />
+                      </div>
+                    )}
+                  </div>
                   <Button
                     onClick={handleSendMessage}
                     className="bg-blue-600 hover:bg-blue-700"

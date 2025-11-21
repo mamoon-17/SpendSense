@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import { toast } from "@/hooks/use-toast";
+import { authAPI, userProfilesAPI } from "@/lib/api";
 
 export const Settings: React.FC = () => {
   const { user } = useAuthStore();
@@ -44,61 +45,195 @@ export const Settings: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [userProfileId, setUserProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "Settings - SpendSense";
   }, []);
+
+  // Load user profile settings
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user?.id) return;
+
+      try {
+        setIsLoadingProfile(true);
+        const response = await userProfilesAPI.getUserProfiles();
+        const userProfile = response.data.find(
+          (p: any) => p.user_id === user.id
+        );
+
+        if (userProfile) {
+          setUserProfileId(userProfile.id);
+          setProfile((prev) => ({
+            ...prev,
+            timezone: userProfile.timezone || "UTC-5",
+            currency: userProfile.currency || "USD",
+            dateFormat: userProfile.date_format || "MM/DD/YYYY",
+          }));
+
+          // Store in localStorage for global use
+          localStorage.setItem(
+            "userSettings",
+            JSON.stringify({
+              timezone: userProfile.timezone || "UTC-5",
+              currency: userProfile.currency || "USD",
+              dateFormat: userProfile.date_format || "MM/DD/YYYY",
+            })
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load user profile:", error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadUserProfile();
+  }, [user?.id]);
 
   // Profile settings
   const [profile, setProfile] = useState({
     name: user?.name || "",
     email: user?.email || "",
     avatar: "",
-    timezone: "",
-    currency: "",
-    dateFormat: "",
+    timezone: "UTC-5",
+    currency: "USD",
+    dateFormat: "MM/DD/YYYY",
   });
 
   // Notification settings
   const [notifications, setNotifications] = useState({
-    emailNotifications: true,
     budgetAlerts: true,
     expenseReminders: false,
     weeklyReports: true,
     monthlyReports: true,
     collaboratorActivity: true,
-    aiInsights: true,
   });
 
-  // Security settings
-  const [security, setSecurity] = useState({
-    twoFactorEnabled: false,
-    emailAlerts: true,
-    sessionTimeout: "30",
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
-  // AI Assistant settings
-  const [aiSettings, setAiSettings] = useState({
-    aiEnabled: true,
-    autoCategorizationEnabled: true,
-    spendingInsightsEnabled: true,
-    budgetSuggestionsEnabled: true,
-    insightFrequency: "daily",
-  });
+  // Removed AI Assistant settings
 
   const handleSaveProfile = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (!userProfileId) {
+        // Create new user profile if it doesn't exist
+        const createResponse = await userProfilesAPI.createUserProfile({
+          user_id: user?.id,
+          timezone: profile.timezone,
+          currency: profile.currency,
+          date_format: profile.dateFormat,
+        });
+        setUserProfileId(createResponse.data.id);
+      } else {
+        // Update existing user profile
+        await userProfilesAPI.updateUserProfile(userProfileId, {
+          timezone: profile.timezone,
+          currency: profile.currency,
+          date_format: profile.dateFormat,
+        });
+      }
+
+      // Store in localStorage for global use
+      localStorage.setItem(
+        "userSettings",
+        JSON.stringify({
+          timezone: profile.timezone,
+          currency: profile.currency,
+          dateFormat: profile.dateFormat,
+        })
+      );
+
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(
+        new CustomEvent("userSettingsChanged", {
+          detail: {
+            timezone: profile.timezone,
+            currency: profile.currency,
+            dateFormat: profile.dateFormat,
+          },
+        })
+      );
+
       toast({
         title: "Profile updated",
-        description: "Your profile has been updated successfully.",
+        description:
+          "Your settings have been saved successfully. Changes will be applied throughout the app.",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update profile.",
+        description:
+          error.response?.data?.message || "Failed to update profile.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    // Validate passwords
+    if (
+      !passwordData.currentPassword ||
+      !passwordData.newPassword ||
+      !passwordData.confirmPassword
+    ) {
+      toast({
+        title: "Error",
+        description: "Please fill in all password fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "New passwords do not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 8 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Call API to change password
+      await authAPI.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      toast({
+        title: "Password updated",
+        description: "Your password has been changed successfully.",
+      });
+      // Clear password fields
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to update password.",
         variant: "destructive",
       });
     } finally {
@@ -132,7 +267,7 @@ export const Settings: React.FC = () => {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="w-4 h-4" />
             Profile
@@ -147,10 +282,6 @@ export const Settings: React.FC = () => {
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
             Security
-          </TabsTrigger>
-          <TabsTrigger value="ai" className="flex items-center gap-2">
-            <Bot className="w-4 h-4" />
-            AI Assistant
           </TabsTrigger>
           <TabsTrigger value="data" className="flex items-center gap-2">
             <Download className="w-4 h-4" />
@@ -335,180 +466,75 @@ export const Settings: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <h4 className="text-sm font-medium mb-4">Change Password</h4>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">
-                      Two-Factor Authentication
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Add an extra layer of security to your account
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {security.twoFactorEnabled && (
-                      <Badge variant="outline" className="text-success">
-                        <Check className="w-3 h-3 mr-1" />
-                        Enabled
-                      </Badge>
-                    )}
-                    <Switch
-                      checked={security.twoFactorEnabled}
-                      onCheckedChange={(checked) =>
-                        setSecurity({ ...security, twoFactorEnabled: checked })
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="currentPassword"
+                      type={showPassword ? "text" : "password"}
+                      value={passwordData.currentPassword}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          currentPassword: e.target.value,
+                        })
                       }
+                      placeholder="Enter current password"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">Login Alerts</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Get notified of suspicious login attempts
-                    </p>
-                  </div>
-                  <Switch
-                    checked={security.emailAlerts}
-                    onCheckedChange={(checked) =>
-                      setSecurity({ ...security, emailAlerts: checked })
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        newPassword: e.target.value,
+                      })
                     }
+                    placeholder="Enter new password"
                   />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="sessionTimeout">
-                    Session Timeout (minutes)
-                  </Label>
-                  <Select
-                    value={security.sessionTimeout}
-                    onValueChange={(value) =>
-                      setSecurity({ ...security, sessionTimeout: value })
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordData({
+                        ...passwordData,
+                        confirmPassword: e.target.value,
+                      })
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15">15 minutes</SelectItem>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="60">1 hour</SelectItem>
-                      <SelectItem value="120">2 hours</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    placeholder="Confirm new password"
+                  />
                 </div>
-              </div>
-
-              <div className="pt-4 border-t">
-                <h4 className="text-sm font-medium mb-4">Change Password</h4>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="currentPassword"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter current password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      placeholder="Enter new password"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">
-                      Confirm New Password
-                    </Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="Confirm new password"
-                    />
-                  </div>
-                  <Button variant="outline">Update Password</Button>
-                </div>
+                <Button onClick={handlePasswordChange} disabled={isLoading}>
+                  {isLoading ? "Updating..." : "Update Password"}
+                </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* AI Assistant Settings */}
-        <TabsContent value="ai" className="space-y-6">
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle>AI Assistant Settings</CardTitle>
-              <CardDescription>
-                Customize your AI assistant experience
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                {Object.entries(aiSettings)
-                  .slice(0, -1)
-                  .map(([key, value]) => (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="space-y-0.5">
-                        <Label className="text-sm font-medium capitalize">
-                          {key
-                            .replace(/([A-Z])/g, " $1")
-                            .replace("Enabled", "")
-                            .toLowerCase()}
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          {getAiSettingDescription(key)}
-                        </p>
-                      </div>
-                      <Switch
-                        checked={value as boolean}
-                        onCheckedChange={(checked) =>
-                          setAiSettings({ ...aiSettings, [key]: checked })
-                        }
-                      />
-                    </div>
-                  ))}
-
-                <div className="space-y-2">
-                  <Label htmlFor="insightFrequency">Insight Frequency</Label>
-                  <Select
-                    value={aiSettings.insightFrequency}
-                    onValueChange={(value) =>
-                      setAiSettings({ ...aiSettings, insightFrequency: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         {/* Data Settings */}
         <TabsContent value="data" className="space-y-6">
           <Card className="card-financial">
@@ -557,23 +583,11 @@ export const Settings: React.FC = () => {
 // Helper functions
 const getNotificationDescription = (key: string) => {
   const descriptions: Record<string, string> = {
-    emailNotifications: "Receive email notifications for important updates",
     budgetAlerts: "Get notified when you exceed budget limits",
     expenseReminders: "Receive reminders to log your expenses",
     weeklyReports: "Get weekly spending summaries",
     monthlyReports: "Receive monthly financial reports",
     collaboratorActivity: "Get notified of collaborator changes",
-    aiInsights: "Receive AI-powered financial insights",
-  };
-  return descriptions[key] || "";
-};
-
-const getAiSettingDescription = (key: string) => {
-  const descriptions: Record<string, string> = {
-    aiEnabled: "Enable AI assistant features across the app",
-    autoCategorizationEnabled: "Automatically categorize expenses using AI",
-    spendingInsightsEnabled: "Get AI-powered spending pattern insights",
-    budgetSuggestionsEnabled: "Receive AI suggestions for budget optimization",
   };
   return descriptions[key] || "";
 };

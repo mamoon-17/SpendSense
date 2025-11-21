@@ -40,4 +40,8 @@ export class CreateSavingsGoalDTO {
   @IsNumber()
   @IsOptional()
   monthly_target?: number;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
 }

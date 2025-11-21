@@ -124,6 +124,7 @@ export class BillsService {
       category: category,
       created_by: creator,
       participants: participants,
+      currency: payload.currency || 'USD',
     });
 
     const savedBill = (await this.billsRepo.save(bill)) as Bill;

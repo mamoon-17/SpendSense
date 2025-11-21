@@ -41,6 +41,7 @@ export class SavingsGoalsService {
       user_id: userId,
       status: SavingsGoalStatus.ACTIVE,
       auto_save: false,
+      currency: data.currency || 'USD',
     });
 
     const savedGoal = (await this.savingsGoalRepo.save(
@@ -53,14 +54,12 @@ export class SavingsGoalsService {
     };
   }
 
-  // Get all savings goals for a user with progress calculations
-  async getAllSavingsGoals(userId: string): Promise<any[]> {
-    const goals = await this.savingsGoalRepo.find({
+  // Get all savings goals for a user (raw data without heavy calculations)
+  async getAllSavingsGoals(userId: string): Promise<SavingsGoal[]> {
+    return this.savingsGoalRepo.find({
       where: { user_id: userId },
       order: { created_at: 'DESC' },
     });
-
-    return goals.map((goal) => this.calculateGoalProgress(goal));
   }
 
   // Get a single savings goal by ID

@@ -21,6 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { budgetAPI, categoriesAPI } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
+import { useUserSettings } from "@/hooks/useUserSettings";
 
 interface BudgetDialogProps {
   open: boolean;
@@ -47,6 +48,7 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuthStore();
+  const { getCurrencySymbol, settings } = useUserSettings();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -60,13 +62,26 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
 
   // Fetch categories
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories", "budget"],
+    queryKey: ["categories"],
     queryFn: async () => {
-      const response = await categoriesAPI.getCategoriesByType("budget");
+      const response = await categoriesAPI.getCategories();
       return response.data;
     },
     enabled: open,
+    staleTime: 300000, // Cache for 5 minutes (categories rarely change)
+    refetchOnWindowFocus: false,
   });
+
+  // Default categories if API returns empty
+  const defaultCategories = [
+    { id: "food-dining", name: "Food & Dining" },
+    { id: "travel", name: "Travel" },
+    { id: "entertainment", name: "Entertainment" },
+    { id: "shopping", name: "Shopping" },
+  ];
+
+  const displayCategories =
+    categories.length > 0 ? categories : defaultCategories;
 
   // Initialize form data when dialog opens or budget changes
   useEffect(() => {
@@ -103,7 +118,6 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
     if (
       !formData.name ||
       !formData.total_amount ||
-      !formData.category ||
       !formData.start_date ||
       !formData.end_date
     ) {
@@ -142,15 +156,28 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
 
     setIsSubmitting(true);
     try {
+      // Check if selected category is from default list (doesn't exist in DB)
+      const defaultCategoryIds = [
+        "food-dining",
+        "travel",
+        "entertainment",
+        "shopping",
+      ];
+      const isDefaultCategory = defaultCategoryIds.includes(formData.category);
+
       const payload = {
         name: formData.name,
         total_amount: formData.total_amount,
         spent_amount: formData.spent_amount || "0",
         period: formData.period,
-        category: formData.category,
+        category:
+          formData.category === "none" || isDefaultCategory
+            ? ""
+            : formData.category,
         start_date: formData.start_date,
         end_date: formData.end_date,
         created_by: user.id,
+        currency: settings.currency,
       };
 
       if (budget) {
@@ -182,7 +209,7 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{budget ? "Edit Budget" : "Create Budget"}</DialogTitle>
           <DialogDescription>
@@ -211,7 +238,8 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="total_amount">
-                Total Amount <span className="text-destructive">*</span>
+                Total Amount ({getCurrencySymbol()}){" "}
+                <span className="text-destructive">*</span>
               </Label>
               <div className="flex gap-2">
                 <Button
@@ -232,9 +260,7 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
                 </Button>
                 <Input
                   id="total_amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
                   value={formData.total_amount}
                   onChange={(e) =>
                     setFormData({ ...formData, total_amount: e.target.value })
@@ -263,7 +289,9 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="spent_amount">Spent Amount</Label>
+              <Label htmlFor="spent_amount">
+                Spent Amount ({getCurrencySymbol()})
+              </Label>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -283,9 +311,7 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
                 </Button>
                 <Input
                   id="spent_amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
                   value={formData.spent_amount}
                   onChange={(e) =>
                     setFormData({ ...formData, spent_amount: e.target.value })
@@ -337,9 +363,7 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">
-                Category <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="category">Category (Optional)</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) =>
@@ -347,11 +371,13 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder="Select category (optional)" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px] overflow-y-auto">
-                  {categories.map((cat: any) => (
+                  <SelectItem value="none">None</SelectItem>
+                  {displayCategories.map((cat: any) => (
                     <SelectItem key={cat.id} value={cat.id}>
+                      {cat.icon && <span className="mr-2">{cat.icon}</span>}
                       {cat.name}
                     </SelectItem>
                   ))}

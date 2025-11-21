@@ -8,10 +8,13 @@ import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
 
-// Extend the Request interface to include session
+// Extend the Request interface to include session and user
 interface RequestWithSession extends Request {
   session?: {
     userId?: string;
+  };
+  user?: {
+    userId: string;
   };
 }
 
@@ -42,9 +45,10 @@ export class AuthGuard implements CanActivate {
       if (!decoded.userId) {
         throw new UnauthorizedException('Invalid token payload');
       }
-      // attaches userID to session for controllers
+      // attaches userID to both session and user for controllers
       request.session = request.session || {};
       request.session.userId = decoded.userId;
+      request.user = { userId: decoded.userId };
 
       return true;
     } catch (error) {

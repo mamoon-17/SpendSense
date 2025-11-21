@@ -86,4 +86,30 @@ export class UsersService {
       })
       .getMany();
   }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<object> {
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      throw new Error('Current password is incorrect');
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    await this.usersRepo.update(userId, { password: hashedPassword });
+
+    return { msg: 'Password changed successfully' };
+  }
 }

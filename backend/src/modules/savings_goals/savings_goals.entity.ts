@@ -62,6 +62,9 @@ export class SavingsGoal {
   @Column({ type: 'boolean', default: false })
   auto_save: boolean;
 
+  @Column({ type: 'varchar', length: 10, default: 'USD' })
+  currency: string;
+
   @Column({
     type: 'enum',
     enum: SavingsGoalStatus,
@@ -82,11 +85,13 @@ export class SavingsGoal {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToMany(() => User, (user) => user.savings_goals_participating, { cascade: true })
+  @ManyToMany(() => User, (user) => user.savings_goals_participating, {
+    cascade: true,
+  })
   @JoinTable({
     name: 'savings_goal_participants',
     joinColumn: { name: 'savings_goal_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' }
+    inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' },
   })
   participants: User[];
 }

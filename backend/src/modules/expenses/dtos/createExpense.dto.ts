@@ -41,4 +41,8 @@ export class CreateExpenseDTO {
   @IsString()
   @IsOptional()
   location?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
 }
