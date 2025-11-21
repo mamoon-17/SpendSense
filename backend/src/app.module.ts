@@ -19,6 +19,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
 import { ChatModule } from './modules/chat/chat.module';
+import { SeedService } from './seed.service';
+import { Category } from './modules/categories/categories.entity';
 
 @Module({
   imports: [
@@ -41,6 +43,7 @@ import { ChatModule } from './modules/chat/chat.module';
       }),
       inject: [ConfigService],
     }),
+    TypeOrmModule.forFeature([Category]),
     UsersModule,
     UserProfilesModule,
     BudgetsModule,
@@ -63,6 +66,7 @@ import { ChatModule } from './modules/chat/chat.module';
       provide: APP_INTERCEPTOR,
       useClass: CurrentUserInterceptor, // Nest will inject UsersService automatically
     },
+    SeedService,
   ],
 })
 export class AppModule {}

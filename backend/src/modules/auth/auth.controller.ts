@@ -1,7 +1,16 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Res,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDTO } from 'src/modules/users/dtos/login.dto';
 import { SignupDTO } from 'src/modules/users/dtos/signup.dto';
+import { ChangePasswordDTO } from 'src/modules/users/dtos/changePassword.dto';
+import { AuthGuard } from './auth.guard';
 import type { Response } from 'express';
 
 @Controller('auth')
@@ -28,5 +37,20 @@ export class AuthController {
     // Clear the JWT cookie
     res.clearCookie('JWTtoken');
     return { message: 'Logout successful' };
+  }
+
+  @Post('change-password')
+  @UseGuards(AuthGuard)
+  async changePassword(@Body() body: ChangePasswordDTO, @Request() req: any) {
+    const userId = req.user?.userId || req.session?.userId;
+    if (!userId) {
+      throw new Error('User ID not found in request');
+    }
+    const result = await this.authService.changePassword(
+      userId,
+      body.currentPassword,
+      body.newPassword,
+    );
+    return result;
   }
 }

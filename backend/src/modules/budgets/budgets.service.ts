@@ -48,7 +48,7 @@ export class BudgetsService {
     const newBudget = this.budgetsRepo.create({
       ...rest,
       period: (payload as any).period,
-      category: category ? ({ id: category } as any) : undefined,
+      category: category && category !== '' ? ({ id: category } as any) : null,
       created_by: { id: userId } as any, // Always use the authenticated user
       participants: participants
         ? participants.map((id) => ({ id }) as any)
@@ -78,7 +78,8 @@ export class BudgetsService {
       payload as UpdateBudgetDTO;
     Object.assign(budget, rest);
     if ((payload as any).period) budget.period = (payload as any).period;
-    if (category) budget.category = { id: category } as any;
+    if (category && category !== '') budget.category = { id: category } as any;
+    else if (category === '') (budget as any).category = null;
     if (participants)
       budget.participants = participants.map(
         (userId) => ({ id: userId }) as any,

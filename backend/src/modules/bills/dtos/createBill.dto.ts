@@ -38,4 +38,8 @@ export class CreateBillDTO {
   @IsUUID('4', { each: true })
   @IsNotEmpty()
   participant_ids: string[];
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
 }

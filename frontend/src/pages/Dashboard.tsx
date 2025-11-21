@@ -26,9 +26,12 @@ import { BudgetOverview } from "@/components/dashboard/BudgetOverview";
 import { SavingsGoals } from "@/components/dashboard/SavingsGoals";
 import { userAPI, budgetAPI, expenseAPI, savingsAPI } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
+import { useUserSettings } from "@/hooks/useUserSettings";
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuthStore();
+  const { formatCurrency, convertAmount, formatAmount, settings } =
+    useUserSettings();
 
   useEffect(() => {
     document.title = "Dashboard - SpendSense";
@@ -59,13 +62,21 @@ export const Dashboard: React.FC = () => {
   const totalBudget =
     budgets?.reduce(
       (sum: number, budget: any) =>
-        sum + parseFloat(budget.total_amount || "0"),
+        sum +
+        convertAmount(
+          parseFloat(budget.total_amount || "0"),
+          budget.currency || "USD"
+        ),
       0
     ) || 0;
   const totalSpent =
     budgets?.reduce(
       (sum: number, budget: any) =>
-        sum + parseFloat(budget.spent_amount || "0"),
+        sum +
+        convertAmount(
+          parseFloat(budget.spent_amount || "0"),
+          budget.currency || "USD"
+        ),
       0
     ) || 0;
   const remainingBudget = totalBudget - totalSpent;
@@ -96,7 +107,7 @@ export const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              ${totalBudget.toFixed(0)}
+              {formatAmount(totalBudget)}
             </div>
             <p className="text-xs text-muted-foreground">
               Across {budgets?.length || 0} budgets
@@ -112,7 +123,7 @@ export const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              ${totalSpent.toFixed(0)}
+              {formatAmount(totalSpent)}
             </div>
             <Progress value={spendingProgress} className="mt-2" />
             <p className="text-xs text-muted-foreground mt-2">
@@ -137,7 +148,7 @@ export const Dashboard: React.FC = () => {
                 remainingBudget >= 0 ? "text-success" : "text-destructive"
               }`}
             >
-              ${Math.abs(remainingBudget).toFixed(0)}
+              {formatAmount(Math.abs(remainingBudget))}
             </div>
             <p className="text-xs text-muted-foreground">
               {remainingBudget >= 0 ? "Under budget" : "Over budget"}

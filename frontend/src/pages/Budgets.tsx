@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Edit,
@@ -26,16 +26,28 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AIAssistant } from "@/components/ai/AIAssistant";
 import { InviteDialog } from "@/components/collaboration/InviteDialog";
-import { budgetAPI } from "@/lib/api";
+import { BudgetDialog } from "@/components/budgets/BudgetDialog";
+import { budgetAPI, categoriesAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { useToast } from "@/hooks/use-toast";
 
 interface Budget {
   id: string;
@@ -48,55 +60,38 @@ interface Budget {
   participants: string[];
   createdAt: string;
   endDate: string;
+  currency: string;
 }
 
-// Mock data
-const mockBudgets: Budget[] = [
-  {
-    id: "1",
-    name: "Monthly Groceries",
-    totalAmount: 800,
-    spent: 650,
-    remaining: 150,
-    period: "monthly",
-    category: "Food & Dining",
-    participants: ["you", "spouse"],
-    createdAt: "2024-01-01",
-    endDate: "2024-01-31",
-  },
-  {
-    id: "2",
-    name: "Vacation Fund",
-    totalAmount: 3000,
-    spent: 1200,
-    remaining: 1800,
-    period: "yearly",
-    category: "Travel",
-    participants: ["you"],
-    createdAt: "2024-01-01",
-    endDate: "2024-12-31",
-  },
-  {
-    id: "3",
-    name: "Weekly Entertainment",
-    totalAmount: 200,
-    spent: 180,
-    remaining: 20,
-    period: "weekly",
-    category: "Entertainment",
-    participants: ["you", "roommate"],
-    createdAt: "2024-01-01",
-    endDate: "2024-01-07",
-  },
-];
-
 export const Budgets: React.FC = () => {
+  const { formatCurrency, convertAmount, formatAmount, formatDate, settings } =
+    useUserSettings();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingBudget, setEditingBudget] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [budgetToDelete, setBudgetToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
-  // Mock query - replace with real API call
-  const { data: budgets = mockBudgets } = useQuery({
+  // Fetch categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const response = await categoriesAPI.getCategories();
+      return response.data;
+    },
+    staleTime: 300000, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
+  });
+
+  // Fetch budgets from API
+  const { data: budgets = [], refetch } = useQuery({
     queryKey: ["budgets"],
     queryFn: () =>
       budgetAPI.getBudgets().then((res) => {
@@ -118,9 +113,44 @@ export const Budgets: React.FC = () => {
           endDate: budget.endDate ?? budget.end_date,
           category: budget.category?.name ?? budget.category ?? "Uncategorized",
           participants: budget.participants ?? [],
+          // Use current user currency as fallback for old budgets without currency
+          currency: budget.currency ?? settings.currency,
         }));
       }),
   });
+
+  // Delete budget mutation
+  const deleteMutation = useMutation({
+    mutationFn: (budgetId: string) => budgetAPI.deleteBudget(budgetId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      toast({
+        title: "Success",
+        description: "Budget deleted successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to delete budget.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteBudget = (budgetId: string, budgetName: string) => {
+    setBudgetToDelete({ id: budgetId, name: budgetName });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteBudget = () => {
+    if (budgetToDelete) {
+      deleteMutation.mutate(budgetToDelete.id);
+      setDeleteDialogOpen(false);
+      setBudgetToDelete(null);
+    }
+  };
 
   const filteredBudgets = budgets.filter((budget) => {
     const matchesSearch = budget.name
@@ -134,15 +164,18 @@ export const Budgets: React.FC = () => {
   });
 
   const totalBudgetAmount = budgets.reduce(
-    (sum, budget) => sum + (budget.totalAmount ?? 0),
+    (sum, budget) =>
+      sum + convertAmount(budget.totalAmount ?? 0, budget.currency || "USD"),
     0
   );
   const totalSpent = budgets.reduce(
-    (sum, budget) => sum + (budget.spent ?? 0),
+    (sum, budget) =>
+      sum + convertAmount(budget.spent ?? 0, budget.currency || "USD"),
     0
   );
   const totalRemaining = budgets.reduce(
-    (sum, budget) => sum + (budget.remaining ?? 0),
+    (sum, budget) =>
+      sum + convertAmount(budget.remaining ?? 0, budget.currency || "USD"),
     0
   );
 
@@ -178,7 +211,10 @@ export const Budgets: React.FC = () => {
             Create, track, and manage your budgets effectively
           </p>
         </div>
-        <Button className="btn-primary w-fit">
+        <Button
+          className="btn-primary w-fit"
+          onClick={() => setIsCreateDialogOpen(true)}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Create Budget
         </Button>
@@ -193,7 +229,7 @@ export const Budgets: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${totalBudgetAmount.toLocaleString()}
+              {formatAmount(totalBudgetAmount)}
             </div>
             <p className="text-xs text-muted-foreground">
               Across {budgets.length} active budgets
@@ -207,8 +243,8 @@ export const Budgets: React.FC = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">
-              ${totalSpent.toLocaleString()}
+            <div className="text-2xl font-bold text-destructive">
+              {formatAmount(totalSpent)}
             </div>
             <p className="text-xs text-muted-foreground">
               {((totalSpent / totalBudgetAmount) * 100).toFixed(1)}% of total
@@ -224,7 +260,7 @@ export const Budgets: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              ${totalRemaining.toLocaleString()}
+              {formatAmount(totalRemaining)}
             </div>
             <p className="text-xs text-muted-foreground">Available to spend</p>
           </CardContent>
@@ -256,12 +292,14 @@ export const Budgets: React.FC = () => {
                   <SelectTrigger className="w-full md:w-[180px]">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px] overflow-y-auto">
                     <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="Food & Dining">Food & Dining</SelectItem>
-                    <SelectItem value="Travel">Travel</SelectItem>
-                    <SelectItem value="Entertainment">Entertainment</SelectItem>
-                    <SelectItem value="Shopping">Shopping</SelectItem>
+                    {categories.map((cat: any) => (
+                      <SelectItem key={cat.id} value={cat.name}>
+                        {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                        {cat.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Select value={filterPeriod} onValueChange={setFilterPeriod}>
@@ -301,8 +339,7 @@ export const Budgets: React.FC = () => {
                           </Badge>
                           <span className="flex items-center">
                             <Calendar className="w-3 h-3 mr-1" />
-                            Until{" "}
-                            {new Date(budget.endDate).toLocaleDateString()}
+                            Until {formatDate(new Date(budget.endDate))}
                           </span>
                           <span className="flex items-center">
                             <Users className="w-3 h-3 mr-1" />
@@ -333,13 +370,23 @@ export const Budgets: React.FC = () => {
                             </Button>
                           }
                         />
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingBudget(budget);
+                            setIsCreateDialogOpen(true);
+                          }}
+                        >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive"
+                          onClick={() =>
+                            handleDeleteBudget(budget.id, budget.name)
+                          }
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -350,12 +397,13 @@ export const Budgets: React.FC = () => {
                   <CardContent className="space-y-4">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">
-                        ${spent.toLocaleString()} spent
+                        {formatCurrency(spent, budget.currency || "USD")} spent
                       </span>
                       <span
                         className={cn("font-medium", getBudgetColor(status))}
                       >
-                        ${remaining.toLocaleString()} remaining
+                        {formatCurrency(remaining, budget.currency || "USD")}{" "}
+                        remaining
                       </span>
                     </div>
 
@@ -376,9 +424,16 @@ export const Budgets: React.FC = () => {
                         {percentage.toFixed(1)}% used
                       </span>
                       <div className="flex items-center space-x-2">
-                        <Badge variant="outline">{budget.category}</Badge>
-                        <span className="text-lg font-semibold">
-                          ${totalAmount.toLocaleString()}
+                        <Badge variant="outline">
+                          {typeof budget.category === "string"
+                            ? budget.category
+                            : budget.category?.name ?? "Uncategorized"}
+                        </Badge>
+                        <span className="text-2xl font-bold">
+                          {formatCurrency(
+                            totalAmount,
+                            budget.currency || "USD"
+                          )}
                         </span>
                       </div>
                     </div>
@@ -391,9 +446,6 @@ export const Budgets: React.FC = () => {
 
         {/* Right Sidebar */}
         <div className="space-y-6">
-          {/* AI Assistant */}
-          <AIAssistant compact context="budgets" />
-
           {/* Quick Stats */}
           <Card className="card-financial">
             <CardHeader>
@@ -438,7 +490,7 @@ export const Budgets: React.FC = () => {
                       {category.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      ${category.amount.toLocaleString()}
+                      {formatAmount(category.amount)}
                     </p>
                   </div>
                 </div>
@@ -448,8 +500,38 @@ export const Budgets: React.FC = () => {
         </div>
       </div>
 
-      {/* AI Assistant */}
-      <AIAssistant context="budgets" />
+      {/* Budget Dialog */}
+      <BudgetDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        budget={editingBudget}
+        onSuccess={() => {
+          refetch();
+          setEditingBudget(null);
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              budget.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteBudget}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

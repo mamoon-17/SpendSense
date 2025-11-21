@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { billsAPI, categoriesAPI, connectionsAPI } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/hooks/use-toast";
+import { useUserSettings } from "@/hooks/useUserSettings";
 
 interface Category {
   id: string;
@@ -88,9 +89,18 @@ interface Bill {
   participants: User[];
   participant_count?: number;
   payment_progress?: string;
+  currency?: string;
 }
 
 export const Bills: React.FC = () => {
+  const {
+    formatCurrency,
+    convertAmount,
+    formatAmount,
+    formatDate,
+    getCurrencySymbol,
+    settings,
+  } = useUserSettings();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -118,7 +128,10 @@ export const Bills: React.FC = () => {
     queryKey: ["bills"],
     queryFn: async () => {
       const response = await billsAPI.getBills();
-      return response.data as Bill[];
+      return response.data.map((bill: Bill) => ({
+        ...bill,
+        currency: bill.currency || settings.currency,
+      })) as Bill[];
     },
   });
 
@@ -129,6 +142,8 @@ export const Bills: React.FC = () => {
       const response = await categoriesAPI.getCategories();
       return response.data;
     },
+    staleTime: 300000, // Cache for 5 minutes (categories rarely change)
+    refetchOnWindowFocus: false,
   });
 
   // Fetch connections for selecting participants
@@ -146,6 +161,7 @@ export const Bills: React.FC = () => {
       billsAPI.createBill({
         ...data,
         total_amount: parseFloat(data.total_amount),
+        currency: settings.currency,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
@@ -218,7 +234,12 @@ export const Bills: React.FC = () => {
   });
 
   const totalBillAmount = bills.reduce(
-    (sum, bill) => sum + parseFloat(bill.total_amount || "0"),
+    (sum, bill) =>
+      sum +
+      convertAmount(
+        parseFloat(bill.total_amount || "0"),
+        bill.currency || "USD"
+      ),
     0
   );
   const totalOwed = 0; // Will be calculated from participant payments
@@ -278,7 +299,7 @@ export const Bills: React.FC = () => {
                   Total Bills
                 </p>
                 <p className="text-2xl font-bold">
-                  ${totalBillAmount.toFixed(2)}
+                  {formatAmount(totalBillAmount)}
                 </p>
               </div>
               <Receipt className="w-8 h-8 text-primary" />
@@ -297,7 +318,7 @@ export const Bills: React.FC = () => {
                   You Owe
                 </p>
                 <p className="text-2xl font-bold text-warning">
-                  ${totalOwed.toFixed(2)}
+                  {formatAmount(totalOwed)}
                 </p>
               </div>
               <Clock className="w-8 h-8 text-warning" />
@@ -316,7 +337,7 @@ export const Bills: React.FC = () => {
                   Owed to You
                 </p>
                 <p className="text-2xl font-bold text-success">
-                  ${totalOwedToYou.toFixed(2)}
+                  {formatAmount(totalOwedToYou)}
                 </p>
               </div>
               <DollarSign className="w-8 h-8 text-success" />
@@ -395,15 +416,12 @@ export const Bills: React.FC = () => {
                     <SelectTrigger className="w-full lg:w-[150px]">
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px] overflow-y-auto">
                       <SelectItem value="all">All Categories</SelectItem>
-                      {Array.from(
-                        new Set(
-                          bills.map((b) => b.category?.name).filter(Boolean)
-                        )
-                      ).map((cat) => (
-                        <SelectItem key={cat} value={cat as string}>
-                          {cat}
+                      {categories.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                          {cat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -452,7 +470,10 @@ export const Bills: React.FC = () => {
                             </div>
                             <CardDescription className="flex items-center space-x-4">
                               <span>
-                                ${parseFloat(bill.total_amount).toFixed(2)}{" "}
+                                {formatCurrency(
+                                  parseFloat(bill.total_amount),
+                                  bill.currency || "USD"
+                                )}{" "}
                                 total
                               </span>
                               <span className="flex items-center">
@@ -461,7 +482,7 @@ export const Bills: React.FC = () => {
                               </span>
                               <span className="flex items-center">
                                 <Calendar className="w-3 h-3 mr-1" />
-                                Due {format(new Date(bill.due_date), "MMM dd")}
+                                Due {formatDate(bill.due_date)}
                               </span>
                             </CardDescription>
                           </div>
@@ -518,7 +539,7 @@ export const Bills: React.FC = () => {
                                     </p>
                                     <p className="text-xs text-muted-foreground">
                                       {participant.amount
-                                        ? `$${participant.amount.toFixed(2)}`
+                                        ? formatAmount(participant.amount)
                                         : "Amount pending"}
                                       {participant.percentage &&
                                         ` (${participant.percentage}%)`}
@@ -567,8 +588,11 @@ export const Bills: React.FC = () => {
                           <div className="space-y-1">
                             <h3 className="font-semibold">{bill.name}</h3>
                             <p className="text-sm text-muted-foreground">
-                              ${parseFloat(bill.total_amount).toFixed(2)} • Due{" "}
-                              {format(new Date(bill.due_date), "MMM dd")}
+                              {formatCurrency(
+                                parseFloat(bill.total_amount),
+                                bill.currency || "USD"
+                              )}{" "}
+                              • Due {formatDate(bill.due_date)}
                             </p>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -598,8 +622,11 @@ export const Bills: React.FC = () => {
                               <CheckCircle className="w-4 h-4 text-success" />
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              ${parseFloat(bill.total_amount).toFixed(2)} • Due{" "}
-                              {format(new Date(bill.due_date), "MMM dd")}
+                              {formatCurrency(
+                                parseFloat(bill.total_amount),
+                                bill.currency || "USD"
+                              )}{" "}
+                              • Due {formatDate(bill.due_date)}
                             </p>
                           </div>
                           <Button variant="ghost" size="sm">
@@ -659,18 +686,20 @@ export const Bills: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-sm">
-                <p className="font-medium">Sarah paid $40.17</p>
+                <p className="font-medium">Sarah paid {formatAmount(40.17)}</p>
                 <p className="text-muted-foreground text-xs">
                   For Dinner at Italiano
                 </p>
               </div>
               <div className="text-sm">
-                <p className="font-medium">Mike requested $45</p>
+                <p className="font-medium">Mike requested {formatAmount(45)}</p>
                 <p className="text-muted-foreground text-xs">Uber to Airport</p>
               </div>
               <div className="text-sm">
                 <p className="font-medium">You settled grocery bill</p>
-                <p className="text-muted-foreground text-xs">$89.30 total</p>
+                <p className="text-muted-foreground text-xs">
+                  {formatAmount(89.3)} total
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -719,7 +748,9 @@ export const Bills: React.FC = () => {
               {/* Amount and Split Type */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="total_amount">Total Amount *</Label>
+                  <Label htmlFor="total_amount">
+                    Total Amount ({getCurrencySymbol()}) *
+                  </Label>
                   <Input
                     id="total_amount"
                     type="number"
@@ -778,9 +809,12 @@ export const Bills: React.FC = () => {
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px] overflow-y-auto">
                       {categories.map((category: any) => (
                         <SelectItem key={category.id} value={category.id}>
+                          {category.icon && (
+                            <span className="mr-2">{category.icon}</span>
+                          )}
                           {category.name}
                         </SelectItem>
                       ))}
@@ -849,11 +883,11 @@ export const Bills: React.FC = () => {
                     {formData.total_amount &&
                       formData.split_type === "equal" && (
                         <span className="ml-2">
-                          ($
-                          {(
+                          (
+                          {formatAmount(
                             parseFloat(formData.total_amount) /
-                            formData.participant_ids.length
-                          ).toFixed(2)}{" "}
+                              formData.participant_ids.length
+                          )}{" "}
                           each)
                         </span>
                       )}

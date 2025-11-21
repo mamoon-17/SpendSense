@@ -58,6 +58,7 @@ import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
 import { expenseAPI, categoriesAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { useUserSettings } from "@/hooks/useUserSettings";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -75,6 +76,7 @@ interface BackendExpense {
   ai_categorized?: boolean;
   budget_id?: string;
   user_id: string;
+  currency?: string;
 }
 
 // Frontend Expense interface
@@ -89,6 +91,7 @@ interface Expense {
   notes?: string;
   tags: string[];
   location?: string;
+  currency: string;
 }
 
 // Helper function to transform backend expense to frontend format
@@ -111,12 +114,15 @@ const transformExpense = (
     notes: backendExpense.notes,
     tags: backendExpense.tags || [],
     location: backendExpense.location,
+    currency: backendExpense.currency || "USD",
   };
 };
 
 export const Expenses: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { formatCurrency, convertAmount, formatAmount, formatDate, settings } =
+    useUserSettings();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("month");
@@ -141,13 +147,15 @@ export const Expenses: React.FC = () => {
     },
   });
 
-  // Fetch categories (using budget categories)
+  // Fetch categories
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories", "budget"],
+    queryKey: ["categories"],
     queryFn: async () => {
-      const response = await categoriesAPI.getCategoriesByType("budget");
+      const response = await categoriesAPI.getCategories();
       return response.data;
     },
+    staleTime: 300000, // Cache for 5 minutes (categories rarely change)
+    refetchOnWindowFocus: false,
   });
 
   // Transform expenses to frontend format
@@ -251,21 +259,25 @@ export const Expenses: React.FC = () => {
       14,
       summaryY
     );
-    doc.text(`Total Expenses: $${totalExpenses.toFixed(2)}`, 14, summaryY + 7);
+    doc.text(
+      `Total Expenses: ${formatAmount(totalExpenses)}`,
+      14,
+      summaryY + 7
+    );
     doc.text(
       `Total Transactions: ${filteredExpenses.length}`,
       14,
       summaryY + 14
     );
     doc.text(
-      `Average per Transaction: $${avgExpense.toFixed(2)}`,
+      `Average per Transaction: ${formatAmount(avgExpense)}`,
       14,
       summaryY + 21
     );
     if (topCategory) {
       doc.text(
-        `Top Category: ${topCategory[0]} ($${(topCategory[1] as number).toFixed(
-          2
+        `Top Category: ${topCategory[0]} (${formatAmount(
+          topCategory[1] as number
         )})`,
         14,
         summaryY + 28
@@ -274,11 +286,11 @@ export const Expenses: React.FC = () => {
 
     // Expenses Table
     const tableData = sortedExpenses.map((expense) => [
-      format(new Date(expense.date), "MMM dd, yyyy"),
+      formatDate(expense.date),
       expense.description,
       expense.category,
       expense.payment_method || "N/A",
-      `$${expense.amount.toFixed(2)}`,
+      formatCurrency(expense.amount, expense.currency || "USD"),
     ]);
 
     autoTable(doc, {
@@ -385,14 +397,19 @@ export const Expenses: React.FC = () => {
   }, [filteredExpenses, sortBy]);
 
   const totalExpenses = filteredExpenses.reduce(
-    (sum, expense) => sum + expense.amount,
+    (sum, expense) =>
+      sum + convertAmount(expense.amount, expense.currency || "USD"),
     0
   );
   const avgExpense =
     filteredExpenses.length > 0 ? totalExpenses / filteredExpenses.length : 0;
 
   const categoryTotals = filteredExpenses.reduce((acc, expense) => {
-    acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+    const convertedAmount = convertAmount(
+      expense.amount,
+      expense.currency || "USD"
+    );
+    acc[expense.category] = (acc[expense.category] || 0) + convertedAmount;
     return acc;
   }, {} as Record<string, number>);
 
@@ -532,7 +549,7 @@ export const Expenses: React.FC = () => {
                     Total Spent
                   </p>
                   <p className="text-2xl font-bold">
-                    ${totalExpenses.toFixed(2)}
+                    {formatAmount(totalExpenses)}
                   </p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-primary" />
@@ -548,7 +565,9 @@ export const Expenses: React.FC = () => {
                   <p className="text-sm font-medium text-muted-foreground">
                     Average
                   </p>
-                  <p className="text-2xl font-bold">${avgExpense.toFixed(2)}</p>
+                  <p className="text-2xl font-bold">
+                    {formatAmount(avgExpense)}
+                  </p>
                 </div>
                 <Receipt className="w-8 h-8 text-success" />
               </div>
@@ -587,7 +606,7 @@ export const Expenses: React.FC = () => {
                 <Filter className="w-8 h-8 text-muted-foreground" />
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                ${(topCategory?.[1] as number)?.toFixed(2) || "0.00"} spent
+                {formatAmount((topCategory?.[1] as number) || 0)} spent
               </p>
             </CardContent>
           </Card>
@@ -766,7 +785,7 @@ export const Expenses: React.FC = () => {
                             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                               <span className="flex items-center">
                                 <Calendar className="w-3 h-3 mr-1" />
-                                {format(new Date(expense.date), "MMM dd, yyyy")}
+                                {formatDate(expense.date)}
                               </span>
                               <Badge variant="outline">
                                 {expense.category}
@@ -813,7 +832,10 @@ export const Expenses: React.FC = () => {
                           <div className="flex items-center space-x-3 ml-4">
                             <div className="text-right">
                               <p className="text-lg font-bold text-foreground">
-                                ${expense.amount.toFixed(2)}
+                                {formatCurrency(
+                                  expense.amount,
+                                  expense.currency || "USD"
+                                )}
                               </p>
                             </div>
 
@@ -866,7 +888,7 @@ export const Expenses: React.FC = () => {
                         <div className="flex justify-between items-start mb-3">
                           <h3 className="font-semibold">{category}</h3>
                           <p className="text-lg font-bold">
-                            ${(amount as number).toFixed(2)}
+                            {formatAmount(amount as number)}
                           </p>
                         </div>
                         <div className="text-sm text-muted-foreground">
@@ -909,7 +931,7 @@ export const Expenses: React.FC = () => {
                           ) : null}
                         </div>
                         <p className="text-2xl font-bold">
-                          ${analytics.currentPeriodTotal.toFixed(2)}
+                          {formatAmount(analytics.currentPeriodTotal)}
                         </p>
                         {analytics.previousPeriodTotal > 0 && (
                           <p
@@ -931,7 +953,7 @@ export const Expenses: React.FC = () => {
                           Previous Period
                         </span>
                         <p className="text-2xl font-bold mt-2">
-                          ${analytics.previousPeriodTotal.toFixed(2)}
+                          {formatAmount(analytics.previousPeriodTotal)}
                         </p>
                       </div>
                     </div>
@@ -957,7 +979,7 @@ export const Expenses: React.FC = () => {
                             <span className="font-medium">{cat.category}</span>
                             <div className="text-right">
                               <span className="font-bold">
-                                ${cat.amount.toFixed(2)}
+                                {formatAmount(cat.amount)}
                               </span>
                               <span className="text-sm text-muted-foreground ml-2">
                                 ({cat.percentage.toFixed(1)}%)
@@ -972,7 +994,7 @@ export const Expenses: React.FC = () => {
                           </div>
                           <div className="flex justify-between text-xs text-muted-foreground mt-1">
                             <span>{cat.count} transactions</span>
-                            <span>Avg: ${cat.average.toFixed(2)}</span>
+                            <span>Avg: {formatAmount(cat.average)}</span>
                           </div>
                         </div>
                       ))}
@@ -1024,7 +1046,7 @@ export const Expenses: React.FC = () => {
                               </div>
                             </div>
                             <p className="text-lg font-bold">
-                              ${day.amount.toFixed(2)}
+                              {formatAmount(day.amount)}
                             </p>
                           </div>
                         ))}
@@ -1055,7 +1077,7 @@ export const Expenses: React.FC = () => {
                         Average Transaction
                       </p>
                       <p className="text-2xl font-bold">
-                        ${avgExpense.toFixed(2)}
+                        {formatAmount(avgExpense)}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Per expense

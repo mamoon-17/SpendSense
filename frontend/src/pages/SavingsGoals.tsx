@@ -30,6 +30,7 @@ import { savingsAPI, categoriesAPI } from "@/lib/api";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useUserSettings } from "@/hooks/useUserSettings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +75,7 @@ interface SavingsGoal {
   user_id: string;
   created_at: string;
   updated_at: string;
+  currency?: string;
   progress_percentage?: string;
   amount_remaining?: string;
   days_left?: number;
@@ -93,11 +95,20 @@ interface GoalFormData {
   category_id: string;
   priority: "high" | "medium" | "low";
   monthly_target?: number;
+  currency?: string;
 }
 
 export const SavingsGoals: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const {
+    formatCurrency,
+    convertAmount,
+    formatAmount,
+    formatDate,
+    getCurrencySymbol,
+    settings,
+  } = useUserSettings();
   const [filter, setFilter] = useState<
     "all" | "active" | "completed" | "behind"
   >("all");
@@ -127,24 +138,94 @@ export const SavingsGoals: React.FC = () => {
     category_id: "",
     priority: "medium",
     monthly_target: 0,
+    currency: settings.currency,
   });
 
+  // Helper function to calculate goal progress on the frontend
+  const calculateGoalProgress = (goal: SavingsGoal): SavingsGoal => {
+    const currentAmount = parseFloat(goal.current_amount);
+    const targetAmount = parseFloat(goal.target_amount);
+    const progressPercentage =
+      targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
+
+    const today = new Date();
+    const targetDate = new Date(goal.target_date);
+    const timeLeftMs = targetDate.getTime() - today.getTime();
+    const daysLeft = Math.ceil(timeLeftMs / (1000 * 60 * 60 * 24));
+    const monthsLeft = Math.ceil(daysLeft / 30);
+
+    // Calculate status
+    let calculatedStatus = goal.status;
+    if (goal.status !== "completed") {
+      if (daysLeft < 0) {
+        calculatedStatus = "overdue";
+      } else if (progressPercentage >= 100) {
+        calculatedStatus = "completed";
+      } else {
+        const totalDays = Math.ceil(
+          (targetDate.getTime() - new Date(goal.created_at).getTime()) /
+            (1000 * 60 * 60 * 24)
+        );
+        const daysPassed = totalDays - daysLeft;
+        const expectedProgress =
+          totalDays > 0 ? (daysPassed / totalDays) * 100 : 0;
+
+        if (progressPercentage >= expectedProgress - 10) {
+          calculatedStatus = "on_track";
+        } else {
+          calculatedStatus = "behind";
+        }
+      }
+    }
+
+    return {
+      ...goal,
+      progress_percentage: progressPercentage.toFixed(2),
+      amount_remaining: (targetAmount - currentAmount).toFixed(2),
+      days_left: daysLeft,
+      months_left: monthsLeft,
+      time_left_display:
+        daysLeft < 0
+          ? "Overdue"
+          : daysLeft === 0
+          ? "Today"
+          : daysLeft === 1
+          ? "1 day"
+          : daysLeft < 30
+          ? `${daysLeft} days`
+          : `${monthsLeft} month${monthsLeft > 1 ? "s" : ""}`,
+      calculated_status: calculatedStatus,
+      is_completed: progressPercentage >= 100,
+      is_overdue: daysLeft < 0 && progressPercentage < 100,
+    };
+  };
+
   // Fetch savings goals
-  const { data: goals = [], isLoading } = useQuery({
+  const { data: rawGoals = [], isLoading } = useQuery({
     queryKey: ["savings-goals"],
     queryFn: async () => {
       const response = await savingsAPI.getGoals();
-      return response.data as SavingsGoal[];
+      return response.data.map((goal: SavingsGoal) => ({
+        ...goal,
+        currency: goal.currency || settings.currency,
+      })) as SavingsGoal[];
     },
+    staleTime: 30000, // Cache for 30 seconds
+    refetchOnWindowFocus: false,
   });
+
+  // Calculate progress for all goals on the frontend
+  const goals = rawGoals.map(calculateGoalProgress);
 
   // Fetch categories for dropdown (using budget categories same as expenses)
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories", "budget"],
+    queryKey: ["categories"],
     queryFn: async () => {
-      const response = await categoriesAPI.getCategoriesByType("budget");
+      const response = await categoriesAPI.getCategories();
       return response.data;
     },
+    staleTime: 300000, // Cache for 5 minutes (categories rarely change)
+    refetchOnWindowFocus: false,
   });
 
   // Delete mutation
@@ -298,7 +379,10 @@ export const SavingsGoals: React.FC = () => {
 
     saveMutation.mutate({
       id: editingGoal?.id,
-      formData,
+      formData: {
+        ...formData,
+        currency: settings.currency, // Always use current currency setting
+      },
     });
   };
 
@@ -337,11 +421,15 @@ export const SavingsGoals: React.FC = () => {
   });
 
   const totalTargetAmount = goals.reduce(
-    (sum, goal) => sum + parseFloat(goal.target_amount),
+    (sum, goal) =>
+      sum +
+      convertAmount(parseFloat(goal.target_amount), goal.currency || "USD"),
     0
   );
   const totalCurrentAmount = goals.reduce(
-    (sum, goal) => sum + parseFloat(goal.current_amount),
+    (sum, goal) =>
+      sum +
+      convertAmount(parseFloat(goal.current_amount), goal.currency || "USD"),
     0
   );
   const overallProgress =
@@ -380,7 +468,7 @@ export const SavingsGoals: React.FC = () => {
                   Total Target
                 </p>
                 <p className="text-2xl font-bold">
-                  ${totalTargetAmount.toLocaleString()}
+                  {formatAmount(totalTargetAmount)}
                 </p>
               </div>
               <Target className="w-8 h-8 text-primary" />
@@ -399,7 +487,7 @@ export const SavingsGoals: React.FC = () => {
                   Total Saved
                 </p>
                 <p className="text-2xl font-bold text-success">
-                  ${totalCurrentAmount.toLocaleString()}
+                  {formatAmount(totalCurrentAmount)}
                 </p>
               </div>
               <DollarSign className="w-8 h-8 text-success" />
@@ -435,7 +523,7 @@ export const SavingsGoals: React.FC = () => {
                   Monthly Target
                 </p>
                 <p className="text-2xl font-bold">
-                  ${totalMonthlyTarget.toLocaleString()}
+                  {formatAmount(totalMonthlyTarget)}
                 </p>
               </div>
               <Calendar className="w-8 h-8 text-muted-foreground" />
@@ -476,7 +564,24 @@ export const SavingsGoals: React.FC = () => {
 
             <TabsContent value="goals" className="space-y-4 mt-6">
               {isLoading ? (
-                <div className="text-center py-8">Loading...</div>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="card-financial">
+                      <CardHeader>
+                        <div className="space-y-3">
+                          <div className="h-6 bg-muted rounded w-1/3 animate-pulse" />
+                          <div className="h-4 bg-muted rounded w-1/2 animate-pulse" />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="h-4 bg-muted rounded animate-pulse" />
+                          <div className="h-20 bg-muted rounded animate-pulse" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               ) : filteredGoals.length === 0 ? (
                 <Card className="card-financial">
                   <CardContent className="p-8 text-center">
@@ -547,8 +652,15 @@ export const SavingsGoals: React.FC = () => {
                         <div className="space-y-2">
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-muted-foreground">
-                              ${currentAmount.toLocaleString()} of $
-                              {targetAmount.toLocaleString()}
+                              {formatCurrency(
+                                currentAmount,
+                                goal.currency || "USD"
+                              )}{" "}
+                              of{" "}
+                              {formatCurrency(
+                                targetAmount,
+                                goal.currency || "USD"
+                              )}
                             </span>
                             <span className="font-bold text-lg">
                               {progress.toFixed(1)}%
@@ -569,10 +681,7 @@ export const SavingsGoals: React.FC = () => {
                                 Target Date
                               </p>
                               <p className="text-muted-foreground text-xs">
-                                {format(
-                                  parseISO(goal.target_date),
-                                  "MMM dd, yyyy"
-                                )}
+                                {formatDate(goal.target_date)}
                               </p>
                             </div>
                           </div>
@@ -603,10 +712,10 @@ export const SavingsGoals: React.FC = () => {
                                 Monthly Need
                               </p>
                               <p className="text-muted-foreground text-xs">
-                                $
-                                {parseFloat(
-                                  goal.monthly_target || "0"
-                                ).toLocaleString()}
+                                {formatCurrency(
+                                  parseFloat(goal.monthly_target || "0"),
+                                  goal.currency || "USD"
+                                )}
                               </p>
                             </div>
                           </div>
@@ -664,8 +773,18 @@ export const SavingsGoals: React.FC = () => {
                             )}
                           />
                           <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>${currentAmount.toLocaleString()}</span>
-                            <span>${targetAmount.toLocaleString()}</span>
+                            <span>
+                              {formatCurrency(
+                                currentAmount,
+                                goal.currency || "USD"
+                              )}
+                            </span>
+                            <span>
+                              {formatCurrency(
+                                targetAmount,
+                                goal.currency || "USD"
+                              )}
+                            </span>
                           </div>
                         </div>
                       );
@@ -747,10 +866,13 @@ export const SavingsGoals: React.FC = () => {
                     className="flex items-center justify-between"
                   >
                     <Badge variant="secondary" className="capitalize">
-                      {category.icon} {category.name}
+                      {category.icon && (
+                        <span className="mr-2">{category.icon}</span>
+                      )}
+                      {category.name}
                     </Badge>
                     <span className="text-sm font-medium">
-                      ${categoryTotal.toLocaleString()}
+                      {formatAmount(categoryTotal)}
                     </span>
                   </div>
                 );
@@ -798,7 +920,9 @@ export const SavingsGoals: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="target_amount">Target Amount ($)</Label>
+                <Label htmlFor="target_amount">
+                  Target Amount ({getCurrencySymbol()})
+                </Label>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -842,7 +966,9 @@ export const SavingsGoals: React.FC = () => {
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="current_amount">Current Amount ($)</Label>
+                <Label htmlFor="current_amount">
+                  Current Amount ({getCurrencySymbol()})
+                </Label>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -978,6 +1104,7 @@ export const SavingsGoals: React.FC = () => {
                 <SelectContent className="max-h-[300px] overflow-y-auto">
                   {categories.map((cat: any) => (
                     <SelectItem key={cat.id} value={cat.id}>
+                      {cat.icon && <span className="mr-2">{cat.icon}</span>}
                       {cat.name}
                     </SelectItem>
                   ))}
@@ -1018,7 +1145,7 @@ export const SavingsGoals: React.FC = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount ($)</Label>
+              <Label htmlFor="amount">Amount ({getCurrencySymbol()})</Label>
               <div className="flex gap-2">
                 <Button
                   type="button"

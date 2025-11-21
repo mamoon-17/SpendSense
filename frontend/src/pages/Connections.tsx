@@ -32,6 +32,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -43,7 +60,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AIAssistant } from "@/components/ai/AIAssistant";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { connectionsAPI, invitationsAPI, conversationsAPI } from "@/lib/api";
@@ -89,6 +105,10 @@ export const Connections: React.FC = () => {
   const [addLoading, setAddLoading] = useState(false);
   const [addSuccess, setAddSuccess] = useState(false);
   const [addError, setAddError] = useState("");
+  const [removeConnectionDialog, setRemoveConnectionDialog] = useState<{
+    open: boolean;
+    connection: Connection | null;
+  }>({ open: false, connection: null });
 
   const [searchTerm, setSearchTerm] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
@@ -214,19 +234,20 @@ export const Connections: React.FC = () => {
           ? connection.receiver
           : connection.requester;
 
-      // Create or get a direct conversation with the other user
-      const res = await conversationsAPI.createConversation({
+      // Navigate immediately for fast UX
+      navigate("/app/messages", {
+        state: {
+          userId: otherUser.id,
+          userName: otherUser.name || otherUser.username,
+        },
+      });
+
+      // Create conversation in background
+      conversationsAPI.createConversation({
         name: `Chat with ${otherUser.name || otherUser.username}`,
         type: "direct",
         participant_ids: [otherUser.id],
       });
-      const conversation = res.data;
-      toast({
-        title: "Starting Chat",
-        description: `Opening chat with ${connectionName}...`,
-      });
-      // Navigate to chat screen; ModernChatApp will join via UI interaction
-      navigate("/messages", { state: { conversationId: conversation.id } });
     } catch (e: any) {
       toast({
         title: "Unable to start chat",
@@ -350,28 +371,52 @@ export const Connections: React.FC = () => {
               )}
               {searchResults.length > 0 && (
                 <div className="space-y-2">
-                  {searchResults.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center justify-between p-2 border rounded"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Avatar className="w-8 h-8">
-                          <AvatarFallback>
-                            {user.username?.[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{user.username}</span>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleAddConnection(user.id)}
-                        disabled={addLoading}
+                  {searchResults.map((user) => {
+                    // Check if user is already a connection
+                    const isAlreadyConnection = connections.some(
+                      (conn) =>
+                        (conn.requester.id === user.id ||
+                          conn.receiver.id === user.id) &&
+                        conn.status === "connected"
+                    );
+
+                    // Check if there's a pending request
+                    const hasPendingRequest = connections.some(
+                      (conn) =>
+                        (conn.requester.id === user.id ||
+                          conn.receiver.id === user.id) &&
+                        conn.status === "pending"
+                    );
+
+                    return (
+                      <div
+                        key={user.id}
+                        className="flex items-center justify-between p-2 border rounded"
                       >
-                        {addLoading ? "Adding..." : "Add"}
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="flex items-center gap-2">
+                          <Avatar className="w-8 h-8">
+                            <AvatarFallback>
+                              {user.username?.[0]?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{user.username}</span>
+                        </div>
+                        {isAlreadyConnection ? (
+                          <Badge variant="secondary">Connected</Badge>
+                        ) : hasPendingRequest ? (
+                          <Badge variant="outline">Pending</Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => handleAddConnection(user.id)}
+                            disabled={addLoading}
+                          >
+                            {addLoading ? "Adding..." : "Add"}
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               {addSuccess && (
@@ -768,9 +813,27 @@ export const Connections: React.FC = () => {
                                 >
                                   <MessageCircle className="w-4 h-4" />
                                 </Button>
-                                <Button size="sm" variant="outline">
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button size="sm" variant="outline">
+                                      <MoreVertical className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() => {
+                                        setRemoveConnectionDialog({
+                                          open: true,
+                                          connection,
+                                        });
+                                      }}
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Remove Connection
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </>
                             ) : (
                               <Button size="sm" variant="outline" disabled>
@@ -1027,8 +1090,6 @@ export const Connections: React.FC = () => {
 
         {/* Right Sidebar */}
         <div className="space-y-6">
-          <AIAssistant compact context="connections" />
-
           {/* Quick Invite */}
           <Card className="card-financial">
             <CardHeader>
@@ -1095,8 +1156,51 @@ export const Connections: React.FC = () => {
         </div>
       </div>
 
-      {/* AI Assistant */}
-      <AIAssistant context="connections" />
+      {/* Remove Connection Alert Dialog */}
+      <AlertDialog
+        open={removeConnectionDialog.open}
+        onOpenChange={(open) =>
+          setRemoveConnectionDialog({ open, connection: null })
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove{" "}
+              {removeConnectionDialog.connection &&
+                (user?.id === removeConnectionDialog.connection.requester.id
+                  ? removeConnectionDialog.connection.receiver.name ||
+                    removeConnectionDialog.connection.receiver.username
+                  : removeConnectionDialog.connection.requester.name ||
+                    removeConnectionDialog.connection.requester.username)}{" "}
+              from connections?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                const otherUser =
+                  removeConnectionDialog.connection &&
+                  (user?.id === removeConnectionDialog.connection.requester.id
+                    ? removeConnectionDialog.connection.receiver
+                    : removeConnectionDialog.connection.requester);
+                toast({
+                  title: "Connection Removed",
+                  description: `${
+                    otherUser?.name || otherUser?.username
+                  } has been removed from your connections.`,
+                });
+                setRemoveConnectionDialog({ open: false, connection: null });
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
