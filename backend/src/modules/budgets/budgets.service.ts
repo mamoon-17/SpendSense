@@ -8,13 +8,18 @@ import { Budget } from './budgets.entity';
 import { Repository } from 'typeorm';
 import { CreateBudgetDTO } from '../budgets/dtos/createBudget.dto';
 import { UpdateBudgetDTO } from '../budgets/dtos/updateBudget.dto';
-import { BudgetNotificationService } from './budget-notification.service';
+import { EventBusService } from 'src/common/events/event-bus.service';
+import {
+  BudgetExceededEvent,
+  BudgetAlertEvent,
+  BudgetCollaboratorJoinedEvent,
+} from 'src/common/events/domain-events';
 
 @Injectable()
 export class BudgetsService {
   constructor(
     @InjectRepository(Budget) private readonly budgetsRepo: Repository<Budget>,
-    private readonly budgetNotificationService: BudgetNotificationService,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async getAllBudgets(userId: string): Promise<Budget[]> {
@@ -113,22 +118,15 @@ export class BudgetsService {
     const percentage = (spentAmount / totalAmount) * 100;
     // Send alert at 85% threshold
     if (percentage >= 85 && percentage < 100) {
-      await this.budgetNotificationService.notifyBudgetAlert(
-        userId,
-        budget.name,
-        Math.round(percentage),
-        spentAmount,
-        totalAmount,
+      await this.eventBus.publish(
+        new BudgetAlertEvent(userId, budget.name, Math.round(percentage)),
       );
     }
 
     // Send exceeded notification at 100% or more
     if (percentage >= 100) {
-      await this.budgetNotificationService.notifyBudgetExceeded(
-        userId,
-        budget.name,
-        spentAmount,
-        totalAmount,
+      await this.eventBus.publish(
+        new BudgetExceededEvent(userId, budget.name, spentAmount, totalAmount),
       );
     }
   }
@@ -144,10 +142,12 @@ export class BudgetsService {
     // Notify all existing participants
     for (const participant of budget.participants) {
       if (participant.id !== collaboratorId) {
-        await this.budgetNotificationService.notifyCollaboratorJoined(
-          participant.id,
-          collaboratorName,
-          budget.name,
+        await this.eventBus.publish(
+          new BudgetCollaboratorJoinedEvent(
+            participant.id,
+            collaboratorName,
+            budget.name,
+          ),
         );
       }
     }

@@ -3,13 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Connection, ConnectionStatus } from './connections.entity';
 import { Repository } from 'typeorm';
 import { CreateConnectionDto } from './dtos/createConnection.dto';
-import { ConnectionNotificationService } from './connection-notification.service';
+import { EventBusService } from 'src/common/events/event-bus.service';
+import {
+  ConnectionRequestEvent,
+  ConnectionAcceptedEvent,
+} from 'src/common/events/domain-events';
 
 @Injectable()
 export class ConnectionsService {
   constructor(
     @InjectRepository(Connection) private readonly repo: Repository<Connection>,
-    private readonly connectionNotificationService: ConnectionNotificationService,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async createConnection(connection: CreateConnectionDto): Promise<Connection> {
@@ -44,10 +48,12 @@ export class ConnectionsService {
 
     // Send notification to receiver about new connection request
     if (fullConnection && fullConnection.requester && fullConnection.receiver) {
-      await this.connectionNotificationService.notifyConnectionRequest(
-        fullConnection.receiver.id,
-        fullConnection.requester.name || fullConnection.requester.username,
-        fullConnection.requester.id,
+      await this.eventBus.publish(
+        new ConnectionRequestEvent(
+          fullConnection.receiver.id,
+          fullConnection.requester.name || fullConnection.requester.username,
+          fullConnection.requester.id,
+        ),
       );
     }
 
@@ -76,9 +82,11 @@ export class ConnectionsService {
     await this.repo.save(connection);
 
     // Send notification to requester that their request was accepted
-    await this.connectionNotificationService.notifyConnectionAccepted(
-      connection.requester.id,
-      connection.receiver.name || connection.receiver.username,
+    await this.eventBus.publish(
+      new ConnectionAcceptedEvent(
+        connection.requester.id,
+        connection.receiver.name || connection.receiver.username,
+      ),
     );
 
     return connection;

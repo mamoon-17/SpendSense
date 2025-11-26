@@ -25,15 +25,15 @@ export class YearPeriodStrategy implements IPeriodStrategy {
 }
 
 export class PeriodStrategyFactory {
+  private static readonly strategies: Map<string, IPeriodStrategy> = new Map([
+    ['week', new WeekPeriodStrategy()],
+    ['month', new MonthPeriodStrategy()],
+    ['year', new YearPeriodStrategy()],
+  ]);
+
   static getStrategy(period?: string): IPeriodStrategy {
-    switch (period) {
-      case 'week':
-        return new WeekPeriodStrategy();
-      case 'year':
-        return new YearPeriodStrategy();
-      case 'month':
-      default:
-        return new MonthPeriodStrategy();
-    }
+    return (
+      this.strategies.get(period || 'month') || this.strategies.get('month')!
+    );
   }
 }

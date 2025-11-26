@@ -5,18 +5,15 @@ import { ConversationsService } from './conversations.service';
 import { Conversation } from './conversations.entity';
 import { ConnectionsModule } from '../connections/connections.module';
 import { UsersModule } from '../users/users.module';
-import { NotificationsModule } from '../notifications/notifications.module';
-import { ConversationNotificationService } from './conversation-notification.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Conversation]),
     forwardRef(() => ConnectionsModule),
     UsersModule,
-    NotificationsModule,
   ],
   controllers: [ConversationsController],
-  providers: [ConversationsService, ConversationNotificationService],
+  providers: [ConversationsService],
   exports: [ConversationsService],
 })
 export class ConversationsModule {}

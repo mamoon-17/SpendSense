@@ -37,16 +37,15 @@ export class ManualSplitStrategy implements IBillSplitStrategy {
 }
 
 export class BillSplitStrategyFactory {
+  private static readonly strategies: Map<string, IBillSplitStrategy> = new Map(
+    [
+      ['equal', new EqualSplitStrategy()],
+      ['percentage', new PercentageSplitStrategy()],
+      ['manual', new ManualSplitStrategy()],
+    ],
+  );
+
   static getStrategy(splitType: string): IBillSplitStrategy {
-    switch (splitType) {
-      case 'equal':
-        return new EqualSplitStrategy();
-      case 'percentage':
-        return new PercentageSplitStrategy();
-      case 'manual':
-        return new ManualSplitStrategy();
-      default:
-        return new EqualSplitStrategy();
-    }
+    return this.strategies.get(splitType) || this.strategies.get('equal')!;
   }
 }

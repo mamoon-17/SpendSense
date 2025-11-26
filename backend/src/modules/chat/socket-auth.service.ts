@@ -1,12 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as jwt from 'jsonwebtoken';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import type { ITokenService } from 'src/common/interfaces/token.interface';
 
 @Injectable()
 export class SocketAuthService {
   private readonly logger = new Logger(SocketAuthService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    @Inject('ITokenService')
+    private readonly tokenService: ITokenService,
+  ) {}
 
   authenticateSocket(token: string): any {
     try {
@@ -14,12 +16,7 @@ export class SocketAuthService {
         throw new Error('No token provided');
       }
 
-      const jwtSecret = this.configService.get<string>('JWT_SECRET');
-      if (!jwtSecret) {
-        throw new Error('JWT secret not configured');
-      }
-
-      const payload = jwt.verify(token, jwtSecret) as any;
+      const payload = this.tokenService.verifyToken(token);
       return payload;
     } catch (error: any) {
       this.logger.warn(`Socket authentication failed: ${error.message}`);

@@ -15,6 +15,7 @@ import { MessageHistoryModule } from './modules/message-history/message-history.
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { EventsModule } from './common/events/events.module';
 
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
@@ -44,6 +45,7 @@ import { Category } from './modules/categories/categories.entity';
       inject: [ConfigService],
     }),
     TypeOrmModule.forFeature([Category]),
+    EventsModule,
     UsersModule,
     UserProfilesModule,
     BudgetsModule,
@@ -53,7 +55,6 @@ import { Category } from './modules/categories/categories.entity';
     ConnectionsModule,
     InvitationsModule,
     ConversationsModule,
-
     MessageHistoryModule,
     NotificationsModule,
     CategoriesModule,

@@ -11,7 +11,8 @@ import { CreateConversationDto } from './dtos/create-conversation.dto';
 import { ConnectionsService } from '../connections/connections.service';
 import { ConnectionStatus } from '../connections/connections.entity';
 import { UsersService } from '../users/users.service';
-import { ConversationNotificationService } from './conversation-notification.service';
+import { EventBusService } from 'src/common/events/event-bus.service';
+import { NewMessageEvent } from 'src/common/events/domain-events';
 
 @Injectable()
 export class ConversationsService {
@@ -20,7 +21,7 @@ export class ConversationsService {
     private readonly conversationRepository: Repository<Conversation>,
     private readonly connectionsService: ConnectionsService,
     private readonly usersService: UsersService,
-    private readonly conversationNotificationService: ConversationNotificationService,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async createConversation(
@@ -85,10 +86,12 @@ export class ConversationsService {
 
       for (const participant of participants) {
         if (participant.id !== creatorId) {
-          await this.conversationNotificationService.notifyGroupAdded(
-            participant.id,
-            name,
-            creatorName,
+          await this.eventBus.publish(
+            new NewMessageEvent(
+              participant.id,
+              creatorName,
+              `You were added to group "${name}"`,
+            ),
           );
         }
       }

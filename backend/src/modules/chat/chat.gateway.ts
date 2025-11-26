@@ -9,8 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { ChatService } from './chat.service';
-import { SocketAuthService } from './socket-auth.service';
+import { ChatFacade } from './chat.facade';
 import { CreateMessageDto } from '../message-history/dtos/create-message.dto';
 import { GetMessagesDto } from '../message-history/dtos/get-messages.dto';
 import { MessageStatus } from '../message-history/message-history.entity';
@@ -39,52 +38,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   private logger: Logger = new Logger('ChatGateway');
-  private connectedUsers: Map<string, string> = new Map(); // userId -> socketId
 
-  constructor(
-    private readonly chatService: ChatService,
-    private readonly socketAuthService: SocketAuthService,
-  ) {}
+  constructor(private readonly chatFacade: ChatFacade) {}
 
   handleConnection(client: Socket) {
-    try {
-      const token = this.socketAuthService.extractTokenFromSocket(client);
-      if (!token) throw new Error('No token provided');
-
-      const payload = this.socketAuthService.authenticateSocket(token);
-      client.data.user = payload;
-      const userId = payload.userId;
-      
-      // Track connected user
-      this.connectedUsers.set(userId, client.id);
-      
-      this.logger.log(
-        `Client connected: ${client.id}, User: ${userId}`,
-      );
-
-      // Notify all clients that this user is now online
-      this.server.emit('user_online', { userId });
-      
-      // Send list of online users to the newly connected client
-      const onlineUserIds = Array.from(this.connectedUsers.keys());
-      client.emit('online_users', { userIds: onlineUserIds });
-    } catch (err: any) {
-      this.logger.warn(`Socket authentication failed: ${err.message}`);
+    const connected = this.chatFacade.handleUserConnection(client, this.server);
+    if (!connected) {
       client.disconnect();
     }
   }
 
   handleDisconnect(client: Socket) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (userId) {
-      // Remove from connected users
-      this.connectedUsers.delete(userId);
-      // Notify all clients that this user is now offline
-      this.server.emit('user_offline', { userId });
-      this.logger.log(`Client disconnected: ${client.id}, User: ${userId}`);
-    } else {
-      this.logger.log(`Client disconnected: ${client.id}`);
-    }
+    this.chatFacade.handleUserDisconnection(client, this.server);
   }
 
   @SubscribeMessage('send_message')
@@ -92,12 +57,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: CreateMessageDto,
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) {
-      client.emit('error', { message: 'User not authenticated' });
-      return;
-    }
-    await this.chatService.sendMessage(userId, data, client, this.server);
+    await this.chatFacade.sendMessage(client, this.server, data);
   }
 
   @SubscribeMessage('typing')
@@ -105,9 +65,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: TypingData,
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) return;
-    this.chatService.handleTyping(userId, data, client, this.server);
+    this.chatFacade.handleTyping(
+      client,
+      this.server,
+      data.conversationId,
+      data.isTyping,
+    );
   }
 
   @SubscribeMessage('join_conversation')
@@ -115,16 +78,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: JoinConversationData,
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) {
-      client.emit('error', { message: 'User not authenticated' });
-      return;
-    }
-    await this.chatService.joinConversation(
-      userId,
-      data.conversationId,
+    await this.chatFacade.joinConversation(
       client,
       this.server,
+      data.conversationId,
     );
   }
 
@@ -133,14 +90,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: JoinConversationData,
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) return;
-    this.chatService.leaveConversation(
-      userId,
-      data.conversationId,
-      client,
-      this.server,
-    );
+    this.chatFacade.leaveConversation(client, this.server, data.conversationId);
   }
 
   @SubscribeMessage('message_delivered')
@@ -148,13 +98,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { messageId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) return;
-    await this.chatService.updateMessageStatus(
+    await this.chatFacade.updateMessageStatus(
+      client,
       data.messageId,
       MessageStatus.DELIVERED,
-      userId,
-      client,
     );
   }
 
@@ -163,24 +110,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { messageId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) return;
-    await this.chatService.updateMessageStatus(
+    await this.chatFacade.updateMessageStatus(
+      client,
       data.messageId,
       MessageStatus.READ,
-      userId,
-      client,
     );
   }
 
   @SubscribeMessage('get_conversations')
   async handleGetConversations(@ConnectedSocket() client: Socket) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) {
-      client.emit('error', { message: 'User not authenticated' });
-      return;
-    }
-    await this.chatService.getUserConversations(userId, client);
+    await this.chatFacade.getConversations(client);
   }
 
   @SubscribeMessage('get_messages')
@@ -189,21 +128,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     data: { conversationId: string; page?: number; limit?: number },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) {
-      client.emit('error', { message: 'User not authenticated' });
-      return;
-    }
     const pagination: GetMessagesDto = {
       page: data.page || 1,
       limit: data.limit || 20,
     };
-    await this.chatService.getMessageHistory(
-      data.conversationId,
-      userId,
-      pagination,
-      client,
-    );
+    await this.chatFacade.getMessages(client, data.conversationId, pagination);
   }
 
   @SubscribeMessage('typing_start')
@@ -211,9 +140,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { conversationId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) return;
-    this.chatService.handleTypingStart(userId, data, client, this.server);
+    this.chatFacade.handleTyping(
+      client,
+      this.server,
+      data.conversationId,
+      true,
+    );
   }
 
   @SubscribeMessage('typing_stop')
@@ -221,9 +153,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { conversationId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) return;
-    this.chatService.handleTypingStop(userId, data, client, this.server);
+    this.chatFacade.handleTyping(
+      client,
+      this.server,
+      data.conversationId,
+      false,
+    );
   }
 
   @SubscribeMessage('mark_as_read')
@@ -231,22 +166,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { conversationId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = this.socketAuthService.getUserIdFromSocket(client);
-    if (!userId) {
-      client.emit('error', { message: 'User not authenticated' });
-      return;
-    }
-    await this.chatService.markMessagesAsRead(
-      data.conversationId,
-      userId,
-      client,
-      this.server,
-    );
+    await this.chatFacade.markAsRead(client, this.server, data.conversationId);
   }
 
   @SubscribeMessage('get_online_users')
   handleGetOnlineUsers(@ConnectedSocket() client: Socket) {
-    const onlineUserIds = Array.from(this.connectedUsers.keys());
+    const onlineUserIds = this.chatFacade.getOnlineUsers();
     client.emit('online_users', { userIds: onlineUserIds });
   }
 }
