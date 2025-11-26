@@ -9,8 +9,10 @@ import { Expense } from './expenses.entity';
 import { Category } from '../categories/categories.entity';
 import { CreateExpenseDTO } from './dtos/createExpense.dto';
 import { UpdateExpenseDTO } from './dtos/updateExpense.dto';
-import { BudgetsService } from '../budgets/budgets.service';
 import { Budget } from '../budgets/budgets.entity';
+import { ExpenseAnalyticsService } from './expense-analytics.service';
+import { PeriodStrategyFactory } from 'src/common/strategies/period.strategy';
+import { BudgetsService } from '../budgets/budgets.service';
 
 @Injectable()
 export class ExpensesService {
@@ -21,6 +23,7 @@ export class ExpensesService {
     private readonly categoriesRepo: Repository<Category>,
     @InjectRepository(Budget)
     private readonly budgetsRepo: Repository<Budget>,
+    private readonly expenseAnalyticsService: ExpenseAnalyticsService,
     private readonly budgetsService: BudgetsService,
   ) {}
 
@@ -123,72 +126,15 @@ export class ExpensesService {
   // Get expenses summary/analytics
   async getExpensesSummary(userId: string, period?: string): Promise<object> {
     const now = new Date();
-    let startDate: Date;
-    let endDate: Date = now;
+    const strategy = PeriodStrategyFactory.getStrategy(period);
+    const { startDate, endDate } = strategy.calculateDateRange(now);
 
-    // Determine date range based on period
-    switch (period) {
-      case 'week':
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      default:
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    }
-
-    const expenses = await this.expensesRepo.find({
-      where: {
-        user_id: userId,
-        date: Between(startDate, endDate),
-      },
-    });
-
-    const totalSpent = expenses.reduce(
-      (sum, exp) => sum + parseFloat(exp.amount),
-      0,
+    return this.expenseAnalyticsService.getExpensesSummary(
+      userId,
+      startDate,
+      endDate,
+      period || 'month',
     );
-    const avgTransaction =
-      expenses.length > 0 ? totalSpent / expenses.length : 0;
-
-    // Get category breakdown
-    const categoryMap = new Map<string, number>();
-    expenses.forEach((exp) => {
-      const current = categoryMap.get(exp.category_id) || 0;
-      categoryMap.set(exp.category_id, current + parseFloat(exp.amount));
-    });
-
-    const categoryBreakdown = Array.from(categoryMap.entries()).map(
-      ([categoryId, amount]) => ({
-        category_id: categoryId,
-        amount: amount.toFixed(2),
-      }),
-    );
-
-    // Find most expensive category
-    let topCategory: string | null = null;
-    let topAmount = 0;
-    categoryBreakdown.forEach((cat) => {
-      if (parseFloat(cat.amount) > topAmount) {
-        topAmount = parseFloat(cat.amount);
-        topCategory = cat.category_id;
-      }
-    });
-
-    return {
-      total_spent: totalSpent.toFixed(2),
-      average_transaction: avgTransaction.toFixed(2),
-      total_transactions: expenses.length,
-      categorized_count: expenses.filter((e) => e.category_id).length,
-      top_category: topCategory,
-      category_breakdown: categoryBreakdown,
-      period: period || 'month',
-    };
   }
 
   // Filter expenses by category

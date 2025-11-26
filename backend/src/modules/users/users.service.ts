@@ -1,15 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './users.entity';
 import { Repository, In } from 'typeorm';
 import { CreateUserDTO } from 'src/modules/users/dtos/createUser.dto';
 import { UpdateUserDTO } from 'src/modules/users/dtos/updateUser.dto';
-import * as bcrypt from 'bcrypt';
+import type { IPasswordService } from 'src/common/interfaces/password.interface';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
+    @Inject('IPasswordService')
+    private readonly passwordService: IPasswordService,
   ) {}
 
   async getAllUsers(): Promise<User[]> {
@@ -44,9 +46,8 @@ export class UsersService {
       throw new Error('Username already exists');
     }
 
-    // generate salt and hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(payload.password, salt);
+    // hash password
+    const hashedPassword = await this.passwordService.hash(payload.password);
 
     // create new user with hashed password
     const newUser = this.usersRepo.create({
@@ -98,14 +99,16 @@ export class UsersService {
     }
 
     // Verify current password
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    const isMatch = await this.passwordService.compare(
+      currentPassword,
+      user.password,
+    );
     if (!isMatch) {
       throw new Error('Current password is incorrect');
     }
 
     // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    const hashedPassword = await this.passwordService.hash(newPassword);
 
     // Update password
     await this.usersRepo.update(userId, { password: hashedPassword });

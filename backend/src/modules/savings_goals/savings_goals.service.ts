@@ -12,14 +12,16 @@ import {
 } from './savings_goals.entity';
 import { CreateSavingsGoalDTO } from './dtos/createSavingsGoal.dto';
 import { UpdateSavingsGoalDTO } from './dtos/updateSavingsGoal.dto';
-import { NotificationsService } from '../notifications/notifications.service';
+import { SavingsGoalCalculator } from './savings-goal-calculator.service';
+import { SavingsGoalNotificationService } from './savings-goal-notification.service';
 
 @Injectable()
 export class SavingsGoalsService {
   constructor(
     @InjectRepository(SavingsGoal)
     private readonly savingsGoalRepo: Repository<SavingsGoal>,
-    private readonly notificationsService: NotificationsService,
+    private readonly savingsGoalCalculator: SavingsGoalCalculator,
+    private readonly savingsGoalNotificationService: SavingsGoalNotificationService,
   ) {}
 
   // Create a new savings goal
@@ -72,7 +74,7 @@ export class SavingsGoalsService {
       throw new NotFoundException('Savings goal not found');
     }
 
-    return this.calculateGoalProgress(goal);
+    return this.savingsGoalCalculator.calculateGoalProgress(goal);
   }
 
   // Update a savings goal
@@ -96,7 +98,7 @@ export class SavingsGoalsService {
 
     return {
       msg: 'Savings goal updated successfully',
-      goal: this.calculateGoalProgress(updatedGoal),
+      goal: this.savingsGoalCalculator.calculateGoalProgress(updatedGoal),
     };
   }
 
@@ -127,25 +129,25 @@ export class SavingsGoalsService {
       goal.status = SavingsGoalStatus.COMPLETED;
 
       // Send goal achieved notification
-      await this.notificationsService.notifySavingsGoalAchieved(
+      await this.savingsGoalNotificationService.notifySavingsGoalAchieved(
         userId,
         goal.name,
         targetAmount,
       );
     } else {
-      // Check for milestone notifications (at 25%, 50%, 75%)
-      const milestones = [25, 50, 75];
-      for (const milestone of milestones) {
-        if (oldPercentage < milestone && newPercentage >= milestone) {
-          await this.notificationsService.notifySavingsGoalMilestone(
-            userId,
-            goal.name,
-            Math.round(newPercentage),
-            newAmount,
-            targetAmount,
-          );
-          break; // Only send one notification
-        }
+      // Check for milestone notifications
+      const milestone = this.savingsGoalCalculator.calculateMilestone(
+        oldPercentage,
+        newPercentage,
+      );
+      if (milestone) {
+        await this.savingsGoalNotificationService.notifySavingsGoalMilestone(
+          userId,
+          goal.name,
+          Math.round(newPercentage),
+          newAmount,
+          targetAmount,
+        );
       }
     }
 
@@ -153,7 +155,7 @@ export class SavingsGoalsService {
 
     return {
       msg: 'Amount added successfully',
-      goal: this.calculateGoalProgress(updatedGoal),
+      goal: this.savingsGoalCalculator.calculateGoalProgress(updatedGoal),
     };
   }
 
@@ -185,7 +187,7 @@ export class SavingsGoalsService {
 
     return {
       msg: 'Amount withdrawn successfully',
-      goal: this.calculateGoalProgress(updatedGoal),
+      goal: this.savingsGoalCalculator.calculateGoalProgress(updatedGoal),
     };
   }
 
@@ -272,7 +274,9 @@ export class SavingsGoalsService {
       });
     }
 
-    return goals.map((goal) => this.calculateGoalProgress(goal));
+    return goals.map((goal) =>
+      this.savingsGoalCalculator.calculateGoalProgress(goal),
+    );
   }
 
   // Filter by priority
@@ -285,66 +289,8 @@ export class SavingsGoalsService {
       order: { created_at: 'DESC' },
     });
 
-    return goals.map((goal) => this.calculateGoalProgress(goal));
-  }
-
-  // Calculate progress and time left for a goal
-  private calculateGoalProgress(goal: SavingsGoal): any {
-    const currentAmount = parseFloat(goal.current_amount);
-    const targetAmount = parseFloat(goal.target_amount);
-    const progressPercentage =
-      targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
-
-    const today = new Date();
-    const targetDate = new Date(goal.target_date);
-    const timeLeftMs = targetDate.getTime() - today.getTime();
-    const daysLeft = Math.ceil(timeLeftMs / (1000 * 60 * 60 * 24));
-    const monthsLeft = Math.ceil(daysLeft / 30);
-
-    // Calculate if on track
-    let calculatedStatus = goal.status;
-    if (goal.status !== SavingsGoalStatus.COMPLETED) {
-      if (daysLeft < 0) {
-        calculatedStatus = SavingsGoalStatus.OVERDUE;
-      } else if (progressPercentage >= 100) {
-        calculatedStatus = SavingsGoalStatus.COMPLETED;
-      } else {
-        // Calculate expected progress
-        const totalDays = Math.ceil(
-          (targetDate.getTime() - new Date(goal.created_at).getTime()) /
-            (1000 * 60 * 60 * 24),
-        );
-        const daysPassed = totalDays - daysLeft;
-        const expectedProgress =
-          totalDays > 0 ? (daysPassed / totalDays) * 100 : 0;
-
-        if (progressPercentage >= expectedProgress - 10) {
-          calculatedStatus = SavingsGoalStatus.ON_TRACK;
-        } else {
-          calculatedStatus = SavingsGoalStatus.BEHIND;
-        }
-      }
-    }
-
-    return {
-      ...goal,
-      progress_percentage: progressPercentage.toFixed(2),
-      amount_remaining: (targetAmount - currentAmount).toFixed(2),
-      days_left: daysLeft,
-      months_left: monthsLeft,
-      time_left_display:
-        daysLeft < 0
-          ? 'Overdue'
-          : daysLeft === 0
-            ? 'Today'
-            : daysLeft === 1
-              ? '1 day'
-              : daysLeft < 30
-                ? `${daysLeft} days`
-                : `${monthsLeft} month${monthsLeft > 1 ? 's' : ''}`,
-      calculated_status: calculatedStatus,
-      is_completed: progressPercentage >= 100,
-      is_overdue: daysLeft < 0 && progressPercentage < 100,
-    };
+    return goals.map((goal) =>
+      this.savingsGoalCalculator.calculateGoalProgress(goal),
+    );
   }
 }

@@ -12,6 +12,9 @@ import { Category } from '../categories/categories.entity';
 import { CreateBillDTO } from './dtos/createBill.dto';
 import { UpdateBillDTO } from './dtos/updateBill.dto';
 import { UpdateBillStatusDTO } from './dtos/updateBillStatus.dto';
+import { BillSplitStrategyFactory } from 'src/common/strategies/bill-split.strategy';
+import { BillAnalyticsService } from './bill-analytics.service';
+import { BillPaymentService } from './bill-payment.service';
 
 @Injectable()
 export class BillsService {
@@ -22,6 +25,8 @@ export class BillsService {
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
     @InjectRepository(Category)
     private readonly categoriesRepo: Repository<Category>,
+    private readonly billAnalyticsService: BillAnalyticsService,
+    private readonly billPaymentService: BillPaymentService,
   ) {}
 
   async getAllBills(userId: string): Promise<Bill[]> {
@@ -43,12 +48,8 @@ export class BillsService {
 
     return Promise.all(
       bills.map(async (bill) => {
-        const payments = await this.billParticipantRepo.find({
-          where: { bill: { id: bill.id } },
-        });
-
-        const paidCount = payments.filter((p) => p.is_paid).length;
-        const progress = (paidCount / payments.length) * 100;
+        const { progress } =
+          await this.billAnalyticsService.calculateBillProgress(bill.id);
 
         return {
           id: bill.id,
@@ -56,7 +57,9 @@ export class BillsService {
           description: bill.description,
           total_amount: bill.total_amount,
           split_type: bill.split_type,
-          split_type_display: this.getSplitTypeDisplay(bill.split_type),
+          split_type_display: this.billAnalyticsService.getSplitTypeDisplay(
+            bill.split_type,
+          ),
           due_date: bill.due_date,
           status: bill.status,
           category: bill.category,
@@ -129,30 +132,22 @@ export class BillsService {
 
     const savedBill = (await this.billsRepo.save(bill)) as Bill;
 
-    // Calculate split amount
+    // Calculate split amount using strategy pattern
     const totalAmount = parseFloat(savedBill.total_amount);
     const participantCount = participants.length;
-    let splitAmount: number;
-
-    if (savedBill.split_type === 'equal') {
-      splitAmount = totalAmount / participantCount;
-    } else {
-      // For now, default to equal split
-      // You can implement percentage and manual split later
-      splitAmount = totalAmount / participantCount;
-    }
+    const strategy = BillSplitStrategyFactory.getStrategy(savedBill.split_type);
+    const splitAmount = strategy.calculateSplitAmount(
+      totalAmount,
+      participantCount,
+    );
 
     // Create participant payment records
-    const participantPayments = participants.map((participant) => {
-      return this.billParticipantRepo.create({
-        bill: savedBill,
-        participant: participant,
-        amount_owed: splitAmount.toFixed(2),
-        is_paid: false,
-      });
-    });
-
-    await this.billParticipantRepo.save(participantPayments);
+    const participantIds = participants.map((p) => p.id);
+    await this.billPaymentService.createParticipantPayments(
+      savedBill.id,
+      participantIds,
+      splitAmount,
+    );
 
     return { msg: 'Bill created successfully' };
   }
@@ -265,65 +260,7 @@ export class BillsService {
   // Get bills summary for dashboard
   async getBillsSummary(userId: string): Promise<object> {
     const bills = await this.getAllBills(userId);
-
-    let totalBills = 0;
-    let youOwe = 0;
-    let owedToYou = 0;
-    let activeBills = 0;
-
-    for (const bill of bills) {
-      const amount = parseFloat(bill.total_amount);
-      const isCreator = bill.created_by.id === userId;
-
-      totalBills += amount;
-
-      if (bill.status !== 'completed') {
-        activeBills++;
-      }
-
-      // Get participant payment for this user
-      const userPayment = await this.billParticipantRepo.findOne({
-        where: { bill: { id: bill.id }, participant: { id: userId } },
-      });
-
-      if (userPayment) {
-        const owedAmount = parseFloat(userPayment.amount_owed);
-        if (!userPayment.is_paid) {
-          youOwe += owedAmount;
-        }
-      }
-
-      // If user is creator, calculate what others owe
-      if (isCreator) {
-        const allPayments = await this.billParticipantRepo.find({
-          where: { bill: { id: bill.id } },
-          relations: ['participant'],
-        });
-
-        for (const payment of allPayments) {
-          if (payment.participant.id !== userId && !payment.is_paid) {
-            owedToYou += parseFloat(payment.amount_owed);
-          }
-        }
-      }
-    }
-
-    const now = new Date();
-    const billsThisMonth = bills.filter((b) => {
-      const billDate = new Date(b.due_date);
-      return (
-        billDate.getMonth() === now.getMonth() &&
-        billDate.getFullYear() === now.getFullYear()
-      );
-    }).length;
-
-    return {
-      total_bills: totalBills.toFixed(2),
-      you_owe: youOwe.toFixed(2),
-      owed_to_you: owedToYou.toFixed(2),
-      active_bills: activeBills,
-      bills_this_month: billsThisMonth,
-    };
+    return this.billAnalyticsService.calculateBillsSummary(bills, userId);
   }
 
   // Get bills by status
@@ -340,17 +277,15 @@ export class BillsService {
     // Enhance bills with additional info for frontend
     return Promise.all(
       filteredBills.map(async (bill) => {
-        const payments = await this.billParticipantRepo.find({
-          where: { bill: { id: bill.id } },
-        });
-
-        const paidCount = payments.filter((p) => p.is_paid).length;
-        const progress = (paidCount / payments.length) * 100;
+        const { progress } =
+          await this.billAnalyticsService.calculateBillProgress(bill.id);
 
         return {
           ...bill,
           participant_count: bill.participants.length,
-          split_type_display: this.getSplitTypeDisplay(bill.split_type),
+          split_type_display: this.billAnalyticsService.getSplitTypeDisplay(
+            bill.split_type,
+          ),
           payment_progress: progress.toFixed(2),
         };
       }),
@@ -374,71 +309,41 @@ export class BillsService {
     // Enhance bills with additional info for frontend
     return Promise.all(
       filteredBills.map(async (bill) => {
-        const payments = await this.billParticipantRepo.find({
-          where: { bill: { id: bill.id } },
-        });
-
-        const paidCount = payments.filter((p) => p.is_paid).length;
-        const progress = (paidCount / payments.length) * 100;
+        const { progress } =
+          await this.billAnalyticsService.calculateBillProgress(bill.id);
 
         return {
           ...bill,
           participant_count: bill.participants.length,
-          split_type_display: this.getSplitTypeDisplay(bill.split_type),
+          split_type_display: this.billAnalyticsService.getSplitTypeDisplay(
+            bill.split_type,
+          ),
           payment_progress: progress.toFixed(2),
         };
       }),
     );
   }
 
-  // Helper method to format split type for display
-  private getSplitTypeDisplay(splitType: string): string {
-    switch (splitType) {
-      case 'equal':
-        return 'Equal Split';
-      case 'percentage':
-        return 'Percentage Split';
-      case 'manual':
-        return 'Manual Split';
-      default:
-        return 'Equal Split';
-    }
-  }
-
   // Get bill with payment details
   async getBillWithPaymentDetails(id: string, userId: string): Promise<object> {
     const bill = await this.getBillById(id, userId);
 
-    // Get all participant payments for this bill
-    const payments = await this.billParticipantRepo.find({
-      where: { bill: { id: bill.id } },
-      relations: ['participant'],
-    });
-
-    // Map payments to include participant details with status
-    const participantsDetails = payments.map((payment) => ({
-      id: payment.participant.id,
-      name: payment.participant.name,
-      username: payment.participant.username,
-      amount_owed: payment.amount_owed,
-      is_paid: payment.is_paid,
-      paid_at: payment.paid_at,
-      payment_status: payment.is_paid ? 'Paid' : 'Pending',
-    }));
-
-    // Calculate payment progress
-    const paidCount = payments.filter((p) => p.is_paid).length;
-    const totalParticipants = payments.length;
-    const progress = (paidCount / totalParticipants) * 100;
+    const participantsDetails = await this.billPaymentService.getPaymentDetails(
+      bill.id,
+    );
+    const { progress, paidCount, totalCount } =
+      await this.billAnalyticsService.calculateBillProgress(bill.id);
 
     return {
       ...bill,
-      participant_count: totalParticipants,
-      split_type_display: this.getSplitTypeDisplay(bill.split_type),
+      participant_count: totalCount,
+      split_type_display: this.billAnalyticsService.getSplitTypeDisplay(
+        bill.split_type,
+      ),
       participants_details: participantsDetails,
       payment_progress: progress.toFixed(2),
       paid_participants: paidCount,
-      pending_participants: totalParticipants - paidCount,
+      pending_participants: totalCount - paidCount,
     };
   }
 
@@ -451,46 +356,8 @@ export class BillsService {
     // Check if user has access to this bill
     await this.getBillById(billId, userId);
 
-    const payment = await this.billParticipantRepo.findOne({
-      where: {
-        bill: { id: billId },
-        participant: { id: participantId },
-      },
-    });
-
-    if (!payment) {
-      throw new NotFoundException('Payment record not found');
-    }
-
-    payment.is_paid = true;
-    payment.paid_at = new Date();
-
-    await this.billParticipantRepo.save(payment);
-
-    // Update bill status based on payments
-    await this.updateBillStatusBasedOnPayments(billId);
+    await this.billPaymentService.markPaymentAsPaid(billId, participantId);
 
     return { msg: 'Payment marked as paid' };
-  }
-
-  // Helper method to update bill status based on payments
-  private async updateBillStatusBasedOnPayments(billId: string): Promise<void> {
-    const payments = await this.billParticipantRepo.find({
-      where: { bill: { id: billId } },
-    });
-
-    const allPaid = payments.every((p) => p.is_paid);
-    const somePaid = payments.some((p) => p.is_paid);
-
-    let newStatus: string;
-    if (allPaid) {
-      newStatus = 'completed';
-    } else if (somePaid) {
-      newStatus = 'partial';
-    } else {
-      newStatus = 'pending';
-    }
-
-    await this.billsRepo.update(billId, { status: newStatus as any });
   }
 }

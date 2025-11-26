@@ -5,6 +5,8 @@ import { SavingsGoalsService } from './savings_goals.service';
 import { SavingsGoal } from './savings_goals.entity';
 import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { SavingsGoalCalculator } from './savings-goal-calculator.service';
+import { SavingsGoalNotificationService } from './savings-goal-notification.service';
 
 @Module({
   imports: [
@@ -13,7 +15,11 @@ import { NotificationsModule } from '../notifications/notifications.module';
     NotificationsModule,
   ],
   controllers: [SavingsGoalsController],
-  providers: [SavingsGoalsService],
+  providers: [
+    SavingsGoalsService,
+    SavingsGoalCalculator,
+    SavingsGoalNotificationService,
+  ],
   exports: [SavingsGoalsService],
 })
 export class SavingsGoalsModule {}

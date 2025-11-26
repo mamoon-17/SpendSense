@@ -2,12 +2,12 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  Inject,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { UsersService } from '../users/users.service';
-import * as bcrypt from 'bcrypt';
-import * as jwt from 'jsonwebtoken';
-import { ConfigService } from '@nestjs/config';
+import type { IPasswordService } from 'src/common/interfaces/password.interface';
+import type { ITokenService } from 'src/common/interfaces/token.interface';
 import { LoginDTO } from 'src/modules/users/dtos/login.dto';
 import { SignupDTO } from 'src/modules/users/dtos/signup.dto';
 
@@ -15,7 +15,10 @@ import { SignupDTO } from 'src/modules/users/dtos/signup.dto';
 export class AuthService {
   constructor(
     private readonly userService: UsersService,
-    private readonly configService: ConfigService,
+    @Inject('IPasswordService')
+    private readonly passwordService: IPasswordService,
+    @Inject('ITokenService')
+    private readonly tokenService: ITokenService,
   ) {}
 
   async login(
@@ -30,19 +33,12 @@ export class AuthService {
       throw new UnauthorizedException('Username or password is incorrect');
 
     // Compare passwords
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await this.passwordService.compare(password, user.password);
     if (!isMatch)
       throw new UnauthorizedException('Username or password is incorrect');
 
     // Sign JWT
-    const jwtSecret = this.configService.get<string>('JWT_SECRET');
-    if (!jwtSecret) {
-      throw new Error('JWT secret is not defined in configuration');
-    }
-
-    const token = jwt.sign({ userId: user.id }, jwtSecret, {
-      expiresIn: '1h',
-    });
+    const token = this.tokenService.generateToken({ userId: user.id }, '1h');
 
     // Return user data without password
     const { password: _, ...userWithoutPassword } = user;

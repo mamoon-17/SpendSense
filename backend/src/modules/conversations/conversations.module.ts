@@ -6,6 +6,7 @@ import { Conversation } from './conversations.entity';
 import { ConnectionsModule } from '../connections/connections.module';
 import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ConversationNotificationService } from './conversation-notification.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     NotificationsModule,
   ],
   controllers: [ConversationsController],
-  providers: [ConversationsService],
+  providers: [ConversationsService, ConversationNotificationService],
   exports: [ConversationsService],
 })
 export class ConversationsModule {}

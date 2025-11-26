@@ -3,10 +3,10 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
+  Inject,
 } from '@nestjs/common';
 import { Request } from 'express';
-import * as jwt from 'jsonwebtoken';
-import { ConfigService } from '@nestjs/config';
+import type { ITokenService } from 'src/common/interfaces/token.interface';
 
 // Extend the Request interface to include session and user
 interface RequestWithSession extends Request {
@@ -20,7 +20,10 @@ interface RequestWithSession extends Request {
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    @Inject('ITokenService')
+    private readonly tokenService: ITokenService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<RequestWithSession>();
@@ -34,12 +37,9 @@ export class AuthGuard implements CanActivate {
 
     try {
       // Verify and decode the JWT token
-      const jwtSecret = this.configService.get<string>('JWT_SECRET');
-      if (!jwtSecret) {
-        throw new UnauthorizedException('JWT secret is not configured');
-      }
-
-      const decoded = jwt.verify(token, jwtSecret) as { userId: string };
+      const decoded = this.tokenService.verifyToken(token) as {
+        userId: string;
+      };
 
       // Check that userId exists in the token payload
       if (!decoded.userId) {

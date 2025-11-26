@@ -5,10 +5,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Connection } from './connections.entity';
 import { ConversationsModule } from '../conversations/conversations.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ConnectionNotificationService } from './connection-notification.service';
 
 @Module({
   controllers: [ConnectionsController],
-  providers: [ConnectionsService],
+  providers: [ConnectionsService, ConnectionNotificationService],
   imports: [
     TypeOrmModule.forFeature([Connection]),
     forwardRef(() => ConversationsModule),

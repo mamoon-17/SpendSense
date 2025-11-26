@@ -11,7 +11,7 @@ import { CreateConversationDto } from './dtos/create-conversation.dto';
 import { ConnectionsService } from '../connections/connections.service';
 import { ConnectionStatus } from '../connections/connections.entity';
 import { UsersService } from '../users/users.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { ConversationNotificationService } from './conversation-notification.service';
 
 @Injectable()
 export class ConversationsService {
@@ -20,7 +20,7 @@ export class ConversationsService {
     private readonly conversationRepository: Repository<Conversation>,
     private readonly connectionsService: ConnectionsService,
     private readonly usersService: UsersService,
-    private readonly notificationsService: NotificationsService,
+    private readonly conversationNotificationService: ConversationNotificationService,
   ) {}
 
   async createConversation(
@@ -85,7 +85,7 @@ export class ConversationsService {
 
       for (const participant of participants) {
         if (participant.id !== creatorId) {
-          await this.notificationsService.notifyGroupAdded(
+          await this.conversationNotificationService.notifyGroupAdded(
             participant.id,
             name,
             creatorName,
