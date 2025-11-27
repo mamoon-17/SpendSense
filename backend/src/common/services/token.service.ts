@@ -12,7 +12,7 @@ export class TokenService implements ITokenService {
     if (!jwtSecret) {
       throw new Error('JWT secret is not defined in configuration');
     }
-    return jwt.sign(payload, jwtSecret, { expiresIn });
+    return jwt.sign(payload, jwtSecret, { expiresIn } as jwt.SignOptions);
   }
 
   verifyToken(token: string): any {
@@ -20,7 +20,7 @@ export class TokenService implements ITokenService {
     if (!jwtSecret) {
       throw new Error('JWT secret is not defined in configuration');
     }
-    return jwt.verify(token, jwtSecret);
+    return jwt.verify(token, jwtSecret) as jwt.JwtPayload;
   }
 
   decodeToken(token: string): any {

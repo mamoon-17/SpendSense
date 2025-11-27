@@ -97,8 +97,23 @@ export const Notifications: React.FC = () => {
 
   const formatTimestamp = (date: string) => {
     try {
-      return formatDistanceToNow(new Date(date), { addSuffix: true });
-    } catch {
+      // Ensure we're parsing the date correctly, handling potential timezone issues
+      const parsedDate = new Date(date);
+
+      // Check if the date is valid
+      if (isNaN(parsedDate.getTime())) {
+        console.warn("Invalid date received:", date);
+        return "Unknown time";
+      }
+
+      // Log for debugging (remove after fixing)
+      console.log("Original date string:", date);
+      console.log("Parsed date:", parsedDate);
+      console.log("Current time:", new Date());
+
+      return formatDistanceToNow(parsedDate, { addSuffix: true });
+    } catch (error) {
+      console.error("Error formatting timestamp:", error, "Date:", date);
       return "Unknown time";
     }
   };

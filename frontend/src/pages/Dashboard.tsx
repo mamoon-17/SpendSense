@@ -45,7 +45,13 @@ export const Dashboard: React.FC = () => {
 
   const { data: budgets } = useQuery({
     queryKey: ["budgets"],
-    queryFn: () => budgetAPI.getBudgets().then((res) => res.data),
+    queryFn: async () => {
+      const response = await budgetAPI.getBudgets();
+      return response.data;
+    },
+    staleTime: 30000, // Cache for 30 seconds
+    refetchOnWindowFocus: false,
+    refetchOnMount: true, // Always refetch when component mounts
   });
 
   const { data: expenses } = useQuery({

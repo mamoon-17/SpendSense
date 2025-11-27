@@ -98,4 +98,18 @@ export class BillsController {
   ) {
     return this.billsService.markPaymentAsPaid(billId, participantId, user.id);
   }
+
+  @Post(':id/request-payment')
+  async requestPayment(
+    @Param('id') billId: string,
+    @Body() payload: { userIds: string[]; message?: string },
+    @CurrentUser() user: any,
+  ) {
+    return this.billsService.requestPayment(
+      billId,
+      payload.userIds,
+      user.id,
+      payload.message,
+    );
+  }
 }

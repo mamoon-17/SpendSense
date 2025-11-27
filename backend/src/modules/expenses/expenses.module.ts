@@ -5,30 +5,20 @@ import { ExpensesService } from './expenses.service';
 import { Expense } from './expenses.entity';
 import { Category } from '../categories/categories.entity';
 import { UsersModule } from '../users/users.module';
-import { AuthGuard } from '../auth/auth.guard';
+import { AuthModule } from '../auth/auth.module';
 import { BudgetsModule } from '../budgets/budgets.module';
 import { Budget } from '../budgets/budgets.entity';
 import { ExpenseAnalyticsService } from './expense-analytics.service';
-import { TokenService } from 'src/common/services/token.service';
-import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Expense, Category, Budget]),
     UsersModule,
-    ConfigModule,
+    AuthModule,
     forwardRef(() => BudgetsModule),
   ],
   controllers: [ExpensesController],
-  providers: [
-    ExpensesService,
-    ExpenseAnalyticsService,
-    AuthGuard,
-    {
-      provide: 'ITokenService',
-      useClass: TokenService,
-    },
-  ],
+  providers: [ExpensesService, ExpenseAnalyticsService],
   exports: [ExpensesService],
 })
 export class ExpensesModule {}

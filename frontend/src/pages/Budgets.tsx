@@ -91,32 +91,41 @@ export const Budgets: React.FC = () => {
   });
 
   // Fetch budgets from API
-  const { data: budgets = [], refetch } = useQuery({
+  const {
+    data: budgets = [],
+    refetch,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["budgets"],
-    queryFn: () =>
-      budgetAPI.getBudgets().then((res) => {
-        // Transform snake_case API response to camelCase
-        return res.data.map((budget: any) => ({
-          ...budget,
-          totalAmount:
-            budget.totalAmount ??
-            (budget.total_amount ? parseFloat(budget.total_amount) : 0),
-          spent:
-            budget.spent ??
-            (budget.spent_amount ? parseFloat(budget.spent_amount) : 0),
-          remaining:
-            budget.remaining ??
-            (budget.total_amount && budget.spent_amount
-              ? parseFloat(budget.total_amount) -
-                parseFloat(budget.spent_amount)
-              : 0),
-          endDate: budget.endDate ?? budget.end_date,
-          category: budget.category?.name ?? budget.category ?? "Uncategorized",
-          participants: budget.participants ?? [],
-          // Use current user currency as fallback for old budgets without currency
-          currency: budget.currency ?? settings.currency,
-        }));
-      }),
+    queryFn: async () => {
+      const response = await budgetAPI.getBudgets();
+
+      // Transform snake_case API response to camelCase
+      return response.data.map((budget: any) => ({
+        ...budget,
+        totalAmount:
+          budget.totalAmount ??
+          (budget.total_amount ? parseFloat(budget.total_amount) : 0),
+        spent:
+          budget.spent ??
+          (budget.spent_amount ? parseFloat(budget.spent_amount) : 0),
+        remaining:
+          budget.remaining ??
+          (budget.total_amount && budget.spent_amount
+            ? parseFloat(budget.total_amount) - parseFloat(budget.spent_amount)
+            : 0),
+        endDate: budget.endDate ?? budget.end_date,
+        category: budget.category?.name ?? budget.category ?? "Uncategorized",
+        participants: budget.participants ?? [],
+        // Use current user currency as fallback for old budgets without currency
+        currency: budget.currency ?? settings.currency,
+      }));
+    },
+    staleTime: 30000, // Cache for 30 seconds
+    refetchOnWindowFocus: false,
+    retry: 3,
+    refetchOnMount: true, // Always refetch when component mounts
   });
 
   // Delete budget mutation
@@ -163,11 +172,25 @@ export const Budgets: React.FC = () => {
     return matchesSearch && matchesCategory && matchesPeriod;
   });
 
-  const totalBudgetAmount = budgets.reduce(
-    (sum, budget) =>
-      sum + convertAmount(budget.totalAmount ?? 0, budget.currency || "USD"),
-    0
-  );
+  // Debug: Log budget data
+  React.useEffect(() => {
+    console.log("Current budgets data:", budgets);
+    console.log("Budgets length:", budgets.length);
+    if (budgets.length > 0) {
+      console.log("Sample budget:", budgets[0]);
+    }
+  }, [budgets]);
+
+  const totalBudgetAmount = budgets.reduce((sum, budget) => {
+    const amount = convertAmount(
+      budget.totalAmount ?? 0,
+      budget.currency || "USD"
+    );
+    console.log(
+      `Budget ${budget.name}: totalAmount=${budget.totalAmount}, converted=${amount}`
+    );
+    return sum + amount;
+  }, 0);
   const totalSpent = budgets.reduce(
     (sum, budget) =>
       sum + convertAmount(budget.spent ?? 0, budget.currency || "USD"),
@@ -199,6 +222,51 @@ export const Budgets: React.FC = () => {
     }
   };
 
+  // Add loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Budget Management
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Create, track, and manage your budgets effectively
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-center items-center h-64">
+          <p className="text-muted-foreground">Loading budgets...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Add error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Budget Management
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Create, track, and manage your budgets effectively
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-center items-center h-64 flex-col gap-4">
+          <p className="text-destructive">
+            Error loading budgets: {error.message}
+          </p>
+          <Button onClick={() => refetch()}>Try Again</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -211,13 +279,25 @@ export const Budgets: React.FC = () => {
             Create, track, and manage your budgets effectively
           </p>
         </div>
-        <Button
-          className="btn-primary w-fit"
-          onClick={() => setIsCreateDialogOpen(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Budget
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ["budgets"] });
+              refetch();
+            }}
+            title="Refresh budget data"
+          >
+            ⟳ Refresh
+          </Button>
+          <Button
+            className="btn-primary w-fit"
+            onClick={() => setIsCreateDialogOpen(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Budget
+          </Button>
+        </div>
       </div>
 
       {/* Overview Cards */}
@@ -506,7 +586,8 @@ export const Budgets: React.FC = () => {
         onOpenChange={setIsCreateDialogOpen}
         budget={editingBudget}
         onSuccess={() => {
-          refetch();
+          // Invalidate all budget-related queries to ensure fresh data
+          queryClient.invalidateQueries({ queryKey: ["budgets"] });
           setEditingBudget(null);
         }}
       />

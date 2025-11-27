@@ -30,6 +30,22 @@ export class BillPaymentService {
     await this.billParticipantRepo.save(participantPayments);
   }
 
+  async createParticipantPaymentsWithAmounts(
+    billId: string,
+    participantPayments: { participantId: string; amount: number }[],
+  ): Promise<void> {
+    const paymentRecords = participantPayments.map((pp) => {
+      return this.billParticipantRepo.create({
+        bill: { id: billId } as any,
+        participant: { id: pp.participantId } as any,
+        amount_owed: pp.amount.toFixed(2),
+        is_paid: false,
+      });
+    });
+
+    await this.billParticipantRepo.save(paymentRecords);
+  }
+
   async markPaymentAsPaid(
     billId: string,
     participantId: string,
@@ -83,7 +99,7 @@ export class BillPaymentService {
       name: payment.participant.name,
       username: payment.participant.username,
       amount_owed: payment.amount_owed,
-      is_paid: payment.is_paid,
+      status: payment.is_paid ? 'paid' : 'pending',
       paid_at: payment.paid_at,
       payment_status: payment.is_paid ? 'Paid' : 'Pending',
     }));

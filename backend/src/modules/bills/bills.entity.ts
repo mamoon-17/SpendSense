@@ -16,6 +16,7 @@ export enum BillSplitType {
   EQUAL = 'equal',
   PERCENTAGE = 'percentage',
   MANUAL = 'manual',
+  CUSTOM = 'custom',
 }
 
 export enum BillStatus {

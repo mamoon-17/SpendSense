@@ -1,5 +1,6 @@
 import { Module, Global } from '@nestjs/common';
 import { EventBusService } from './event-bus.service';
+import { NotificationsModule } from '../../modules/notifications/notifications.module';
 import {
   BudgetExceededHandler,
   BudgetAlertHandler,
@@ -21,6 +22,7 @@ import {
  */
 @Global()
 @Module({
+  imports: [NotificationsModule],
   providers: [
     EventBusService,
     // Budget event handlers

@@ -212,4 +212,8 @@ export const billsAPI = {
   getBillWithPaymentDetails: (id: string) => api.get(`/bills/${id}/details`),
   markPaymentAsPaid: (billId: string, participantId: string) =>
     api.patch(`/bills/${billId}/payment/${participantId}/mark-paid`),
+  requestPayment: (
+    billId: string,
+    data: { userIds: string[]; message?: string }
+  ) => api.post(`/bills/${billId}/request-payment`, data),
 };

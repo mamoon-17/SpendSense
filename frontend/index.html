@@ -2,19 +2,65 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FinanceFlow - Smart Personal Finance</title>
-    <meta name="description" content="Take control of your financial future with FinanceFlow. Track expenses, manage budgets, and achieve savings goals with our comprehensive personal finance platform." />
-    <meta name="author" content="FinanceFlow" />
+    <title>SpendSense - Smart Personal Finance</title>
+    <meta
+      name="description"
+      content="Take control of your financial future with SpendSense. Track expenses, manage budgets, and achieve savings goals with our comprehensive personal finance platform."
+    />
+    <meta name="author" content="SpendSense" />
 
-    <meta property="og:title" content="FinanceFlow - Smart Personal Finance" />
-    <meta property="og:description" content="Take control of your financial future with FinanceFlow. Track expenses, manage budgets, and achieve savings goals with our comprehensive personal finance platform." />
+    <meta property="og:title" content="SpendSense - Smart Personal Finance" />
+    <meta
+      property="og:description"
+      content="Take control of your financial future with SpendSense. Track expenses, manage budgets, and achieve savings goals with our comprehensive personal finance platform."
+    />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta
+      property="og:image"
+      content="https://lovable.dev/opengraph-image-p98pqg.png"
+    />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta
+      name="twitter:image"
+      content="https://lovable.dev/opengraph-image-p98pqg.png"
+    />
+
+    <script>
+      // Set theme immediately before page loads to prevent flash
+      (function () {
+        const isAuthPage =
+          window.location.pathname === "/login" ||
+          window.location.pathname === "/register" ||
+          window.location.pathname === "/";
+
+        // Force light mode for auth pages
+        if (isAuthPage) {
+          document.documentElement.className = "light";
+          document.documentElement.style.colorScheme = "light";
+          document.documentElement.setAttribute("data-theme", "light");
+        } else {
+          const theme = localStorage.getItem("financeflow-theme") || "light";
+          document.documentElement.className = theme;
+          document.documentElement.style.colorScheme = theme;
+          document.documentElement.setAttribute("data-theme", theme);
+        }
+      })();
+    </script>
+
+    <style>
+      /* Force light mode styles for auth pages to prevent color flash */
+      html.light input,
+      html.light input::placeholder {
+        color: #111827 !important;
+      }
+      html.light input::placeholder {
+        opacity: 0.6;
+      }
+    </style>
   </head>
 
   <body>

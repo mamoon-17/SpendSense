@@ -99,7 +99,10 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-white">
+    <div
+      className="min-h-screen relative overflow-hidden bg-white"
+      style={{ colorScheme: "light" }}
+    >
       {/* Background Image with Gradient */}
       <div className="absolute inset-0">
         <img
@@ -133,8 +136,9 @@ export const Login: React.FC = () => {
                         {...register("username")}
                         type="text"
                         placeholder="Type your username"
-                        className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900 placeholder:text-gray-500"
                         disabled={isLoading}
+                        style={{ color: "#111827" }}
                       />
                     </div>
                     {errors.username && (
@@ -155,8 +159,9 @@ export const Login: React.FC = () => {
                         {...register("password")}
                         type={showPassword ? "text" : "password"}
                         placeholder="Type your password"
-                        className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900 placeholder:text-gray-500"
                         disabled={isLoading}
+                        style={{ color: "#111827" }}
                       />
                       <button
                         type="button"

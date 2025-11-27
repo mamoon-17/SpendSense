@@ -1,5 +1,6 @@
 import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useUserSettings } from "@/hooks/useUserSettings";
 
 interface Budget {
   id: string;
@@ -63,38 +64,95 @@ const COLORS = [
 export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
   budgets = mockBudgets,
 }) => {
+  const { formatCurrency, convertAmount } = useUserSettings();
+
+  // Custom tooltip component for better visibility and positioning
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      return (
+        <div
+          className="bg-gray-900 border-2 border-gray-700 rounded-lg p-4 shadow-2xl"
+          style={{
+            zIndex: 9999,
+            position: "relative",
+          }}
+        >
+          <p className="text-sm font-bold text-white mb-2">{data.name}</p>
+          <div className="space-y-1">
+            <p className="text-xs text-gray-300">
+              <span className="font-medium">Spent:</span>{" "}
+              <span className="text-primary font-bold text-base">
+                {formatCurrency(data.value, data.payload.currency || "USD")}
+              </span>
+            </p>
+            <p className="text-xs text-gray-300">
+              <span className="font-medium">Budget:</span>{" "}
+              <span className="text-white font-semibold">
+                {formatCurrency(
+                  data.payload.total,
+                  data.payload.currency || "USD"
+                )}
+              </span>
+            </p>
+            <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700">
+              {data.payload.percentage}% used
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const chartData = budgets.map((budget) => {
     // Handle both camelCase and snake_case from API
     const spent = budget.spent ?? (budget as any).spent_amount ?? 0;
     const totalAmount = budget.totalAmount ?? (budget as any).total_amount ?? 0;
+    const budgetCurrency = (budget as any).currency || "USD";
+
     const spentNum = typeof spent === "string" ? parseFloat(spent) : spent;
     const totalNum =
       typeof totalAmount === "string" ? parseFloat(totalAmount) : totalAmount;
+
+    // Convert to user's currency
+    const convertedSpent = convertAmount(spentNum, budgetCurrency);
+    const convertedTotal = convertAmount(totalNum, budgetCurrency);
+
     const percentage =
-      totalNum > 0 ? ((spentNum / totalNum) * 100).toFixed(1) : "0.0";
+      convertedTotal > 0
+        ? ((convertedSpent / convertedTotal) * 100).toFixed(1)
+        : "0.0";
 
     return {
       name: budget.name,
-      value: spentNum,
-      total: totalNum,
+      value: convertedSpent,
+      total: convertedTotal,
       percentage,
+      currency: budgetCurrency,
     };
   });
 
+  // Calculate total for center display
+  const totalSpent = chartData.reduce((sum, item) => sum + item.value, 0);
+  const totalBudget = chartData.reduce((sum, item) => sum + item.total, 0);
+
   return (
-    <div className="space-y-4">
-      {/* Pie Chart */}
-      <div className="h-64 w-full">
+    <div className="space-y-6">
+      {/* Pie Chart with improved spacing */}
+      <div className="h-72 w-full relative" style={{ zIndex: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+          <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
             <Pie
               data={chartData}
               cx="50%"
               cy="50%"
-              innerRadius={40}
-              outerRadius={80}
-              paddingAngle={2}
+              innerRadius={60}
+              outerRadius={95}
+              paddingAngle={3}
               dataKey="value"
+              strokeWidth={2}
+              stroke="hsl(var(--background))"
             >
               {chartData.map((entry, index) => (
                 <Cell
@@ -104,18 +162,30 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{
-                backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "calc(var(--radius) - 2px)",
+              content={<CustomTooltip />}
+              cursor={{ fill: "transparent" }}
+              wrapperStyle={{
+                zIndex: 9999,
+                outline: "none",
               }}
-              formatter={(value: number, name: string) => [
-                `$${value.toLocaleString()}`,
-                "Spent",
-              ]}
+              position={{ x: 0, y: 0 }}
+              allowEscapeViewBox={{ x: true, y: true }}
             />
           </PieChart>
         </ResponsiveContainer>
+
+        {/* Center Label */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <p className="text-xs text-muted-foreground font-medium">
+            Total Spent
+          </p>
+          <p className="text-2xl font-bold text-foreground mt-1">
+            {formatCurrency(totalSpent, "USD")}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            of {formatCurrency(totalBudget, "USD")}
+          </p>
+        </div>
       </div>
 
       {/* Budget List */}
@@ -125,13 +195,21 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
           const spent = budget.spent ?? (budget as any).spent_amount ?? 0;
           const totalAmount =
             budget.totalAmount ?? (budget as any).total_amount ?? 0;
+          const budgetCurrency = (budget as any).currency || "USD";
+
           const spentNum =
             typeof spent === "string" ? parseFloat(spent) : spent;
           const totalNum =
             typeof totalAmount === "string"
               ? parseFloat(totalAmount)
               : totalAmount;
-          const percentage = totalNum > 0 ? (spentNum / totalNum) * 100 : 0;
+
+          // Convert to user's currency
+          const convertedSpent = convertAmount(spentNum, budgetCurrency);
+          const convertedTotal = convertAmount(totalNum, budgetCurrency);
+
+          const percentage =
+            convertedTotal > 0 ? (convertedSpent / convertedTotal) * 100 : 0;
           const isOverBudget = percentage > 100;
 
           return (
@@ -151,7 +229,8 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
                     isOverBudget ? "text-destructive" : "text-muted-foreground"
                   }`}
                 >
-                  ${spentNum.toLocaleString()} / ${totalNum.toLocaleString()}
+                  {formatCurrency(convertedSpent, budgetCurrency)} /{" "}
+                  {formatCurrency(convertedTotal, budgetCurrency)}
                 </span>
               </div>
 
@@ -172,7 +251,11 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({
                 </span>
                 {isOverBudget && (
                   <span className="text-xs text-destructive font-medium">
-                    Over budget by ${(spentNum - totalNum).toLocaleString()}
+                    Over budget by{" "}
+                    {formatCurrency(
+                      convertedSpent - convertedTotal,
+                      budgetCurrency
+                    )}
                   </span>
                 )}
               </div>

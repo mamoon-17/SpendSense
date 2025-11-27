@@ -110,7 +110,10 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-white">
+    <div
+      className="min-h-screen relative overflow-hidden bg-white"
+      style={{ colorScheme: "light" }}
+    >
       {/* Background Image with Gradient - Landscape Layout */}
       <div className="absolute inset-0">
         <img
@@ -149,8 +152,9 @@ export const Register: React.FC = () => {
                         {...register("name")}
                         type="text"
                         placeholder="Enter your full name"
-                        className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900 placeholder:text-gray-500"
                         disabled={isLoading}
+                        style={{ color: "#111827" }}
                       />
                     </div>
                     {errors.name && (
@@ -171,8 +175,9 @@ export const Register: React.FC = () => {
                         {...register("username")}
                         type="text"
                         placeholder="Enter your username"
-                        className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900 placeholder:text-gray-500"
                         disabled={isLoading}
+                        style={{ color: "#111827" }}
                       />
                     </div>
                     {errors.username && (
@@ -193,8 +198,9 @@ export const Register: React.FC = () => {
                         {...register("password")}
                         type={showPassword ? "text" : "password"}
                         placeholder="Create a strong password"
-                        className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900 placeholder:text-gray-500"
                         disabled={isLoading}
+                        style={{ color: "#111827" }}
                       />
                       <button
                         type="button"
@@ -227,8 +233,9 @@ export const Register: React.FC = () => {
                         {...register("confirmPassword")}
                         type={showConfirmPassword ? "text" : "password"}
                         placeholder="Confirm your password"
-                        className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900 placeholder:text-gray-500"
                         disabled={isLoading}
+                        style={{ color: "#111827" }}
                       />
                       <button
                         type="button"

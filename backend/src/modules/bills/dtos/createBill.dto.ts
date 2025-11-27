@@ -42,4 +42,12 @@ export class CreateBillDTO {
   @IsString()
   @IsOptional()
   currency?: string;
+
+  @IsArray()
+  @IsOptional()
+  percentages?: number[];
+
+  @IsArray()
+  @IsOptional()
+  custom_amounts?: number[];
 }

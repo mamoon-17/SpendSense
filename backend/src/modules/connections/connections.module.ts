@@ -4,12 +4,14 @@ import { ConnectionsService } from './connections.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Connection } from './connections.entity';
 import { ConversationsModule } from '../conversations/conversations.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   controllers: [ConnectionsController],
   providers: [ConnectionsService],
   imports: [
     TypeOrmModule.forFeature([Connection]),
+    AuthModule,
     forwardRef(() => ConversationsModule),
   ],
   exports: [ConnectionsService],

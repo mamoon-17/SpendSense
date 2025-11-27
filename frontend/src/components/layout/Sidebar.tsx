@@ -100,8 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           {!collapsed && (
             <div>
-              <h2 className="font-bold text-lg text-foreground">FinanceFlow</h2>
-              <p className="text-sm text-muted-foreground">Personal Finance</p>
+              <h2 className="font-bold text-lg text-foreground">SpendSense</h2>
             </div>
           )}
         </div>

@@ -113,7 +113,20 @@ export const Bills: React.FC = () => {
     due_date: "",
     category_id: "",
     participant_ids: [] as string[],
+    percentages: [] as number[],
+    custom_amounts: [] as number[],
   });
+  const [isRequestPaymentOpen, setIsRequestPaymentOpen] = useState(false);
+  const [selectedBillForRequest, setSelectedBillForRequest] = useState<
+    string | null
+  >(null);
+  const [selectedUsersForRequest, setSelectedUsersForRequest] = useState<
+    string[]
+  >([]);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedBillForEdit, setSelectedBillForEdit] = useState<Bill | null>(
+    null
+  );
 
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -128,9 +141,15 @@ export const Bills: React.FC = () => {
     queryKey: ["bills"],
     queryFn: async () => {
       const response = await billsAPI.getBills();
-      return response.data.map((bill: Bill) => ({
+      return response.data.map((bill: any) => ({
         ...bill,
         currency: bill.currency || settings.currency,
+        participants: bill.participants.map((participant: any) => ({
+          ...participant,
+          amount: participant.amount_owed
+            ? parseFloat(participant.amount_owed)
+            : 0,
+        })),
       })) as Bill[];
     },
   });
@@ -181,6 +200,81 @@ export const Bills: React.FC = () => {
     },
   });
 
+  // Send payment request mutation
+  const sendPaymentRequestMutation = useMutation({
+    mutationFn: ({
+      billId,
+      userIds,
+      message,
+    }: {
+      billId: string;
+      userIds: string[];
+      message?: string;
+    }) => billsAPI.requestPayment(billId, { userIds, message }),
+    onSuccess: () => {
+      toast({
+        title: "Payment request sent!",
+        description:
+          "Selected users will receive a notification about the payment request.",
+      });
+      setIsRequestPaymentOpen(false);
+      setSelectedBillForRequest(null);
+      setSelectedUsersForRequest([]);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send payment request. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mark payment as paid mutation
+  const markPaymentPaidMutation = useMutation({
+    mutationFn: ({
+      billId,
+      participantId,
+    }: {
+      billId: string;
+      participantId: string;
+    }) => billsAPI.markPaymentAsPaid(billId, participantId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      toast({
+        title: "Payment marked as paid!",
+        description: "Your payment status has been updated.",
+      });
+      setIsEditDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to mark payment as paid. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete bill mutation
+  const deleteBillMutation = useMutation({
+    mutationFn: (billId: string) => billsAPI.deleteBill(billId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      toast({
+        title: "Bill deleted successfully",
+        description: "The bill has been removed from your list.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete bill. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -190,6 +284,8 @@ export const Bills: React.FC = () => {
       due_date: "",
       category_id: "",
       participant_ids: [],
+      percentages: [],
+      custom_amounts: [],
     });
   };
 
@@ -214,12 +310,37 @@ export const Bills: React.FC = () => {
   };
 
   const toggleParticipant = (userId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      participant_ids: prev.participant_ids.includes(userId)
-        ? prev.participant_ids.filter((id) => id !== userId)
-        : [...prev.participant_ids, userId],
-    }));
+    setFormData((prev) => {
+      const currentIndex = prev.participant_ids.indexOf(userId);
+
+      if (currentIndex >= 0) {
+        // Remove participant
+        const newParticipantIds = prev.participant_ids.filter(
+          (id) => id !== userId
+        );
+        const newPercentages = [...prev.percentages];
+        const newCustomAmounts = [...prev.custom_amounts];
+
+        // Remove the corresponding percentage/amount
+        newPercentages.splice(currentIndex, 1);
+        newCustomAmounts.splice(currentIndex, 1);
+
+        return {
+          ...prev,
+          participant_ids: newParticipantIds,
+          percentages: newPercentages,
+          custom_amounts: newCustomAmounts,
+        };
+      } else {
+        // Add participant
+        return {
+          ...prev,
+          participant_ids: [...prev.participant_ids, userId],
+          percentages: [...prev.percentages, 0], // Default to 0%
+          custom_amounts: [...prev.custom_amounts, 0], // Default to $0
+        };
+      }
+    });
   };
 
   const filteredBills = bills.filter((bill) => {
@@ -377,7 +498,21 @@ export const Bills: React.FC = () => {
                 <TabsTrigger value="history">History</TabsTrigger>
               </TabsList>
 
-              <Button className="btn-success">
+              <Button
+                className="btn-success"
+                onClick={() => {
+                  if (bills.length === 0) {
+                    toast({
+                      title: "No bills available",
+                      description:
+                        "Create a bill first before requesting payment.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  setIsRequestPaymentOpen(true);
+                }}
+              >
                 <Share2 className="w-4 h-4 mr-2" />
                 Request Payment
               </Button>
@@ -488,13 +623,39 @@ export const Bills: React.FC = () => {
                           </div>
 
                           <div className="flex items-center space-x-2">
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedBillForEdit(bill);
+                                setIsEditDialogOpen(true);
+                              }}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-destructive hover:text-destructive"
+                              disabled={
+                                bill.created_by.id !== user?.id ||
+                                deleteBillMutation.isPending
+                              }
+                              className={
+                                bill.created_by.id === user?.id
+                                  ? "text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  : "text-muted-foreground cursor-not-allowed"
+                              }
+                              onClick={() => {
+                                if (bill.created_by.id === user?.id) {
+                                  if (
+                                    confirm(
+                                      `Are you sure you want to delete "${bill.name}"? This action cannot be undone.`
+                                    )
+                                  ) {
+                                    deleteBillMutation.mutate(bill.id);
+                                  }
+                                }
+                              }}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -845,53 +1006,188 @@ export const Bills: React.FC = () => {
                       return (
                         <div
                           key={otherUser.id}
-                          onClick={() => toggleParticipant(otherUser.id)}
                           className={cn(
-                            "flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors",
+                            "p-3 rounded-lg transition-colors",
                             isSelected
                               ? "bg-primary/10 border-2 border-primary"
                               : "bg-muted/30 hover:bg-muted/50 border-2 border-transparent"
                           )}
                         >
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="w-8 h-8">
-                              <AvatarFallback>
-                                {otherUser.name?.charAt(0) ||
-                                  otherUser.username?.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium">
-                                {otherUser.name || otherUser.username}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                @{otherUser.username}
-                              </p>
+                          <div className="flex items-center justify-between">
+                            <div
+                              className="flex items-center space-x-3 cursor-pointer flex-1"
+                              onClick={() => toggleParticipant(otherUser.id)}
+                            >
+                              <Avatar className="w-8 h-8">
+                                <AvatarFallback>
+                                  {otherUser.name?.charAt(0) ||
+                                    otherUser.username?.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="text-sm font-medium">
+                                  {otherUser.name || otherUser.username}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  @{otherUser.username}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              {isSelected &&
+                                formData.split_type === "percentage" && (
+                                  <div
+                                    className="flex items-center space-x-2"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Input
+                                      type="number"
+                                      placeholder="0"
+                                      min="0"
+                                      max="100"
+                                      step="0.1"
+                                      className="w-16 h-8"
+                                      value={
+                                        formData.percentages[
+                                          formData.participant_ids.indexOf(
+                                            otherUser.id
+                                          )
+                                        ] || ""
+                                      }
+                                      onChange={(e) => {
+                                        const index =
+                                          formData.participant_ids.indexOf(
+                                            otherUser.id
+                                          );
+                                        const newPercentages = [
+                                          ...formData.percentages,
+                                        ];
+                                        newPercentages[index] =
+                                          parseFloat(e.target.value) || 0;
+                                        setFormData({
+                                          ...formData,
+                                          percentages: newPercentages,
+                                        });
+                                      }}
+                                    />
+                                    <span className="text-xs text-muted-foreground">
+                                      %
+                                    </span>
+                                  </div>
+                                )}
+
+                              {isSelected &&
+                                formData.split_type === "manual" && (
+                                  <div
+                                    className="flex items-center space-x-2"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Input
+                                      type="number"
+                                      placeholder="0.00"
+                                      min="0"
+                                      step="0.01"
+                                      className="w-20 h-8"
+                                      value={
+                                        formData.custom_amounts[
+                                          formData.participant_ids.indexOf(
+                                            otherUser.id
+                                          )
+                                        ] || ""
+                                      }
+                                      onChange={(e) => {
+                                        const index =
+                                          formData.participant_ids.indexOf(
+                                            otherUser.id
+                                          );
+                                        const newAmounts = [
+                                          ...formData.custom_amounts,
+                                        ];
+                                        newAmounts[index] =
+                                          parseFloat(e.target.value) || 0;
+                                        setFormData({
+                                          ...formData,
+                                          custom_amounts: newAmounts,
+                                        });
+                                      }}
+                                    />
+                                    <span className="text-xs text-muted-foreground">
+                                      {getCurrencySymbol()}
+                                    </span>
+                                  </div>
+                                )}
+
+                              {isSelected && (
+                                <CheckCircle className="w-5 h-5 text-primary" />
+                              )}
                             </div>
                           </div>
-                          {isSelected && (
-                            <CheckCircle className="w-5 h-5 text-primary" />
-                          )}
                         </div>
                       );
                     })
                   )}
                 </div>
                 {formData.participant_ids.length > 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    {formData.participant_ids.length} participant(s) selected
-                    {formData.total_amount &&
-                      formData.split_type === "equal" && (
-                        <span className="ml-2">
-                          (
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>
+                      {formData.participant_ids.length} participant(s) selected
+                      {formData.total_amount &&
+                        formData.split_type === "equal" && (
+                          <span className="ml-2">
+                            (
+                            {formatAmount(
+                              parseFloat(formData.total_amount) /
+                                formData.participant_ids.length
+                            )}{" "}
+                            each)
+                          </span>
+                        )}
+                    </p>
+
+                    {formData.split_type === "percentage" && (
+                      <p className="text-xs">
+                        Total:{" "}
+                        {formData.percentages
+                          .reduce((sum, p) => sum + (p || 0), 0)
+                          .toFixed(1)}
+                        %
+                        {formData.percentages.reduce(
+                          (sum, p) => sum + (p || 0),
+                          0
+                        ) !== 100 && (
+                          <span className="text-warning ml-2">
+                            ⚠️ Should total 100%
+                          </span>
+                        )}
+                      </p>
+                    )}
+
+                    {formData.split_type === "manual" &&
+                      formData.total_amount && (
+                        <p className="text-xs">
+                          Total:{" "}
                           {formatAmount(
-                            parseFloat(formData.total_amount) /
-                              formData.participant_ids.length
-                          )}{" "}
-                          each)
-                        </span>
+                            formData.custom_amounts.reduce(
+                              (sum, a) => sum + (a || 0),
+                              0
+                            )
+                          )}
+                          {" / " +
+                            formatAmount(parseFloat(formData.total_amount))}
+                          {Math.abs(
+                            formData.custom_amounts.reduce(
+                              (sum, a) => sum + (a || 0),
+                              0
+                            ) - parseFloat(formData.total_amount)
+                          ) > 0.01 && (
+                            <span className="text-warning ml-2">
+                              ⚠️ Should match total amount
+                            </span>
+                          )}
+                        </p>
                       )}
-                  </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -912,6 +1208,353 @@ export const Bills: React.FC = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request Payment Dialog */}
+      <Dialog
+        open={isRequestPaymentOpen}
+        onOpenChange={setIsRequestPaymentOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-success" />
+              Request Payment
+            </DialogTitle>
+            <DialogDescription>
+              Select a bill and choose users to request payment from.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Bill Selection */}
+            <div>
+              <Label htmlFor="bill-select">Select Bill</Label>
+              <Select
+                value={selectedBillForRequest || ""}
+                onValueChange={setSelectedBillForRequest}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a bill" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bills
+                    .filter((bill) => bill.status !== "completed")
+                    .map((bill) => (
+                      <SelectItem key={bill.id} value={bill.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{bill.name}</span>
+                          <span className="text-sm text-muted-foreground ml-2">
+                            {formatAmount(
+                              parseFloat(bill.total_amount),
+                              bill.currency
+                            )}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* User Selection */}
+            {selectedBillForRequest &&
+              (() => {
+                const selectedBill = bills.find(
+                  (b) => b.id === selectedBillForRequest
+                );
+                const allParticipants = selectedBill?.participants || [];
+                // Filter out the current user from the participants list
+                const billParticipants = allParticipants.filter(
+                  (participant: any) => participant.id !== user?.id
+                );
+
+                return (
+                  <div>
+                    <Label>Select Users to Request Payment From</Label>
+                    <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
+                      {billParticipants.length === 0 ? (
+                        <p className="text-sm text-muted-foreground p-3 text-center border rounded">
+                          {allParticipants.length === 0
+                            ? "No participants found for this bill"
+                            : "No other participants to request payment from"}
+                        </p>
+                      ) : (
+                        billParticipants.map((participant: any) => (
+                          <div
+                            key={participant.id}
+                            className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-accent cursor-pointer"
+                            onClick={() => {
+                              setSelectedUsersForRequest((prev) =>
+                                prev.includes(participant.id)
+                                  ? prev.filter((id) => id !== participant.id)
+                                  : [...prev, participant.id]
+                              );
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedUsersForRequest.includes(
+                                participant.id
+                              )}
+                              onChange={() => {}}
+                              className="rounded"
+                            />
+                            <Avatar className="w-8 h-8">
+                              <AvatarFallback className="text-xs">
+                                {participant.name?.charAt(0) ||
+                                  participant.username?.charAt(0) ||
+                                  participant.email?.charAt(0) ||
+                                  "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">
+                                {participant.name ||
+                                  participant.username ||
+                                  participant.email ||
+                                  "Unknown User"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Click to select for payment request
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+            {/* Optional Message */}
+            <div>
+              <Label htmlFor="request-message">Message (Optional)</Label>
+              <Textarea
+                id="request-message"
+                placeholder="Add a message for the payment request..."
+                className="resize-none"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsRequestPaymentOpen(false);
+                setSelectedBillForRequest(null);
+                setSelectedUsersForRequest([]);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="btn-success"
+              disabled={
+                !selectedBillForRequest ||
+                selectedUsersForRequest.length === 0 ||
+                sendPaymentRequestMutation.isPending
+              }
+              onClick={() => {
+                if (
+                  selectedBillForRequest &&
+                  selectedUsersForRequest.length > 0
+                ) {
+                  const message = (
+                    document.getElementById(
+                      "request-message"
+                    ) as HTMLTextAreaElement
+                  )?.value;
+                  sendPaymentRequestMutation.mutate({
+                    billId: selectedBillForRequest,
+                    userIds: selectedUsersForRequest,
+                    message,
+                  });
+                }
+              }}
+            >
+              {sendPaymentRequestMutation.isPending ? (
+                <>
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Send Request ({selectedUsersForRequest.length})
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Bill Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5 text-primary" />
+              Payment Status for "{selectedBillForEdit?.name}"
+            </DialogTitle>
+            <DialogDescription>
+              Mark your payment as completed for this bill.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedBillForEdit && (
+            <div className="space-y-4">
+              {/* Bill Details */}
+              <div className="p-4 bg-accent rounded-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-semibold">{selectedBillForEdit.name}</h4>
+                  <Badge variant="secondary">
+                    {selectedBillForEdit.split_type_display ||
+                      selectedBillForEdit.split_type}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {selectedBillForEdit.description}
+                </p>
+                <div className="flex justify-between items-center text-sm">
+                  <span>Total Amount:</span>
+                  <span className="font-semibold">
+                    {formatAmount(
+                      parseFloat(selectedBillForEdit.total_amount),
+                      selectedBillForEdit.currency
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span>Due Date:</span>
+                  <span>{formatDate(selectedBillForEdit.due_date)}</span>
+                </div>
+              </div>
+
+              {/* Current User's Participation */}
+              {(() => {
+                const currentUserParticipation =
+                  selectedBillForEdit.participants?.find(
+                    (p: any) => p.id === user?.id
+                  );
+
+                if (!currentUserParticipation) {
+                  return (
+                    <div className="text-center p-4 text-muted-foreground">
+                      You are not a participant in this bill.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback>
+                            {user?.name?.charAt(0) ||
+                              user?.username?.charAt(0) ||
+                              "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">
+                            {user?.name || user?.username}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Your portion
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          {formatAmount(
+                            parseFloat(
+                              currentUserParticipation.amount_owed || "0"
+                            ),
+                            selectedBillForEdit.currency
+                          )}
+                        </p>
+                        <Badge
+                          variant={
+                            currentUserParticipation.is_paid
+                              ? "success"
+                              : "warning"
+                          }
+                          className="text-xs"
+                        >
+                          {currentUserParticipation.is_paid
+                            ? "Paid"
+                            : "Pending"}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {!currentUserParticipation.is_paid && (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800 flex items-center">
+                          <AlertCircle className="w-4 h-4 mr-2 text-yellow-600" />
+                          Mark this payment as completed once you've paid your
+                          portion.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            {selectedBillForEdit &&
+              (() => {
+                const currentUserParticipation =
+                  selectedBillForEdit.participants?.find(
+                    (p: any) => p.id === user?.id
+                  );
+
+                if (
+                  !currentUserParticipation ||
+                  currentUserParticipation.is_paid
+                ) {
+                  return null;
+                }
+
+                return (
+                  <Button
+                    className="btn-success"
+                    disabled={markPaymentPaidMutation.isPending}
+                    onClick={() => {
+                      markPaymentPaidMutation.mutate({
+                        billId: selectedBillForEdit.id,
+                        participantId: currentUserParticipation.id,
+                      });
+                    }}
+                  >
+                    {markPaymentPaidMutation.isPending ? (
+                      <>
+                        <Clock className="w-4 h-4 mr-2 animate-spin" />
+                        Marking as Paid...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Mark as Paid
+                      </>
+                    )}
+                  </Button>
+                );
+              })()}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -18,9 +18,17 @@ export class PercentageSplitStrategy implements IBillSplitStrategy {
     participantCount: number,
     percentages?: number[],
   ): number {
-    // For now, default to equal split
-    // Implementation can be extended when percentage data is provided
+    // If percentages are provided, use them; otherwise default to equal split
+    if (percentages && percentages.length > 0) {
+      // This will be called for each participant with their individual percentage
+      // The calling code needs to handle per-participant calculation
+      return totalAmount / participantCount; // Fallback
+    }
     return totalAmount / participantCount;
+  }
+
+  calculateIndividualAmount(totalAmount: number, percentage: number): number {
+    return (totalAmount * percentage) / 100;
   }
 }
 
@@ -30,8 +38,12 @@ export class ManualSplitStrategy implements IBillSplitStrategy {
     participantCount: number,
     amounts?: number[],
   ): number {
-    // For now, default to equal split
-    // Implementation can be extended when manual amounts are provided
+    // If custom amounts are provided, use them; otherwise default to equal split
+    if (amounts && amounts.length > 0) {
+      // This will be called for each participant with their individual amount
+      // The calling code needs to handle per-participant calculation
+      return totalAmount / participantCount; // Fallback
+    }
     return totalAmount / participantCount;
   }
 }
