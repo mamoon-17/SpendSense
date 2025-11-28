@@ -218,7 +218,6 @@ export class BillsService {
             amount = totalAmount / participantCount; // Default to equal if no percentage provided
           }
           break;
-        case 'custom':
         case 'manual':
           if (
             payload.custom_amounts &&
@@ -226,7 +225,7 @@ export class BillsService {
           ) {
             amount = payload.custom_amounts[index];
           } else {
-            amount = totalAmount / participantCount; // Default to equal if no custom amount provided
+            amount = totalAmount / participantCount; // Default to equal if no manual amount provided
           }
           break;
         case 'equal':

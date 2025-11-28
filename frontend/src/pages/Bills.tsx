@@ -123,7 +123,7 @@ export const Bills: React.FC = () => {
     string[]
   >([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedBillForEdit, setSelectedBillForEdit] = useState<Bill | null>(
+  const [selectedBillIdForEdit, setSelectedBillIdForEdit] = useState<string | null>(
     null
   );
 
@@ -152,6 +152,11 @@ export const Bills: React.FC = () => {
       })) as Bill[];
     },
   });
+  
+  // Get the current bill data from the bills array (ensures fresh data)
+  const selectedBillForEdit = selectedBillIdForEdit
+    ? bills.find(b => b.id === selectedBillIdForEdit) || null
+    : null;
 
   // Fetch categories for the form
   const { data: categories = [] } = useQuery({
@@ -237,13 +242,14 @@ export const Bills: React.FC = () => {
       billId: string;
       participantId: string;
     }) => billsAPI.markPaymentAsPaid(billId, participantId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["bills"] });
+    onSuccess: async () => {
+      // Invalidate and refetch bills - the modal will automatically update via selectedBillForEdit computed value
+      await queryClient.invalidateQueries({ queryKey: ["bills"] });
+      
       toast({
         title: "Payment marked as paid!",
         description: "Your payment status has been updated.",
       });
-      setIsEditDialogOpen(false);
     },
     onError: () => {
       toast({
@@ -625,7 +631,7 @@ export const Bills: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                setSelectedBillForEdit(bill);
+                                setSelectedBillIdForEdit(bill.id);
                                 setIsEditDialogOpen(true);
                               }}
                             >
@@ -1441,19 +1447,19 @@ export const Bills: React.FC = () => {
                         </p>
                         <Badge
                           className={`text-xs ${
-                            (currentUserParticipation as any).is_paid
+                            ((currentUserParticipation as any).status === 'paid')
                               ? "bg-success/10 text-success border-success/20"
                               : "bg-warning/10 text-warning border-warning/20"
                           }`}
                         >
-                          {(currentUserParticipation as any).is_paid
+                          {(currentUserParticipation as any).status === 'paid'
                             ? "Paid"
                             : "Pending"}
                         </Badge>
                       </div>
                     </div>
 
-                    {!(currentUserParticipation as any).is_paid && (
+                    {(currentUserParticipation as any).status !== 'paid' && (
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p className="text-sm text-yellow-800 flex items-center">
                           <AlertCircle className="w-4 h-4 mr-2 text-yellow-600" />
@@ -1482,28 +1488,34 @@ export const Bills: React.FC = () => {
                     (p: any) => p.id === user?.id
                   );
 
-                if (
-                  !currentUserParticipation ||
-                  (currentUserParticipation as any).is_paid
-                ) {
+                if (!currentUserParticipation) {
                   return null;
                 }
+
+                const isAlreadyPaid = (currentUserParticipation as any).status === 'paid';
 
                 return (
                   <Button
                     className="btn-success"
-                    disabled={markPaymentPaidMutation.isPending}
+                    disabled={isAlreadyPaid || markPaymentPaidMutation.isPending}
                     onClick={() => {
-                      markPaymentPaidMutation.mutate({
-                        billId: selectedBillForEdit.id,
-                        participantId: currentUserParticipation.id,
-                      });
+                      if (!isAlreadyPaid) {
+                        markPaymentPaidMutation.mutate({
+                          billId: selectedBillForEdit.id,
+                          participantId: currentUserParticipation.id,
+                        });
+                      }
                     }}
                   >
                     {markPaymentPaidMutation.isPending ? (
                       <>
                         <Clock className="w-4 h-4 mr-2 animate-spin" />
                         Marking as Paid...
+                      </>
+                    ) : isAlreadyPaid ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Already Paid
                       </>
                     ) : (
                       <>
