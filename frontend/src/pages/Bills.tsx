@@ -9,7 +9,6 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Split,
   Share2,
   Edit,
   Trash2,
@@ -86,7 +85,7 @@ interface Bill {
   status: "pending" | "partial" | "completed";
   category: Category;
   created_by: User;
-  participants: User[];
+  participants: Participant[];
   participant_count?: number;
   payment_progress?: string;
   currency?: string;
@@ -180,7 +179,6 @@ export const Bills: React.FC = () => {
       billsAPI.createBill({
         ...data,
         total_amount: parseFloat(data.total_amount),
-        currency: settings.currency,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
@@ -804,41 +802,7 @@ export const Bills: React.FC = () => {
 
         {/* Right Sidebar */}
         <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center">
-                <Split className="w-4 h-4 mr-2" />
-                Quick Split
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-              >
-                <Receipt className="w-4 h-4 mr-2" />
-                Split Receipt
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Equal Split
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-              >
-                <DollarSign className="w-4 h-4 mr-2" />
-                Custom Amount
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Quick Split removed - layout adjusted */}
 
           {/* Recent Activity */}
           <Card className="card-financial">
@@ -1247,8 +1211,7 @@ export const Bills: React.FC = () => {
                           <span>{bill.name}</span>
                           <span className="text-sm text-muted-foreground ml-2">
                             {formatAmount(
-                              parseFloat(bill.total_amount),
-                              bill.currency
+                              parseFloat(bill.total_amount)
                             )}
                           </span>
                         </div>
@@ -1423,8 +1386,7 @@ export const Bills: React.FC = () => {
                   <span>Total Amount:</span>
                   <span className="font-semibold">
                     {formatAmount(
-                      parseFloat(selectedBillForEdit.total_amount),
-                      selectedBillForEdit.currency
+                      parseFloat(selectedBillForEdit.total_amount)
                     )}
                   </span>
                 </div>
@@ -1456,13 +1418,13 @@ export const Bills: React.FC = () => {
                         <Avatar className="w-8 h-8">
                           <AvatarFallback>
                             {user?.name?.charAt(0) ||
-                              user?.username?.charAt(0) ||
+                              (user as any)?.username?.charAt(0) ||
                               "U"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium">
-                            {user?.name || user?.username}
+                            {user?.name || (user as any)?.username}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             Your portion
@@ -1473,27 +1435,25 @@ export const Bills: React.FC = () => {
                         <p className="font-semibold">
                           {formatAmount(
                             parseFloat(
-                              currentUserParticipation.amount_owed || "0"
-                            ),
-                            selectedBillForEdit.currency
+                              (currentUserParticipation as any).amount_owed || "0"
+                            )
                           )}
                         </p>
                         <Badge
-                          variant={
-                            currentUserParticipation.is_paid
-                              ? "success"
-                              : "warning"
-                          }
-                          className="text-xs"
+                          className={`text-xs ${
+                            (currentUserParticipation as any).is_paid
+                              ? "bg-success/10 text-success border-success/20"
+                              : "bg-warning/10 text-warning border-warning/20"
+                          }`}
                         >
-                          {currentUserParticipation.is_paid
+                          {(currentUserParticipation as any).is_paid
                             ? "Paid"
                             : "Pending"}
                         </Badge>
                       </div>
                     </div>
 
-                    {!currentUserParticipation.is_paid && (
+                    {!(currentUserParticipation as any).is_paid && (
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p className="text-sm text-yellow-800 flex items-center">
                           <AlertCircle className="w-4 h-4 mr-2 text-yellow-600" />
@@ -1524,7 +1484,7 @@ export const Bills: React.FC = () => {
 
                 if (
                   !currentUserParticipation ||
-                  currentUserParticipation.is_paid
+                  (currentUserParticipation as any).is_paid
                 ) {
                   return null;
                 }
