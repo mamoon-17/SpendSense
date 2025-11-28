@@ -470,10 +470,6 @@ export const Bills: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Receipt className="w-4 h-4 mr-2" />
-            Scan Receipt
-          </Button>
           <Button className="btn-primary" onClick={() => setIsDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Split Bill
