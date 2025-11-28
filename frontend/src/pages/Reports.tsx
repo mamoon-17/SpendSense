@@ -666,48 +666,59 @@ export const Reports: React.FC = () => {
   const isLoading = isLoadingExpenses || isLoadingBudgets || isLoadingGoals;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Financial Reports
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Comprehensive insights into your financial health
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handlePreview}>
-            <Eye className="w-4 h-4 mr-2" />
-            Preview
-          </Button>
-          <Button
-            className="btn-primary"
-            onClick={handleExportPDF}
-            disabled={isExporting}
-          >
-            {isExporting ? (
-              <>
-                <Printer className="w-4 h-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 mr-2" />
-                Export PDF
-              </>
-            )}
-          </Button>
+    <div className="space-y-8 p-2">
+      {/* Header with Blue/Slate Gradient */}
+      <div className="bg-gradient-to-r from-slate-50 via-sky-50 to-indigo-50 dark:from-slate-900/40 dark:via-sky-950/30 dark:to-indigo-950/30 rounded-2xl p-8 shadow-sm border border-sky-100/50 dark:border-sky-900/30">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-sky-500/10 dark:bg-sky-500/20 rounded-xl">
+                <BarChart3 className="w-8 h-8 text-sky-600 dark:text-sky-400" />
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-sky-700 to-indigo-600 dark:from-sky-300 dark:to-indigo-300 bg-clip-text text-transparent">
+                Financial Reports
+              </h1>
+            </div>
+            <p className="text-muted-foreground ml-20 text-base">
+              Comprehensive insights into your financial health
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={handlePreview}
+              className="border-sky-200 hover:bg-sky-50 dark:border-sky-800 dark:hover:bg-sky-950/50"
+            >
+              <Eye className="w-5 h-5 mr-2" />
+              Preview
+            </Button>
+            <Button
+              className="bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 shadow-md h-11 px-6"
+              onClick={handleExportPDF}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <Printer className="w-5 h-5 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Download className="w-5 h-5 mr-2" />
+                  Export PDF
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Report Controls */}
-      <Card className="card-financial">
+      {/* Report Controls with Sky Theme */}
+      <Card className="border-sky-100/50 dark:border-sky-900/20 shadow-sm bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <Select value={reportPeriod} onValueChange={setReportPeriod}>
-              <SelectTrigger className="w-full md:w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px] border-sky-200 dark:border-sky-900/50">
                 <SelectValue placeholder="Time Period" />
               </SelectTrigger>
               <SelectContent>
@@ -719,7 +730,7 @@ export const Reports: React.FC = () => {
             </Select>
 
             <Select value="spending" disabled>
-              <SelectTrigger className="w-full md:w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px] border-sky-200 dark:border-sky-900/50">
                 <SelectValue placeholder="Spending Analysis" />
               </SelectTrigger>
               <SelectContent>
@@ -728,7 +739,11 @@ export const Reports: React.FC = () => {
             </Select>
 
             <div className="flex gap-2 ml-auto">
-              <Button variant="outline" onClick={handlePreview}>
+              <Button
+                variant="outline"
+                onClick={handlePreview}
+                className="border-sky-200 hover:bg-sky-50 dark:border-sky-800 dark:hover:bg-sky-950/50"
+              >
                 <Eye className="w-4 h-4 mr-2" />
                 Preview
               </Button>
@@ -736,6 +751,7 @@ export const Reports: React.FC = () => {
                 variant="outline"
                 onClick={handleExportPDF}
                 disabled={isExporting}
+                className="border-sky-200 hover:bg-sky-50 dark:border-sky-800 dark:hover:bg-sky-950/50"
               >
                 {isExporting ? (
                   <>

@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import { toast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authAPI, userProfilesAPI } from "@/lib/api";
 
 export const Settings: React.FC = () => {
@@ -58,10 +59,8 @@ export const Settings: React.FC = () => {
 
       try {
         setIsLoadingProfile(true);
-        const response = await userProfilesAPI.getUserProfiles();
-        const userProfile = response.data.find(
-          (p: any) => p.user_id === user.id
-        );
+        const response = await userProfilesAPI.getUserProfileByUserId(user.id);
+        const userProfile = response.data;
 
         if (userProfile) {
           setUserProfileId(userProfile.id);
@@ -69,6 +68,20 @@ export const Settings: React.FC = () => {
             ...prev,
             currency: userProfile.currency || "USD",
             dateFormat: userProfile.date_format || "MM/DD/YYYY",
+          }));
+
+          // Initialize notifications from server preferences
+          const prefs = (userProfile.preferences || {}) as Record<
+            string,
+            boolean
+          >;
+          setNotifications((prev) => ({
+            budgetAlerts: prefs.budgetAlerts ?? prev.budgetAlerts,
+            expenseReminders: prefs.expenseReminders ?? prev.expenseReminders,
+            weeklyReports: prefs.weeklyReports ?? prev.weeklyReports,
+            monthlyReports: prefs.monthlyReports ?? prev.monthlyReports,
+            collaboratorActivity:
+              prefs.collaboratorActivity ?? prev.collaboratorActivity,
           }));
 
           // Store in localStorage for global use
@@ -105,6 +118,42 @@ export const Settings: React.FC = () => {
     weeklyReports: true,
     monthlyReports: true,
     collaboratorActivity: true,
+  });
+
+  const queryClient = useQueryClient();
+
+  const updatePreferencesMutation = useMutation({
+    mutationFn: async (prefs: Record<string, boolean>) => {
+      if (!userProfileId) {
+        const createResponse = await userProfilesAPI.createUserProfile({
+          user_id: user?.id,
+          currency: profile.currency,
+          date_format: profile.dateFormat,
+        });
+        setUserProfileId(createResponse.data.id);
+        return userProfilesAPI.updateUserPreferences(
+          createResponse.data.id,
+          prefs
+        );
+      }
+      return userProfilesAPI.updateUserPreferences(userProfileId, prefs);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Preferences updated",
+        description: "Notification settings saved.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["user-profile", user?.id] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update",
+        description:
+          error?.response?.data?.message ||
+          "Could not save notification preferences.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Password change state
@@ -399,9 +448,14 @@ export const Settings: React.FC = () => {
                     </div>
                     <Switch
                       checked={value}
-                      onCheckedChange={(checked) =>
-                        setNotifications({ ...notifications, [key]: checked })
-                      }
+                      onCheckedChange={(checked) => {
+                        const next = {
+                          ...notifications,
+                          [key]: checked,
+                        } as Record<string, boolean>;
+                        setNotifications(next);
+                        updatePreferencesMutation.mutate(next);
+                      }}
                     />
                   </div>
                 ))}

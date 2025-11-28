@@ -78,7 +78,9 @@ export const NotificationDropdown: React.FC = () => {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to mark notifications as read",
+        description:
+          error.response?.data?.message ||
+          "Failed to mark notifications as read",
         variant: "destructive",
       });
     },
@@ -121,9 +123,9 @@ export const NotificationDropdown: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-foreground">Notifications</h3>
             {unreadCount > 0 && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="text-xs"
                 onClick={(e) => {
                   e.preventDefault();
@@ -132,7 +134,9 @@ export const NotificationDropdown: React.FC = () => {
                 }}
                 disabled={markAllAsReadMutation.isPending}
               >
-                {markAllAsReadMutation.isPending ? "Marking..." : "Mark all read"}
+                {markAllAsReadMutation.isPending
+                  ? "Marking..."
+                  : "Mark all read"}
               </Button>
             )}
           </div>

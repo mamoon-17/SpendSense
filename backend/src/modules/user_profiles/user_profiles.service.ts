@@ -25,6 +25,13 @@ export class UserProfilesService {
     return profile;
   }
 
+  async getUserProfileByUserId(userId: string): Promise<UserProfile | null> {
+    return this.profilesRepo.findOne({
+      where: { user_id: userId },
+      relations: ['user'],
+    });
+  }
+
   async createUserProfile(payload: CreateUserProfileDTO): Promise<object> {
     const { user_id, ...rest } = payload;
     const profile = this.profilesRepo.create({
@@ -37,7 +44,10 @@ export class UserProfilesService {
     return { msg: 'User profile created successfully' };
   }
 
-  async updateUserProfile(id: string, payload: UpdateUserProfileDTO): Promise<object> {
+  async updateUserProfile(
+    id: string,
+    payload: UpdateUserProfileDTO,
+  ): Promise<object> {
     const profile = await this.profilesRepo.findOne({ where: { id } });
     if (!profile) throw new NotFoundException('User profile not found');
 

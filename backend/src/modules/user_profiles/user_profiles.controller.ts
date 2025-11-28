@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { UserProfilesService } from './user_profiles.service';
 import { CreateUserProfileDTO } from './dtos/createUser_profile.dto';
 import { UpdateUserProfileDTO } from './dtos/updateUser_profile.dto';
@@ -22,8 +30,16 @@ export class UserProfilesController {
     return this.userProfilesService.getUserProfileById(id);
   }
 
+  @Get('by-user/:userId')
+  async getUserProfileByUser(@Param('userId') userId: string) {
+    return this.userProfilesService.getUserProfileByUserId(userId);
+  }
+
   @Patch(':id')
-  async updateUserProfile(@Param('id') id: string, @Body() payload: UpdateUserProfileDTO) {
+  async updateUserProfile(
+    @Param('id') id: string,
+    @Body() payload: UpdateUserProfileDTO,
+  ) {
     return this.userProfilesService.updateUserProfile(id, payload);
   }
 

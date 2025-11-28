@@ -401,19 +401,20 @@ export const Bills: React.FC = () => {
               </h1>
             </div>
             <p className="text-muted-foreground ml-20 text-base">
-              Split bills fairly, track shared expenses, and settle up with friends
+              Split bills fairly, track shared expenses, and settle up with
+              friends
             </p>
           </div>
           <div className="flex gap-3">
-            <Button 
+            <Button
               variant="outline"
               className="border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-950/50"
             >
               <Receipt className="w-4 h-4 mr-2" />
               Scan Receipt
             </Button>
-            <Button 
-              className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 shadow-md h-11 px-6" 
+            <Button
+              className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 shadow-md h-11 px-6"
               onClick={() => setIsDialogOpen(true)}
             >
               <Plus className="w-5 h-5 mr-2" />
@@ -514,9 +515,24 @@ export const Bills: React.FC = () => {
           <Tabs defaultValue="bills" className="w-full">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <TabsList className="grid w-full sm:w-fit grid-cols-3 bg-purple-100/50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50">
-                <TabsTrigger value="bills" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">All Bills</TabsTrigger>
-                <TabsTrigger value="pending" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">Pending</TabsTrigger>
-                <TabsTrigger value="history" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">History</TabsTrigger>
+                <TabsTrigger
+                  value="bills"
+                  className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                >
+                  All Bills
+                </TabsTrigger>
+                <TabsTrigger
+                  value="pending"
+                  className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                >
+                  Pending
+                </TabsTrigger>
+                <TabsTrigger
+                  value="history"
+                  className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+                >
+                  History
+                </TabsTrigger>
               </TabsList>
 
               <Button
@@ -600,7 +616,10 @@ export const Bills: React.FC = () => {
                   const progress = getBillProgress(bill);
 
                   return (
-                    <Card key={bill.id} className="border-purple-100 dark:border-purple-900/30 shadow-md hover:shadow-xl hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-200 bg-gradient-to-br from-white via-white to-purple-50/20 dark:from-slate-950 dark:via-slate-950 dark:to-purple-950/10">
+                    <Card
+                      key={bill.id}
+                      className="border-purple-100 dark:border-purple-900/30 shadow-md hover:shadow-xl hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-200 bg-gradient-to-br from-white via-white to-purple-50/20 dark:from-slate-950 dark:via-slate-950 dark:to-purple-950/10"
+                    >
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="space-y-2">
@@ -617,13 +636,18 @@ export const Bills: React.FC = () => {
                                     : "outline"
                                 }
                                 className={cn(
-                                  bill.status === "completed" && "bg-purple-600 hover:bg-purple-700",
-                                  bill.status === "partial" && "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
+                                  bill.status === "completed" &&
+                                    "bg-purple-600 hover:bg-purple-700",
+                                  bill.status === "partial" &&
+                                    "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
                                 )}
                               >
                                 {bill.status}
                               </Badge>
-                              <Badge variant="outline" className="capitalize border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-300">
+                              <Badge
+                                variant="outline"
+                                className="capitalize border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-300"
+                              >
                                 {bill.split_type_display || bill.split_type}{" "}
                                 split
                               </Badge>
@@ -699,7 +723,10 @@ export const Bills: React.FC = () => {
                               {progress.toFixed(0)}% complete
                             </span>
                           </div>
-                          <Progress value={progress} className="h-3 bg-purple-100 dark:bg-purple-950/50 [&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-indigo-500" />
+                          <Progress
+                            value={progress}
+                            className="h-3 bg-purple-100 dark:bg-purple-950/50 [&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-indigo-500"
+                          />
                         </div>
 
                         {/* Participants */}

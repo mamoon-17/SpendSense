@@ -443,35 +443,49 @@ export const SavingsGoals: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Savings Goals</h1>
-          <p className="text-muted-foreground mt-1">
-            Track your progress and achieve your financial dreams
-          </p>
+    <div className="space-y-8 p-2">
+      {/* Header with Rose/Pink Gradient */}
+      <div className="bg-gradient-to-r from-rose-50 via-pink-50 to-fuchsia-50 dark:from-rose-950/30 dark:via-pink-950/30 dark:to-fuchsia-950/30 rounded-2xl p-8 shadow-sm border border-rose-100/50 dark:border-rose-900/30">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-rose-500/10 dark:bg-rose-500/20 rounded-xl">
+                <PiggyBank className="w-8 h-8 text-rose-600 dark:text-rose-400" />
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-rose-700 to-pink-600 dark:from-rose-300 dark:to-pink-300 bg-clip-text text-transparent">
+                Savings Goals
+              </h1>
+            </div>
+            <p className="text-muted-foreground ml-20 text-base">
+              Track your progress and achieve your financial dreams
+            </p>
+          </div>
+          <Button
+            className="bg-rose-600 hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600 shadow-md h-11 px-6"
+            onClick={handleCreateClick}
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            New Goal
+          </Button>
         </div>
-        <Button className="btn-primary w-fit" onClick={handleCreateClick}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Goal
-        </Button>
       </div>
 
-      {/* Overview Cards */}
+      {/* Overview Cards with Rose/Pink Theme */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="card-financial">
+        <Card className="border-rose-100 dark:border-rose-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-rose-50/30 dark:from-slate-950 dark:to-rose-950/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Target
                 </p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-rose-700 dark:text-rose-300">
                   {formatAmount(totalTargetAmount)}
                 </p>
               </div>
-              <Target className="w-8 h-8 text-primary" />
+              <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
+                <Target className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               Across {goals.length} goals
@@ -479,18 +493,20 @@ export const SavingsGoals: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
+        <Card className="border-pink-100 dark:border-pink-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-pink-50/30 dark:from-slate-950 dark:to-pink-950/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Saved
                 </p>
-                <p className="text-2xl font-bold text-success">
+                <p className="text-2xl font-bold text-pink-700 dark:text-pink-300">
                   {formatAmount(totalCurrentAmount)}
                 </p>
               </div>
-              <DollarSign className="w-8 h-8 text-success" />
+              <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
+                <DollarSign className="w-6 h-6 text-pink-600 dark:text-pink-400" />
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               {overallProgress.toFixed(1)}% of total target
@@ -498,35 +514,39 @@ export const SavingsGoals: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
+        <Card className="border-fuchsia-100 dark:border-fuchsia-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-fuchsia-50/30 dark:from-slate-950 dark:to-fuchsia-950/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Completed
                 </p>
-                <p className="text-2xl font-bold text-warning">
+                <p className="text-2xl font-bold text-fuchsia-700 dark:text-fuchsia-300">
                   {completedGoals}
                 </p>
               </div>
-              <Trophy className="w-8 h-8 text-warning" />
+              <div className="p-2 bg-fuchsia-100 dark:bg-fuchsia-900/30 rounded-lg">
+                <Trophy className="w-6 h-6 text-fuchsia-600 dark:text-fuchsia-400" />
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Goals achieved</p>
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
+        <Card className="border-rose-100 dark:border-rose-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-rose-50/30 dark:from-slate-950 dark:to-rose-950/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Monthly Target
                 </p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-rose-700 dark:text-rose-300">
                   {formatAmount(totalMonthlyTarget)}
                 </p>
               </div>
-              <Calendar className="w-8 h-8 text-muted-foreground" />
+              <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
+                <Calendar className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               To stay on track

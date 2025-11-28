@@ -69,6 +69,8 @@ export const userAPI = {
 export const userProfilesAPI = {
   getUserProfiles: () => api.get("/user-profiles"),
   getUserProfileById: (id: string) => api.get(`/user-profiles/${id}`),
+  getUserProfileByUserId: (userId: string) =>
+    api.get(`/user-profiles/by-user/${userId}`),
   createUserProfile: (data: any) => api.post("/user-profiles", data),
   updateUserProfile: (id: string, data: any) =>
     api.patch(`/user-profiles/${id}`, data),

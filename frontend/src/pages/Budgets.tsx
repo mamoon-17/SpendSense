@@ -287,17 +287,6 @@ export const Budgets: React.FC = () => {
           </div>
           <div className="flex gap-3">
             <Button
-              variant="outline"
-              onClick={() => {
-                queryClient.invalidateQueries({ queryKey: ["budgets"] });
-                refetch();
-              }}
-              title="Refresh budget data"
-              className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950/50"
-            >
-              ⟳ Refresh
-            </Button>
-            <Button
               className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 shadow-md h-11 px-6"
               onClick={() => setIsCreateDialogOpen(true)}
             >
@@ -312,7 +301,9 @@ export const Budgets: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-emerald-100 dark:border-emerald-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-emerald-50/30 dark:from-slate-950 dark:to-emerald-950/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-emerald-900 dark:text-emerald-100">Total Budget</CardTitle>
+            <CardTitle className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+              Total Budget
+            </CardTitle>
             <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
               <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
@@ -329,7 +320,9 @@ export const Budgets: React.FC = () => {
 
         <Card className="border-cyan-100 dark:border-cyan-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-cyan-50/30 dark:from-slate-950 dark:to-cyan-950/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-cyan-900 dark:text-cyan-100">Total Spent</CardTitle>
+            <CardTitle className="text-sm font-medium text-cyan-900 dark:text-cyan-100">
+              Total Spent
+            </CardTitle>
             <div className="p-2 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg">
               <TrendingUp className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
             </div>
@@ -347,7 +340,9 @@ export const Budgets: React.FC = () => {
 
         <Card className="border-teal-100 dark:border-teal-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-teal-50/30 dark:from-slate-950 dark:to-teal-950/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-teal-900 dark:text-teal-100">Remaining</CardTitle>
+            <CardTitle className="text-sm font-medium text-teal-900 dark:text-teal-100">
+              Remaining
+            </CardTitle>
             <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
               <Target className="h-5 w-5 text-teal-600 dark:text-teal-400" />
             </div>
@@ -356,7 +351,9 @@ export const Budgets: React.FC = () => {
             <div className="text-3xl font-bold text-teal-700 dark:text-teal-300">
               {formatAmount(totalRemaining)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Available to spend</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Available to spend
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -422,13 +419,21 @@ export const Budgets: React.FC = () => {
                 totalAmount > 0 ? (spent / totalAmount) * 100 : 0;
 
               return (
-                <Card key={budget.id} className="border-emerald-100 dark:border-emerald-900/30 shadow-md hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-800 transition-all duration-200 bg-gradient-to-br from-white via-white to-emerald-50/20 dark:from-slate-950 dark:via-slate-950 dark:to-emerald-950/10">
+                <Card
+                  key={budget.id}
+                  className="border-emerald-100 dark:border-emerald-900/30 shadow-md hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-800 transition-all duration-200 bg-gradient-to-br from-white via-white to-emerald-50/20 dark:from-slate-950 dark:via-slate-950 dark:to-emerald-950/10"
+                >
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
-                        <CardTitle className="text-lg text-emerald-900 dark:text-emerald-100">{budget.name}</CardTitle>
+                        <CardTitle className="text-lg text-emerald-900 dark:text-emerald-100">
+                          {budget.name}
+                        </CardTitle>
                         <CardDescription className="flex items-center space-x-4">
-                          <Badge variant="secondary" className="capitalize bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">
+                          <Badge
+                            variant="secondary"
+                            className="capitalize bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                          >
                             {budget.period}
                           </Badge>
                           <span className="flex items-center">

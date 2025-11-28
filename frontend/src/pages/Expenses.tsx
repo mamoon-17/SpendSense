@@ -536,11 +536,12 @@ export const Expenses: React.FC = () => {
                 </h1>
               </div>
               <p className="text-muted-foreground ml-20 text-base">
-                Monitor spending, analyze patterns, and optimize your financial health
+                Monitor spending, analyze patterns, and optimize your financial
+                health
               </p>
             </div>
-            <Button 
-              className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 shadow-md h-11 px-6" 
+            <Button
+              className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 shadow-md h-11 px-6"
               onClick={handleCreateClick}
             >
               <Plus className="w-5 h-5 mr-2" />
@@ -636,9 +637,24 @@ export const Expenses: React.FC = () => {
             <Tabs defaultValue="list" className="w-full">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                 <TabsList className="grid w-full sm:w-fit grid-cols-3 bg-orange-100/50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50">
-                  <TabsTrigger value="list" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">List View</TabsTrigger>
-                  <TabsTrigger value="categories" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">Categories</TabsTrigger>
-                  <TabsTrigger value="analytics" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">Analytics</TabsTrigger>
+                  <TabsTrigger
+                    value="list"
+                    className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+                  >
+                    List View
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="categories"
+                    className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+                  >
+                    Categories
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="analytics"
+                    className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+                  >
+                    Analytics
+                  </TabsTrigger>
                 </TabsList>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm">

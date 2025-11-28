@@ -326,129 +326,139 @@ export const Connections: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Connections</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage collaborators and shared budget access
-          </p>
-        </div>
-        <div className="flex gap-2">
+      {/* Header with Teal/Cyan/Sky Theme */}
+      <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-sky-50 dark:from-teal-950/30 dark:via-cyan-950/30 dark:to-sky-950/30 rounded-2xl p-8 shadow-sm border border-teal-100/50 dark:border-teal-900/30">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-teal-500/10 dark:bg-teal-500/20 rounded-xl">
+                <Users className="w-8 h-8 text-teal-600 dark:text-teal-400" />
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-teal-700 to-cyan-600 dark:from-teal-300 dark:to-cyan-300 bg-clip-text text-transparent">
+                Connections
+              </h1>
+            </div>
+            <p className="text-muted-foreground ml-20 text-base">
+              Manage your network and collaborate with ease
+            </p>
+          </div>
           <Button
-            className="btn-primary w-fit"
+            className="bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 shadow-md h-11 px-6"
             onClick={() => setShowAddConnection(true)}
           >
             <UserPlus className="w-4 h-4 mr-2" />
             Add Connection
           </Button>
         </div>
-        {/* Add Connection Modal */}
-        <Dialog open={showAddConnection} onOpenChange={setShowAddConnection}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Connection</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Input
-                placeholder="Search by username..."
-                value={usernameSearch}
-                onChange={(e) => setUsernameSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleUsernameSearch();
-                }}
-                autoFocus
-              />
-              <Button
-                onClick={handleUsernameSearch}
-                disabled={!usernameSearch || isSearching}
-                className="w-full"
-              >
-                {isSearching ? "Searching..." : "Search"}
-              </Button>
-              {addError && (
-                <div className="text-destructive text-sm">{addError}</div>
-              )}
-              {searchResults.length > 0 && (
-                <div className="space-y-2">
-                  {searchResults.map((user) => {
-                    // Check if user is already a connection
-                    const isAlreadyConnection = connections.some(
-                      (conn) =>
-                        (conn.requester.id === user.id ||
-                          conn.receiver.id === user.id) &&
-                        conn.status === "connected"
-                    );
-
-                    // Check if there's a pending request
-                    const hasPendingRequest = connections.some(
-                      (conn) =>
-                        (conn.requester.id === user.id ||
-                          conn.receiver.id === user.id) &&
-                        conn.status === "pending"
-                    );
-
-                    return (
-                      <div
-                        key={user.id}
-                        className="flex items-center justify-between p-2 border rounded"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Avatar className="w-8 h-8">
-                            <AvatarFallback>
-                              {user.username?.[0]?.toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{user.username}</span>
-                        </div>
-                        {isAlreadyConnection ? (
-                          <Badge variant="secondary">Connected</Badge>
-                        ) : hasPendingRequest ? (
-                          <Badge variant="outline">Pending</Badge>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => handleAddConnection(user.id)}
-                            disabled={addLoading}
-                          >
-                            {addLoading ? "Adding..." : "Add"}
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              {addSuccess && (
-                <div className="text-success text-sm">
-                  Connection request sent!
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowAddConnection(false)}
-              >
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
 
-      {/* Stats Cards */}
+      {/* Add Connection Modal */}
+      <Dialog open={showAddConnection} onOpenChange={setShowAddConnection}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Connection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              placeholder="Search by username..."
+              value={usernameSearch}
+              onChange={(e) => setUsernameSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleUsernameSearch();
+              }}
+              autoFocus
+            />
+            <Button
+              onClick={handleUsernameSearch}
+              disabled={!usernameSearch || isSearching}
+              className="w-full"
+            >
+              {isSearching ? "Searching..." : "Search"}
+            </Button>
+            {addError && (
+              <div className="text-destructive text-sm">{addError}</div>
+            )}
+            {searchResults.length > 0 && (
+              <div className="space-y-2">
+                {searchResults.map((user) => {
+                  // Check if user is already a connection
+                  const isAlreadyConnection = connections.some(
+                    (conn) =>
+                      (conn.requester.id === user.id ||
+                        conn.receiver.id === user.id) &&
+                      conn.status === "connected"
+                  );
+
+                  // Check if there's a pending request
+                  const hasPendingRequest = connections.some(
+                    (conn) =>
+                      (conn.requester.id === user.id ||
+                        conn.receiver.id === user.id) &&
+                      conn.status === "pending"
+                  );
+
+                  return (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-2 border rounded"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback>
+                            {user.username?.[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{user.username}</span>
+                      </div>
+                      {isAlreadyConnection ? (
+                        <Badge variant="secondary">Connected</Badge>
+                      ) : hasPendingRequest ? (
+                        <Badge variant="outline">Pending</Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddConnection(user.id)}
+                          disabled={addLoading}
+                        >
+                          {addLoading ? "Adding..." : "Add"}
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {addSuccess && (
+              <div className="text-success text-sm">
+                Connection request sent!
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowAddConnection(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Stats Cards with Teal/Cyan/Sky Theme */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="card-financial">
+        <Card className="border-teal-100 dark:border-teal-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-teal-50/30 dark:from-slate-950 dark:to-teal-950/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Connections
                 </p>
-                <p className="text-2xl font-bold">{connections.length}</p>
+                <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">
+                  {connections.length}
+                </p>
               </div>
-              <Users className="w-8 h-8 text-primary" />
+              <Users className="w-8 h-8 text-teal-500" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               Across all budgets
@@ -456,18 +466,18 @@ export const Connections: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
+        <Card className="border-cyan-100 dark:border-cyan-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-cyan-50/30 dark:from-slate-950 dark:to-cyan-950/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Pending Requests
                 </p>
-                <p className="text-2xl font-bold text-warning">
+                <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
                   {pendingRequests.length}
                 </p>
               </div>
-              <Send className="w-8 h-8 text-warning" />
+              <Send className="w-8 h-8 text-cyan-500" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               Awaiting your approval
@@ -475,16 +485,18 @@ export const Connections: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
+        <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Shared Budgets
                 </p>
-                <p className="text-2xl font-bold text-success">8</p>
+                <p className="text-2xl font-bold text-sky-600 dark:text-sky-400">
+                  8
+                </p>
               </div>
-              <Share className="w-8 h-8 text-success" />
+              <Share className="w-8 h-8 text-sky-500" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               Active collaborations
@@ -492,14 +504,14 @@ export const Connections: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
+        <Card className="border-teal-100 dark:border-teal-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-teal-50/30 dark:from-slate-950 dark:to-teal-950/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Active Now
                 </p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">
                   {
                     connections.filter(
                       (c) =>
@@ -510,7 +522,7 @@ export const Connections: React.FC = () => {
                   }
                 </p>
               </div>
-              <MessageCircle className="w-8 h-8 text-muted-foreground" />
+              <MessageCircle className="w-8 h-8 text-teal-500" />
             </div>
             <p className="text-xs text-muted-foreground mt-2">Online users</p>
           </CardContent>
@@ -519,9 +531,9 @@ export const Connections: React.FC = () => {
 
       {/* Pending Connection Requests - Prominent Display */}
       {pendingRequests.length > 0 && (
-        <Card className="card-financial border-warning/20 bg-warning/5">
+        <Card className="border-cyan-200 dark:border-cyan-900/30 bg-cyan-50/50 dark:bg-cyan-950/20">
           <CardHeader>
-            <CardTitle className="text-warning flex items-center">
+            <CardTitle className="text-cyan-700 dark:text-cyan-300 flex items-center">
               <UserPlus className="w-5 h-5 mr-2" />
               Connection Requests ({pendingRequests.length})
             </CardTitle>
@@ -618,542 +630,402 @@ export const Connections: React.FC = () => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-3 space-y-6">
-          <Tabs
-            defaultValue={
-              pendingRequests.length > 0 ? "requests" : "connections"
-            }
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="connections">Connections</TabsTrigger>
-              <TabsTrigger value="requests">Connection Requests</TabsTrigger>
-              <TabsTrigger value="invites">Pending Invites</TabsTrigger>
-              <TabsTrigger value="permissions">Permissions</TabsTrigger>
-            </TabsList>
+      {/* Main Content */}
+      <div className="space-y-6">
+        <Tabs
+          defaultValue={pendingRequests.length > 0 ? "requests" : "connections"}
+          className="w-full"
+        >
+          <TabsList className="grid w-full grid-cols-3 bg-teal-100/50 dark:bg-teal-950/30">
+            <TabsTrigger
+              value="connections"
+              className="data-[state=active]:bg-teal-600 data-[state=active]:text-white"
+            >
+              Connections
+            </TabsTrigger>
+            <TabsTrigger
+              value="requests"
+              className="data-[state=active]:bg-teal-600 data-[state=active]:text-white"
+            >
+              Connection Requests
+            </TabsTrigger>
+            <TabsTrigger
+              value="invites"
+              className="data-[state=active]:bg-teal-600 data-[state=active]:text-white"
+            >
+              Pending Invites
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Search */}
-            <Card className="card-financial mt-6">
-              <CardContent className="pt-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Search connections by name or email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <TabsContent value="connections" className="space-y-4 mt-6">
-              {filteredConnections.length === 0 ? (
-                <Card className="card-financial">
-                  <CardContent className="p-4 text-center text-muted-foreground">
-                    No connections found.
-                  </CardContent>
-                </Card>
-              ) : (
-                filteredConnections.map((connection) => {
-                  const otherUser =
-                    connection.requester.id === user?.id
-                      ? connection.receiver
-                      : connection.requester;
-                  const isReceiver = connection.receiver.id === user?.id;
-                  const isPending = connection.status === "pending";
-
-                  return (
-                    <Card key={connection.id} className="card-financial">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-4">
-                            <div className="relative">
-                              <Avatar className="w-12 h-12">
-                                <AvatarFallback>
-                                  {otherUser.name
-                                    ?.split(" ")
-                                    .map((n) => n[0])
-                                    .join("") ||
-                                    otherUser.username?.[0]?.toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              {connection.status === "connected" &&
-                                connection.last_active &&
-                                new Date(connection.last_active) >
-                                  new Date(Date.now() - 3600000) && (
-                                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-background" />
-                                )}
-                            </div>
-
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <h3 className="font-semibold text-foreground">
-                                  {otherUser.name || otherUser.username}
-                                </h3>
-                                {isPending && isReceiver && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-warning border-warning/20"
-                                  >
-                                    Pending Approval
-                                  </Badge>
-                                )}
-                                {isPending && !isReceiver && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-info border-info/20"
-                                  >
-                                    Request Sent
-                                  </Badge>
-                                )}
-                                {connection.status === "connected" && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-success border-success/20"
-                                  >
-                                    Connected
-                                  </Badge>
-                                )}
-                              </div>
-
-                              <p className="text-sm text-muted-foreground">
-                                @{otherUser.username}
-                              </p>
-
-                              <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                                <span>
-                                  {isPending && isReceiver
-                                    ? `Requested ${format(
-                                        new Date(
-                                          connection.created_at ||
-                                            connection.accepted_at ||
-                                            new Date()
-                                        ),
-                                        "MMM dd, yyyy"
-                                      )}`
-                                    : connection.accepted_at
-                                    ? `Connected ${format(
-                                        new Date(connection.accepted_at),
-                                        "MMM dd, yyyy"
-                                      )}`
-                                    : `Requested ${format(
-                                        new Date(
-                                          connection.created_at || new Date()
-                                        ),
-                                        "MMM dd, yyyy"
-                                      )}`}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            {isPending && isReceiver ? (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-success hover:text-success"
-                                  onClick={async () => {
-                                    try {
-                                      await connectionsAPI.acceptRequest(
-                                        connection.id
-                                      );
-                                      toast({
-                                        title: "Connection Accepted",
-                                        description: `Connection request from ${
-                                          otherUser.name || otherUser.username
-                                        } accepted.`,
-                                      });
-                                      // Refresh the connections list
-                                      await refetchConnections();
-                                    } catch (error) {
-                                      toast({
-                                        title: "Error",
-                                        description:
-                                          "Failed to accept connection request.",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }}
-                                >
-                                  <Check className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => {
-                                    toast({
-                                      title: "Connection Declined",
-                                      description: `Connection request from ${
-                                        otherUser.name || otherUser.username
-                                      } declined.`,
-                                    });
-                                  }}
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </>
-                            ) : connection.status === "connected" ? (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    handleStartChat(
-                                      connection.id,
-                                      otherUser.name || otherUser.username
-                                    )
-                                  }
-                                  title="Start Chat"
-                                >
-                                  <MessageCircle className="w-4 h-4" />
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline">
-                                      <MoreVertical className="w-4 h-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive"
-                                      onClick={() => {
-                                        setRemoveConnectionDialog({
-                                          open: true,
-                                          connection,
-                                        });
-                                      }}
-                                    >
-                                      <Trash2 className="w-4 h-4 mr-2" />
-                                      Remove Connection
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </>
-                            ) : (
-                              <Button size="sm" variant="outline" disabled>
-                                Pending...
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              )}
-            </TabsContent>
-
-            <TabsContent value="requests" className="space-y-4 mt-6">
-              {pendingRequests.length === 0 ? (
-                <Card className="card-financial">
-                  <CardContent className="p-4 text-center text-muted-foreground">
-                    No pending connection requests.
-                  </CardContent>
-                </Card>
-              ) : (
-                pendingRequests.map((connection) => (
-                  <Card
-                    key={connection.id}
-                    className="card-financial border-warning/20"
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <Avatar className="w-12 h-12">
-                            <AvatarFallback>
-                              {connection.requester.name
-                                ?.split(" ")
-                                .map((n) => n[0])
-                                .join("") ||
-                                connection.requester.username?.[0]?.toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="font-semibold">
-                              {connection.requester.name ||
-                                connection.requester.username}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              @{connection.requester.username}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Requested{" "}
-                              {format(
-                                new Date(
-                                  connection.created_at ||
-                                    connection.accepted_at ||
-                                    new Date()
-                                ),
-                                "MMM dd, yyyy 'at' h:mm a"
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            size="sm"
-                            onClick={async () => {
-                              try {
-                                await connectionsAPI.acceptRequest(
-                                  connection.id
-                                );
-                                toast({
-                                  title: "Connection Accepted",
-                                  description: `You are now connected with ${
-                                    connection.requester.name ||
-                                    connection.requester.username
-                                  }`,
-                                });
-                                await refetchConnections();
-                              } catch (error) {
-                                toast({
-                                  title: "Error",
-                                  description:
-                                    "Failed to accept connection request.",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}
-                            className="bg-success hover:bg-success/90 text-success-foreground"
-                          >
-                            <Check className="w-4 h-4 mr-2" />
-                            Accept
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              toast({
-                                title: "Connection Declined",
-                                description: `Connection request from ${
-                                  connection.requester.name ||
-                                  connection.requester.username
-                                } declined.`,
-                              });
-                            }}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="invites" className="space-y-4 mt-6">
-              {pendingInvites.length === 0 ? (
-                <Card className="card-financial">
-                  <CardContent className="p-4 text-center text-muted-foreground">
-                    No pending invites.
-                  </CardContent>
-                </Card>
-              ) : (
-                pendingInvites.map((invite) => (
-                  <Card key={invite.id} className="card-financial">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <h3 className="font-semibold">{invite.email}</h3>
-                            <Badge
-                              variant={
-                                invite.status === "expired"
-                                  ? "destructive"
-                                  : "secondary"
-                              }
-                            >
-                              {invite.status}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Invited to{" "}
-                            <span className="font-medium">
-                              {invite.budgetName}
-                            </span>{" "}
-                            as {invite.role}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Sent{" "}
-                            {format(new Date(invite.sentAt), "MMM dd, yyyy")}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <Button size="sm" variant="outline">
-                            Resend
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-destructive hover:text-destructive"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="permissions" className="mt-6">
-              <Card className="card-financial">
-                <CardHeader>
-                  <CardTitle>Role Permissions</CardTitle>
-                  <CardDescription>
-                    Understand what each role can do in shared budgets
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {[
-                    {
-                      role: "Owner",
-                      icon: <Crown className="w-5 h-5 text-warning" />,
-                      permissions: [
-                        "Full control",
-                        "Delete budget",
-                        "Manage all members",
-                        "All editing rights",
-                      ],
-                      color: "border-warning/20 bg-warning/5",
-                    },
-                    {
-                      role: "Admin",
-                      icon: <Shield className="w-5 h-5 text-primary" />,
-                      permissions: [
-                        "Add/remove members",
-                        "Edit budget settings",
-                        "Manage expenses",
-                        "View all data",
-                      ],
-                      color: "border-primary/20 bg-primary/5",
-                    },
-                    {
-                      role: "Editor",
-                      icon: <Edit className="w-5 h-5 text-success" />,
-                      permissions: [
-                        "Add expenses",
-                        "Edit own expenses",
-                        "View budget data",
-                        "Comment and discuss",
-                      ],
-                      color: "border-success/20 bg-success/5",
-                    },
-                    {
-                      role: "Viewer",
-                      icon: <Eye className="w-5 h-5 text-muted-foreground" />,
-                      permissions: [
-                        "View budget data",
-                        "See expenses",
-                        "Join discussions",
-                        "Receive notifications",
-                      ],
-                      color: "border-muted/20 bg-muted/5",
-                    },
-                  ].map((roleData) => (
-                    <div
-                      key={roleData.role}
-                      className={cn("p-4 rounded-lg border", roleData.color)}
-                    >
-                      <div className="flex items-center space-x-3 mb-3">
-                        {roleData.icon}
-                        <h3 className="font-semibold">{roleData.role}</h3>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {roleData.permissions.map((permission, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center space-x-2 text-sm"
-                          >
-                            <Check className="w-3 h-3 text-success" />
-                            <span>{permission}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Right Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Invite */}
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Quick Invite
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input
-                placeholder="Email address"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-
-              <Select value={selectedBudget} onValueChange={setSelectedBudget}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select budget" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="family">Family Budget</SelectItem>
-                  <SelectItem value="vacation">Vacation Fund</SelectItem>
-                  <SelectItem value="groceries">Grocery Budget</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={inviteRole}
-                onValueChange={(value: "viewer" | "editor" | "admin") =>
-                  setInviteRole(value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="viewer">Viewer</SelectItem>
-                  <SelectItem value="editor">Editor</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button
-                onClick={handleSendInvite}
-                disabled={!inviteEmail || !selectedBudget || isInviting}
-                className="w-full btn-primary"
-              >
-                {isInviting ? "Sending..." : "Send Invite"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle className="text-sm">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-sm text-muted-foreground">
-                No recent activity.
+          {/* Search */}
+          <Card className="card-financial mt-6">
+            <CardContent className="pt-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Search connections by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </CardContent>
           </Card>
-        </div>
+
+          <TabsContent value="connections" className="space-y-4 mt-6">
+            {filteredConnections.length === 0 ? (
+              <Card className="card-financial">
+                <CardContent className="p-4 text-center text-muted-foreground">
+                  No connections found.
+                </CardContent>
+              </Card>
+            ) : (
+              filteredConnections.map((connection) => {
+                const otherUser =
+                  connection.requester.id === user?.id
+                    ? connection.receiver
+                    : connection.requester;
+                const isReceiver = connection.receiver.id === user?.id;
+                const isPending = connection.status === "pending";
+
+                return (
+                  <Card key={connection.id} className="card-financial">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="relative">
+                            <Avatar className="w-12 h-12">
+                              <AvatarFallback>
+                                {otherUser.name
+                                  ?.split(" ")
+                                  .map((n) => n[0])
+                                  .join("") ||
+                                  otherUser.username?.[0]?.toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            {connection.status === "connected" &&
+                              connection.last_active &&
+                              new Date(connection.last_active) >
+                                new Date(Date.now() - 3600000) && (
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-background" />
+                              )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <h3 className="font-semibold text-foreground">
+                                {otherUser.name || otherUser.username}
+                              </h3>
+                              {isPending && isReceiver && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-warning border-warning/20"
+                                >
+                                  Pending Approval
+                                </Badge>
+                              )}
+                              {isPending && !isReceiver && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-info border-info/20"
+                                >
+                                  Request Sent
+                                </Badge>
+                              )}
+                              {connection.status === "connected" && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-success border-success/20"
+                                >
+                                  Connected
+                                </Badge>
+                              )}
+                            </div>
+
+                            <p className="text-sm text-muted-foreground">
+                              @{otherUser.username}
+                            </p>
+
+                            <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                              <span>
+                                {isPending && isReceiver
+                                  ? `Requested ${format(
+                                      new Date(
+                                        connection.created_at ||
+                                          connection.accepted_at ||
+                                          new Date()
+                                      ),
+                                      "MMM dd, yyyy"
+                                    )}`
+                                  : connection.accepted_at
+                                  ? `Connected ${format(
+                                      new Date(connection.accepted_at),
+                                      "MMM dd, yyyy"
+                                    )}`
+                                  : `Requested ${format(
+                                      new Date(
+                                        connection.created_at || new Date()
+                                      ),
+                                      "MMM dd, yyyy"
+                                    )}`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          {isPending && isReceiver ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-success hover:text-success"
+                                onClick={async () => {
+                                  try {
+                                    await connectionsAPI.acceptRequest(
+                                      connection.id
+                                    );
+                                    toast({
+                                      title: "Connection Accepted",
+                                      description: `Connection request from ${
+                                        otherUser.name || otherUser.username
+                                      } accepted.`,
+                                    });
+                                    // Refresh the connections list
+                                    await refetchConnections();
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description:
+                                        "Failed to accept connection request.",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                              >
+                                <Check className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => {
+                                  toast({
+                                    title: "Connection Declined",
+                                    description: `Connection request from ${
+                                      otherUser.name || otherUser.username
+                                    } declined.`,
+                                  });
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : connection.status === "connected" ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleStartChat(
+                                    connection.id,
+                                    otherUser.name || otherUser.username
+                                  )
+                                }
+                                title="Start Chat"
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="sm" variant="outline">
+                                    <MoreVertical className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => {
+                                      setRemoveConnectionDialog({
+                                        open: true,
+                                        connection,
+                                      });
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Remove Connection
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </>
+                          ) : (
+                            <Button size="sm" variant="outline" disabled>
+                              Pending...
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </TabsContent>
+
+          <TabsContent value="requests" className="space-y-4 mt-6">
+            {pendingRequests.length === 0 ? (
+              <Card className="card-financial">
+                <CardContent className="p-4 text-center text-muted-foreground">
+                  No pending connection requests.
+                </CardContent>
+              </Card>
+            ) : (
+              pendingRequests.map((connection) => (
+                <Card
+                  key={connection.id}
+                  className="card-financial border-warning/20"
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <Avatar className="w-12 h-12">
+                          <AvatarFallback>
+                            {connection.requester.name
+                              ?.split(" ")
+                              .map((n) => n[0])
+                              .join("") ||
+                              connection.requester.username?.[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-semibold">
+                            {connection.requester.name ||
+                              connection.requester.username}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            @{connection.requester.username}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Requested{" "}
+                            {format(
+                              new Date(
+                                connection.created_at ||
+                                  connection.accepted_at ||
+                                  new Date()
+                              ),
+                              "MMM dd, yyyy 'at' h:mm a"
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await connectionsAPI.acceptRequest(connection.id);
+                              toast({
+                                title: "Connection Accepted",
+                                description: `You are now connected with ${
+                                  connection.requester.name ||
+                                  connection.requester.username
+                                }`,
+                              });
+                              await refetchConnections();
+                            } catch (error) {
+                              toast({
+                                title: "Error",
+                                description:
+                                  "Failed to accept connection request.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                          className="bg-success hover:bg-success/90 text-success-foreground"
+                        >
+                          <Check className="w-4 h-4 mr-2" />
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            toast({
+                              title: "Connection Declined",
+                              description: `Connection request from ${
+                                connection.requester.name ||
+                                connection.requester.username
+                              } declined.`,
+                            });
+                          }}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="invites" className="space-y-4 mt-6">
+            {pendingInvites.length === 0 ? (
+              <Card className="card-financial">
+                <CardContent className="p-4 text-center text-muted-foreground">
+                  No pending invites.
+                </CardContent>
+              </Card>
+            ) : (
+              pendingInvites.map((invite) => (
+                <Card key={invite.id} className="card-financial">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="font-semibold">{invite.email}</h3>
+                          <Badge
+                            variant={
+                              invite.status === "expired"
+                                ? "destructive"
+                                : "secondary"
+                            }
+                          >
+                            {invite.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Invited to{" "}
+                          <span className="font-medium">
+                            {invite.budgetName}
+                          </span>{" "}
+                          as {invite.role}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Sent {format(new Date(invite.sentAt), "MMM dd, yyyy")}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Button size="sm" variant="outline">
+                          Resend
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Remove Connection Alert Dialog */}
