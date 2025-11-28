@@ -310,6 +310,73 @@ export const Bills: React.FC = () => {
       });
       return;
     }
+
+    // Additional validation for manual split
+    if (formData.split_type === "manual") {
+      const total = parseFloat(formData.total_amount) || 0;
+      const enteredSum = formData.custom_amounts.reduce(
+        (sum, a) => sum + (a || 0),
+        0
+      );
+      const creatorIncluded = formData.participant_ids.includes(user?.id || "");
+
+      if (!creatorIncluded) {
+        // Sum must be strictly less than total so creator gets remaining share.
+        if (enteredSum >= total) {
+          toast({
+            title: "Manual Split Error",
+            description:
+              "Assigned amounts for other participants must be less than the total so your share remains.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // When creator is selected, sums must match exactly.
+        if (Math.abs(enteredSum - total) > 0.01) {
+          toast({
+            title: "Manual Split Error",
+            description:
+              "Manual split amounts must add up exactly to the total when you are included as a participant.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
+    // Additional validation for percentage split
+    if (formData.split_type === "percentage") {
+      const totalPct = formData.percentages.reduce(
+        (sum, p) => sum + (p || 0),
+        0
+      );
+      const creatorIncluded = formData.participant_ids.includes(user?.id || "");
+
+      if (!creatorIncluded) {
+        // Others must be strictly less than 100% so creator has remaining share.
+        if (totalPct >= 100) {
+          toast({
+            title: "Percentage Split Error",
+            description:
+              "Assigned percentages for other participants must total less than 100% so your share remains.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // When creator included, percentage must total exactly 100%.
+        if (Math.abs(totalPct - 100) > 0.01) {
+          toast({
+            title: "Percentage Split Error",
+            description:
+              "Percentages must add up exactly to 100% when you are included as a participant.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
     createBillMutation.mutate(formData);
   };
 
