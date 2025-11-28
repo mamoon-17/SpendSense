@@ -1103,50 +1103,6 @@ export const Expenses: React.FC = () => {
             </Tabs>
           </div>
 
-          {/* Quick Actions Sidebar */}
-          <div className="space-y-6">
-            <Card className="card-financial">
-              <CardHeader>
-                <CardTitle className="text-sm">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={handleExportPDF}
-                >
-                  <Download className="w-4 h-4" />
-                  Export Report
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() =>
-                    toast({
-                      title: "Bulk Import",
-                      description: "Bulk import feature coming soon.",
-                    })
-                  }
-                >
-                  <FileUp className="w-4 h-4" />
-                  Bulk Import
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() =>
-                    toast({
-                      title: "Manage Tags",
-                      description: "Tag management feature coming soon.",
-                    })
-                  }
-                >
-                  <Tags className="w-4 h-4" />
-                  Manage Tags
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
         </div>
 
         {/* Expense Dialog */}
