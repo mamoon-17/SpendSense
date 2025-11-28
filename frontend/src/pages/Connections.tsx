@@ -53,13 +53,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { connectionsAPI, invitationsAPI, conversationsAPI } from "@/lib/api";
@@ -111,12 +104,6 @@ export const Connections: React.FC = () => {
   }>({ open: false, connection: null });
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"viewer" | "editor" | "admin">(
-    "viewer"
-  );
-  const [selectedBudget, setSelectedBudget] = useState("");
-  const [isInviting, setIsInviting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -181,46 +168,7 @@ export const Connections: React.FC = () => {
     );
   });
 
-  const handleSendInvite = async () => {
-    if (!inviteEmail || !selectedBudget) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter both email and select a budget.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsInviting(true);
-    try {
-      // Create invitation data
-      const invitationData = {
-        username: inviteEmail.split("@")[0], // Extract username from email
-        sent_by: "current-user-id", // This would come from auth store
-        type: "budget", // Assuming budget invitation type
-        target_id: selectedBudget,
-      };
-
-      await invitationsAPI.sendInvitation(invitationData);
-
-      toast({
-        title: "Invitation Sent",
-        description: `Invitation sent to ${inviteEmail} for ${selectedBudget} as ${inviteRole}.`,
-      });
-
-      setInviteEmail("");
-      setSelectedBudget("");
-    } catch (error) {
-      toast({
-        title: "Failed to Send Invitation",
-        description:
-          "There was an error sending the invitation. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsInviting(false);
-    }
-  };
+  
 
   const handleStartChat = async (
     connectionId: string,
@@ -1090,58 +1038,6 @@ export const Connections: React.FC = () => {
 
         {/* Right Sidebar */}
         <div className="space-y-6">
-          {/* Quick Invite */}
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Quick Invite
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input
-                placeholder="Email address"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-
-              <Select value={selectedBudget} onValueChange={setSelectedBudget}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select budget" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="family">Family Budget</SelectItem>
-                  <SelectItem value="vacation">Vacation Fund</SelectItem>
-                  <SelectItem value="groceries">Grocery Budget</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={inviteRole}
-                onValueChange={(value: "viewer" | "editor" | "admin") =>
-                  setInviteRole(value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="viewer">Viewer</SelectItem>
-                  <SelectItem value="editor">Editor</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button
-                onClick={handleSendInvite}
-                disabled={!inviteEmail || !selectedBudget || isInviting}
-                className="w-full btn-primary"
-              >
-                {isInviting ? "Sending..." : "Send Invite"}
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Recent Activity */}
           <Card className="card-financial">
             <CardHeader>
