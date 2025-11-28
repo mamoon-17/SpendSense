@@ -268,81 +268,95 @@ export const Budgets: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Budget Management
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Create, track, and manage your budgets effectively
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ["budgets"] });
-              refetch();
-            }}
-            title="Refresh budget data"
-          >
-            ⟳ Refresh
-          </Button>
-          <Button
-            className="btn-primary w-fit"
-            onClick={() => setIsCreateDialogOpen(true)}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Budget
-          </Button>
+    <div className="space-y-8 p-2">
+      {/* Header with Gradient Background */}
+      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/30 dark:to-cyan-950/30 rounded-2xl p-8 shadow-sm border border-emerald-100/50 dark:border-emerald-900/30">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl">
+                <Target className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-emerald-700 to-teal-600 dark:from-emerald-300 dark:to-teal-300 bg-clip-text text-transparent">
+                Budget Management
+              </h1>
+            </div>
+            <p className="text-muted-foreground ml-20 text-base">
+              Set financial goals, track spending, and stay within your limits
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ["budgets"] });
+                refetch();
+              }}
+              title="Refresh budget data"
+              className="border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950/50"
+            >
+              ⟳ Refresh
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 shadow-md h-11 px-6"
+              onClick={() => setIsCreateDialogOpen(true)}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Create Budget
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Overview Cards */}
+      {/* Overview Cards with Enhanced Styling */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="card-financial">
+        <Card className="border-emerald-100 dark:border-emerald-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-emerald-50/30 dark:from-slate-950 dark:to-emerald-950/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Budget</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-emerald-900 dark:text-emerald-100">Total Budget</CardTitle>
+            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+              <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
               {formatAmount(totalBudgetAmount)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               Across {budgets.length} active budgets
             </p>
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
+        <Card className="border-cyan-100 dark:border-cyan-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-cyan-50/30 dark:from-slate-950 dark:to-cyan-950/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-cyan-900 dark:text-cyan-100">Total Spent</CardTitle>
+            <div className="p-2 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">
+            <div className="text-3xl font-bold text-cyan-700 dark:text-cyan-300">
               {formatAmount(totalSpent)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               {((totalSpent / totalBudgetAmount) * 100).toFixed(1)}% of total
               budget
             </p>
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
+        <Card className="border-teal-100 dark:border-teal-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-teal-50/30 dark:from-slate-950 dark:to-teal-950/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Remaining</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-teal-900 dark:text-teal-100">Remaining</CardTitle>
+            <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+              <Target className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">
+            <div className="text-3xl font-bold text-teal-700 dark:text-teal-300">
               {formatAmount(totalRemaining)}
             </div>
-            <p className="text-xs text-muted-foreground">Available to spend</p>
+            <p className="text-xs text-muted-foreground mt-1">Available to spend</p>
           </CardContent>
         </Card>
       </div>
@@ -350,18 +364,18 @@ export const Budgets: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Budget List */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Filters */}
-          <Card className="card-financial">
+          {/* Filters with Enhanced Styling */}
+          <Card className="border-emerald-100/50 dark:border-emerald-900/20 shadow-sm bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-500 w-4 h-4" />
                     <Input
                       placeholder="Search budgets..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 border-emerald-200 focus-visible:ring-emerald-400 dark:border-emerald-900/50"
                     />
                   </div>
                 </div>
@@ -369,7 +383,7 @@ export const Budgets: React.FC = () => {
                   value={filterCategory}
                   onValueChange={setFilterCategory}
                 >
-                  <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectTrigger className="w-full md:w-[180px] border-emerald-200 dark:border-emerald-900/50">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px] overflow-y-auto">
@@ -383,7 +397,7 @@ export const Budgets: React.FC = () => {
                   </SelectContent>
                 </Select>
                 <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-                  <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectTrigger className="w-full md:w-[150px] border-emerald-200 dark:border-emerald-900/50">
                     <SelectValue placeholder="Period" />
                   </SelectTrigger>
                   <SelectContent>
@@ -408,13 +422,13 @@ export const Budgets: React.FC = () => {
                 totalAmount > 0 ? (spent / totalAmount) * 100 : 0;
 
               return (
-                <Card key={budget.id} className="card-financial">
+                <Card key={budget.id} className="border-emerald-100 dark:border-emerald-900/30 shadow-md hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-800 transition-all duration-200 bg-gradient-to-br from-white via-white to-emerald-50/20 dark:from-slate-950 dark:via-slate-950 dark:to-emerald-950/10">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
-                        <CardTitle className="text-lg">{budget.name}</CardTitle>
+                        <CardTitle className="text-lg text-emerald-900 dark:text-emerald-100">{budget.name}</CardTitle>
                         <CardDescription className="flex items-center space-x-4">
-                          <Badge variant="secondary" className="capitalize">
+                          <Badge variant="secondary" className="capitalize bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">
                             {budget.period}
                           </Badge>
                           <span className="flex items-center">
@@ -490,12 +504,12 @@ export const Budgets: React.FC = () => {
                     <Progress
                       value={Math.min(percentage, 100)}
                       className={cn(
-                        "h-3",
+                        "h-3.5 bg-emerald-100 dark:bg-emerald-950/50",
                         status === "over"
-                          ? "[&>div]:bg-destructive"
+                          ? "[&>div]:bg-gradient-to-r [&>div]:from-red-500 [&>div]:to-red-600"
                           : status === "warning"
-                          ? "[&>div]:bg-warning"
-                          : "[&>div]:bg-success"
+                          ? "[&>div]:bg-gradient-to-r [&>div]:from-yellow-500 [&>div]:to-orange-500"
+                          : "[&>div]:bg-gradient-to-r [&>div]:from-emerald-500 [&>div]:to-teal-500"
                       )}
                     />
 

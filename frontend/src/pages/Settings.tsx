@@ -67,7 +67,6 @@ export const Settings: React.FC = () => {
           setUserProfileId(userProfile.id);
           setProfile((prev) => ({
             ...prev,
-            timezone: userProfile.timezone || "UTC-5",
             currency: userProfile.currency || "USD",
             dateFormat: userProfile.date_format || "MM/DD/YYYY",
           }));
@@ -76,7 +75,6 @@ export const Settings: React.FC = () => {
           localStorage.setItem(
             "userSettings",
             JSON.stringify({
-              timezone: userProfile.timezone || "UTC-5",
               currency: userProfile.currency || "USD",
               dateFormat: userProfile.date_format || "MM/DD/YYYY",
             })
@@ -95,9 +93,7 @@ export const Settings: React.FC = () => {
   // Profile settings
   const [profile, setProfile] = useState({
     name: user?.name || "",
-    email: user?.email || "",
     avatar: "",
-    timezone: "UTC-5",
     currency: "USD",
     dateFormat: "MM/DD/YYYY",
   });
@@ -127,7 +123,6 @@ export const Settings: React.FC = () => {
         // Create new user profile if it doesn't exist
         const createResponse = await userProfilesAPI.createUserProfile({
           user_id: user?.id,
-          timezone: profile.timezone,
           currency: profile.currency,
           date_format: profile.dateFormat,
         });
@@ -135,7 +130,6 @@ export const Settings: React.FC = () => {
       } else {
         // Update existing user profile
         await userProfilesAPI.updateUserProfile(userProfileId, {
-          timezone: profile.timezone,
           currency: profile.currency,
           date_format: profile.dateFormat,
         });
@@ -145,7 +139,6 @@ export const Settings: React.FC = () => {
       localStorage.setItem(
         "userSettings",
         JSON.stringify({
-          timezone: profile.timezone,
           currency: profile.currency,
           dateFormat: profile.dateFormat,
         })
@@ -155,7 +148,6 @@ export const Settings: React.FC = () => {
       window.dispatchEvent(
         new CustomEvent("userSettingsChanged", {
           detail: {
-            timezone: profile.timezone,
             currency: profile.currency,
             dateFormat: profile.dateFormat,
           },
@@ -337,44 +329,6 @@ export const Settings: React.FC = () => {
                       setProfile({ ...profile, name: e.target.value })
                     }
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profile.email}
-                    onChange={(e) =>
-                      setProfile({ ...profile, email: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Select
-                    value={profile.timezone}
-                    onValueChange={(value) =>
-                      setProfile({ ...profile, timezone: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="UTC-8">
-                        Pacific Time (UTC-8)
-                      </SelectItem>
-                      <SelectItem value="UTC-7">
-                        Mountain Time (UTC-7)
-                      </SelectItem>
-                      <SelectItem value="UTC-6">
-                        Central Time (UTC-6)
-                      </SelectItem>
-                      <SelectItem value="UTC-5">
-                        Eastern Time (UTC-5)
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">Default Currency</Label>

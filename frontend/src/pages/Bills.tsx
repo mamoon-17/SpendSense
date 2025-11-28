@@ -387,43 +387,58 @@ export const Bills: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Bills & Splitting
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Split bills and track shared expenses with friends
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Receipt className="w-4 h-4 mr-2" />
-            Scan Receipt
-          </Button>
-          <Button className="btn-primary" onClick={() => setIsDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Split Bill
-          </Button>
+    <div className="space-y-8 p-2">
+      {/* Header with Purple/Indigo Gradient */}
+      <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-violet-50 dark:from-purple-950/30 dark:via-indigo-950/30 dark:to-violet-950/30 rounded-2xl p-8 shadow-sm border border-purple-100/50 dark:border-purple-900/30">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-500/10 dark:bg-purple-500/20 rounded-xl">
+                <Split className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-purple-700 to-indigo-600 dark:from-purple-300 dark:to-indigo-300 bg-clip-text text-transparent">
+                Bills & Splitting
+              </h1>
+            </div>
+            <p className="text-muted-foreground ml-20 text-base">
+              Split bills fairly, track shared expenses, and settle up with friends
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline"
+              className="border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-950/50"
+            >
+              <Receipt className="w-4 h-4 mr-2" />
+              Scan Receipt
+            </Button>
+            <Button 
+              className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 shadow-md h-11 px-6" 
+              onClick={() => setIsDialogOpen(true)}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Split Bill
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="card-financial">
-          <CardContent className="p-4">
+      {/* Overview Cards with Purple/Indigo Theme */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <Card className="border-purple-100 dark:border-purple-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-950 dark:to-purple-950/10">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
                   Total Bills
                 </p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
                   {formatAmount(totalBillAmount)}
                 </p>
               </div>
-              <Receipt className="w-8 h-8 text-primary" />
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Receipt className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               {bills.length} bills this month
@@ -431,18 +446,20 @@ export const Bills: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
-          <CardContent className="p-4">
+        <Card className="border-indigo-100 dark:border-indigo-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-indigo-50/30 dark:from-slate-950 dark:to-indigo-950/10">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100">
                   You Owe
                 </p>
-                <p className="text-2xl font-bold text-warning">
+                <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">
                   {formatAmount(totalOwed)}
                 </p>
               </div>
-              <Clock className="w-8 h-8 text-warning" />
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                <Clock className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               Pending payments
@@ -450,35 +467,39 @@ export const Bills: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
-          <CardContent className="p-4">
+        <Card className="border-violet-100 dark:border-violet-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-violet-50/30 dark:from-slate-950 dark:to-violet-950/10">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-medium text-violet-900 dark:text-violet-100">
                   Owed to You
                 </p>
-                <p className="text-2xl font-bold text-success">
+                <p className="text-2xl font-bold text-violet-700 dark:text-violet-300">
                   {formatAmount(totalOwedToYou)}
                 </p>
               </div>
-              <DollarSign className="w-8 h-8 text-success" />
+              <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
+                <DollarSign className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">From others</p>
           </CardContent>
         </Card>
 
-        <Card className="card-financial">
-          <CardContent className="p-4">
+        <Card className="border-purple-100 dark:border-purple-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-950 dark:to-purple-950/10">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
                   Active Bills
                 </p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
                   {bills.filter((b) => b.status !== "completed").length}
                 </p>
               </div>
-              <Users className="w-8 h-8 text-muted-foreground" />
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               Awaiting settlement
@@ -492,14 +513,14 @@ export const Bills: React.FC = () => {
         <div className="lg:col-span-3 space-y-6">
           <Tabs defaultValue="bills" className="w-full">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <TabsList className="grid w-full sm:w-fit grid-cols-3">
-                <TabsTrigger value="bills">All Bills</TabsTrigger>
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="history">History</TabsTrigger>
+              <TabsList className="grid w-full sm:w-fit grid-cols-3 bg-purple-100/50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50">
+                <TabsTrigger value="bills" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">All Bills</TabsTrigger>
+                <TabsTrigger value="pending" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">Pending</TabsTrigger>
+                <TabsTrigger value="history" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">History</TabsTrigger>
               </TabsList>
 
               <Button
-                className="btn-success"
+                className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 shadow-md"
                 onClick={() => {
                   if (bills.length === 0) {
                     toast({
@@ -518,23 +539,23 @@ export const Bills: React.FC = () => {
               </Button>
             </div>
 
-            {/* Filters */}
-            <Card className="card-financial">
+            {/* Filters with Purple Theme */}
+            <Card className="border-purple-100/50 dark:border-purple-900/20 shadow-sm bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="flex flex-col lg:flex-row gap-4">
                   <div className="flex-1">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-500 w-4 h-4" />
                       <Input
                         placeholder="Search bills..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 border-purple-200 focus-visible:ring-purple-400 dark:border-purple-900/50"
                       />
                     </div>
                   </div>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-full lg:w-[150px]">
+                    <SelectTrigger className="w-full lg:w-[150px] border-purple-200 dark:border-purple-900/50">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -579,12 +600,12 @@ export const Bills: React.FC = () => {
                   const progress = getBillProgress(bill);
 
                   return (
-                    <Card key={bill.id} className="card-financial">
+                    <Card key={bill.id} className="border-purple-100 dark:border-purple-900/30 shadow-md hover:shadow-xl hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-200 bg-gradient-to-br from-white via-white to-purple-50/20 dark:from-slate-950 dark:via-slate-950 dark:to-purple-950/10">
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="space-y-2">
                             <div className="flex items-center space-x-2">
-                              <CardTitle className="text-lg">
+                              <CardTitle className="text-lg text-purple-900 dark:text-purple-100">
                                 {bill.name}
                               </CardTitle>
                               <Badge
@@ -595,10 +616,14 @@ export const Bills: React.FC = () => {
                                     ? "secondary"
                                     : "outline"
                                 }
+                                className={cn(
+                                  bill.status === "completed" && "bg-purple-600 hover:bg-purple-700",
+                                  bill.status === "partial" && "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
+                                )}
                               >
                                 {bill.status}
                               </Badge>
-                              <Badge variant="outline" className="capitalize">
+                              <Badge variant="outline" className="capitalize border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-300">
                                 {bill.split_type_display || bill.split_type}{" "}
                                 split
                               </Badge>
@@ -674,7 +699,7 @@ export const Bills: React.FC = () => {
                               {progress.toFixed(0)}% complete
                             </span>
                           </div>
-                          <Progress value={progress} className="h-2" />
+                          <Progress value={progress} className="h-3 bg-purple-100 dark:bg-purple-950/50 [&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-indigo-500" />
                         </div>
 
                         {/* Participants */}
@@ -684,7 +709,7 @@ export const Bills: React.FC = () => {
                             {bill.participants?.map((participant) => (
                               <div
                                 key={participant.id}
-                                className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                                className="flex items-center justify-between p-3 rounded-lg bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30"
                               >
                                 <div className="flex items-center space-x-3">
                                   <Avatar className="w-8 h-8">

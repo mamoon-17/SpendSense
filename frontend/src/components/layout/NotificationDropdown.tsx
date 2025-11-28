@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { notificationsAPI } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface Notification {
   id: string;
@@ -54,12 +55,33 @@ const getNotificationIcon = (type?: string) => {
 export const NotificationDropdown: React.FC = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch notifications
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => notificationsAPI.getNotifications().then((res) => res.data),
     refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  // Mark all as read mutation
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => notificationsAPI.markAllAsRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast({
+        title: "Success",
+        description: "All notifications marked as read",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to mark notifications as read",
+        variant: "destructive",
+      });
+    },
   });
 
   const unreadCount = notifications.filter((n: Notification) => !n.read).length;
@@ -99,8 +121,18 @@ export const NotificationDropdown: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-foreground">Notifications</h3>
             {unreadCount > 0 && (
-              <Button variant="ghost" size="sm" className="text-xs">
-                Mark all read
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-xs"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  markAllAsReadMutation.mutate();
+                }}
+                disabled={markAllAsReadMutation.isPending}
+              >
+                {markAllAsReadMutation.isPending ? "Marking..." : "Mark all read"}
               </Button>
             )}
           </div>

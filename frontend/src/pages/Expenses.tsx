@@ -522,88 +522,106 @@ export const Expenses: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Expense Tracking
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Track, categorize, and analyze your spending
-            </p>
+      <div className="space-y-8 p-2">
+        {/* Header with Orange/Amber Gradient */}
+        <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 rounded-2xl p-8 shadow-sm border border-orange-100/50 dark:border-orange-900/30">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-orange-500/10 dark:bg-orange-500/20 rounded-xl">
+                  <Receipt className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                </div>
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-orange-700 to-amber-600 dark:from-orange-300 dark:to-amber-300 bg-clip-text text-transparent">
+                  Expense Tracking
+                </h1>
+              </div>
+              <p className="text-muted-foreground ml-20 text-base">
+                Monitor spending, analyze patterns, and optimize your financial health
+              </p>
+            </div>
+            <Button 
+              className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 shadow-md h-11 px-6" 
+              onClick={handleCreateClick}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Add Expense
+            </Button>
           </div>
-          <Button className="btn-primary" onClick={handleCreateClick}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Expense
-          </Button>
         </div>
 
-        {/* Quick Stats */}
+        {/* Quick Stats with Orange/Amber Theme */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="card-financial">
+          <Card className="border-orange-100 dark:border-orange-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-orange-50/30 dark:from-slate-950 dark:to-orange-950/10">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
                     Total Spent
                   </p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
                     {formatAmount(totalExpenses)}
                   </p>
                 </div>
-                <TrendingUp className="w-8 h-8 text-primary" />
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">This Month</p>
             </CardContent>
           </Card>
 
-          <Card className="card-financial">
+          <Card className="border-amber-100 dark:border-amber-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-amber-50/30 dark:from-slate-950 dark:to-amber-950/10">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                     Average
                   </p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
                     {formatAmount(avgExpense)}
                   </p>
                 </div>
-                <Receipt className="w-8 h-8 text-success" />
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <Receipt className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">This Month</p>
             </CardContent>
           </Card>
 
-          <Card className="card-financial">
+          <Card className="border-yellow-100 dark:border-yellow-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-yellow-50/30 dark:from-slate-950 dark:to-yellow-950/10">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
                     Transactions
                   </p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
                     {filteredExpenses.length}
                   </p>
                 </div>
-                <Tag className="w-8 h-8 text-warning" />
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                  <Tag className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">This Month</p>
             </CardContent>
           </Card>
 
-          <Card className="card-financial">
+          <Card className="border-amber-100 dark:border-amber-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-amber-50/30 dark:from-slate-950 dark:to-amber-950/10">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                     Top Category
                   </p>
-                  <p className="text-lg font-bold truncate">
+                  <p className="text-lg font-bold truncate text-amber-700 dark:text-amber-300">
                     {topCategory?.[0] || "N/A"}
                   </p>
                 </div>
-                <Filter className="w-8 h-8 text-muted-foreground" />
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <Filter className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 {formatAmount((topCategory?.[1] as number) || 0)} spent
@@ -617,10 +635,10 @@ export const Expenses: React.FC = () => {
           <div className="lg:col-span-3 space-y-6">
             <Tabs defaultValue="list" className="w-full">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <TabsList className="grid w-full sm:w-fit grid-cols-3">
-                  <TabsTrigger value="list">List View</TabsTrigger>
-                  <TabsTrigger value="categories">Categories</TabsTrigger>
-                  <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                <TabsList className="grid w-full sm:w-fit grid-cols-3 bg-orange-100/50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50">
+                  <TabsTrigger value="list" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">List View</TabsTrigger>
+                  <TabsTrigger value="categories" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">Categories</TabsTrigger>
+                  <TabsTrigger value="analytics" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white">Analytics</TabsTrigger>
                 </TabsList>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm">
@@ -635,17 +653,17 @@ export const Expenses: React.FC = () => {
               </div>
 
               {/* Filters */}
-              <Card className="card-financial">
+              <Card className="border-orange-100/50 dark:border-orange-900/20 shadow-sm bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
                 <CardContent className="pt-6">
                   <div className="flex flex-col lg:flex-row gap-4">
                     <div className="flex-1">
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 w-4 h-4" />
                         <Input
                           placeholder="Search expenses, tags, or locations..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 pr-10"
+                          className="pl-10 pr-10 border-orange-200 focus-visible:ring-orange-400 dark:border-orange-900/50"
                         />
                         {searchTerm && (
                           <Button
@@ -663,7 +681,7 @@ export const Expenses: React.FC = () => {
                       value={filterCategory}
                       onValueChange={setFilterCategory}
                     >
-                      <SelectTrigger className="w-full lg:w-[180px]">
+                      <SelectTrigger className="w-full lg:w-[180px] border-orange-200 dark:border-orange-900/50">
                         <SelectValue placeholder="Category" />
                       </SelectTrigger>
                       <SelectContent className="max-h-[300px] overflow-y-auto">
@@ -682,7 +700,7 @@ export const Expenses: React.FC = () => {
                       value={filterPeriod}
                       onValueChange={setFilterPeriod}
                     >
-                      <SelectTrigger className="w-full lg:w-[150px]">
+                      <SelectTrigger className="w-full lg:w-[150px] border-orange-200 dark:border-orange-900/50">
                         <SelectValue placeholder="Period" />
                       </SelectTrigger>
                       <SelectContent>
