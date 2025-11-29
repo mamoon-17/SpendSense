@@ -212,6 +212,8 @@ export const Reports: React.FC = () => {
 
   const savingsRate =
     totalIncome > 0 ? ((totalSavings / totalIncome) * 100).toFixed(1) : "0.0";
+  // Numeric value for comparisons
+  const savingsRateNum = parseFloat(savingsRate) || 0;
 
   // Budget health
   const budgetsOnTrack = useMemo(() => {
@@ -597,71 +599,7 @@ export const Reports: React.FC = () => {
 
   const handleExportReport = handleExportPDF;
 
-  const handleExportMonthlySummary = async () => {
-    setIsExporting(true);
-    try {
-      const reportData = generateReportData();
-      const simplePDFService = new SimplePDFExportService();
-      await simplePDFService.generateReport(reportData);
-
-      toast({
-        title: "📊 Monthly Summary Exported!",
-        description: "Your monthly summary has been downloaded successfully!",
-      });
-    } catch (error) {
-      toast({
-        title: "❌ Export Error",
-        description: "Failed to generate monthly summary. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportTaxReport = async () => {
-    setIsExporting(true);
-    try {
-      const reportData = generateReportData();
-      const simplePDFService = new SimplePDFExportService();
-      await simplePDFService.generateReport(reportData);
-
-      toast({
-        title: "📋 Tax Report Exported!",
-        description: "Your tax report has been downloaded successfully!",
-      });
-    } catch (error) {
-      toast({
-        title: "❌ Export Error",
-        description: "Failed to generate tax report. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportBudgetAnalysis = async () => {
-    setIsExporting(true);
-    try {
-      const reportData = generateReportData();
-      const simplePDFService = new SimplePDFExportService();
-      await simplePDFService.generateReport(reportData);
-
-      toast({
-        title: "📊 Budget Analysis Exported!",
-        description: "Your budget analysis has been downloaded successfully!",
-      });
-    } catch (error) {
-      toast({
-        title: "❌ Export Error",
-        description: "Failed to generate budget analysis. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
+  // Quick Actions removed: monthly / tax / budget-specific exporters were redundant
 
   const isLoading = isLoadingExpenses || isLoadingBudgets || isLoadingGoals;
 
@@ -851,7 +789,7 @@ export const Reports: React.FC = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Charts Area */}
         <div className="lg:col-span-3 space-y-6">
           <Tabs defaultValue="trends" className="w-full">
@@ -1326,14 +1264,14 @@ export const Reports: React.FC = () => {
                               </p>
                               <p className="text-sm text-muted-foreground mt-1">
                                 You're saving {savingsRate}% of your income -{" "}
-                                {savingsRate >= 20
+                                {savingsRateNum >= 20
                                   ? "Great job!"
                                   : "Try to save more"}
                               </p>
                             </div>
                             <DollarSign
                               className={`w-5 h-5 ${
-                                savingsRate >= 20
+                                savingsRateNum >= 20
                                   ? "text-success"
                                   : "text-warning"
                               }`}
@@ -1349,47 +1287,7 @@ export const Reports: React.FC = () => {
           </Tabs>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle className="text-sm">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={handleExportMonthlySummary}
-                disabled={isExporting}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Monthly Summary
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={handleExportTaxReport}
-                disabled={isExporting}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Tax Report
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={handleExportBudgetAnalysis}
-                disabled={isExporting}
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Budget Analysis
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Right Sidebar removed (Quick Actions) — layout now uses 3-column grid */}
       </div>
 
       {/* Preview Dialog */}

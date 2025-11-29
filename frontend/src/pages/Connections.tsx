@@ -53,13 +53,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { connectionsAPI, invitationsAPI, conversationsAPI } from "@/lib/api";
@@ -111,12 +104,6 @@ export const Connections: React.FC = () => {
   }>({ open: false, connection: null });
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"viewer" | "editor" | "admin">(
-    "viewer"
-  );
-  const [selectedBudget, setSelectedBudget] = useState("");
-  const [isInviting, setIsInviting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -180,47 +167,6 @@ export const Connections: React.FC = () => {
       otherUser.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
-
-  const handleSendInvite = async () => {
-    if (!inviteEmail || !selectedBudget) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter both email and select a budget.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsInviting(true);
-    try {
-      // Create invitation data
-      const invitationData = {
-        username: inviteEmail.split("@")[0], // Extract username from email
-        sent_by: "current-user-id", // This would come from auth store
-        type: "budget", // Assuming budget invitation type
-        target_id: selectedBudget,
-      };
-
-      await invitationsAPI.sendInvitation(invitationData);
-
-      toast({
-        title: "Invitation Sent",
-        description: `Invitation sent to ${inviteEmail} for ${selectedBudget} as ${inviteRole}.`,
-      });
-
-      setInviteEmail("");
-      setSelectedBudget("");
-    } catch (error) {
-      toast({
-        title: "Failed to Send Invitation",
-        description:
-          "There was an error sending the invitation. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsInviting(false);
-    }
-  };
 
   const handleStartChat = async (
     connectionId: string,
@@ -351,7 +297,6 @@ export const Connections: React.FC = () => {
           </Button>
         </div>
       </div>
-
       {/* Add Connection Modal */}
       <Dialog open={showAddConnection} onOpenChange={setShowAddConnection}>
         <DialogContent>
@@ -444,7 +389,6 @@ export const Connections: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Stats Cards with Teal/Cyan/Sky Theme */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-teal-100 dark:border-teal-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-teal-50/30 dark:from-slate-950 dark:to-teal-950/10">
@@ -528,7 +472,6 @@ export const Connections: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
       {/* Pending Connection Requests - Prominent Display */}
       {pendingRequests.length > 0 && (
         <Card className="border-cyan-200 dark:border-cyan-900/30 bg-cyan-50/50 dark:bg-cyan-950/20">
@@ -629,7 +572,6 @@ export const Connections: React.FC = () => {
           </CardContent>
         </Card>
       )}
-
       {/* Main Content */}
       <div className="space-y-6">
         <Tabs
@@ -1026,8 +968,7 @@ export const Connections: React.FC = () => {
             )}
           </TabsContent>
         </Tabs>
-      </div>
-
+      </div>{" "}
       {/* Remove Connection Alert Dialog */}
       <AlertDialog
         open={removeConnectionDialog.open}

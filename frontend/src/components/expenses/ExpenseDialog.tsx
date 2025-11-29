@@ -34,7 +34,6 @@ interface ExpenseDialogProps {
     date: string;
     payment_method?: string;
     notes?: string;
-    tags?: string[];
     location?: string;
   };
   onSuccess?: () => void;
@@ -56,7 +55,6 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
     date: new Date().toISOString().split("T")[0],
     payment_method: "",
     notes: "",
-    tags: "",
     location: "",
   });
 
@@ -81,7 +79,6 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
           date: expense.date.split("T")[0],
           payment_method: expense.payment_method || "",
           notes: expense.notes || "",
-          tags: expense.tags?.join(", ") || "",
           location: expense.location || "",
         });
       } else {
@@ -94,7 +91,6 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
           date: today,
           payment_method: "",
           notes: "",
-          tags: "",
           location: "",
         });
       }
@@ -141,12 +137,6 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
         date: new Date(formData.date).toISOString(),
         payment_method: formData.payment_method || undefined,
         notes: formData.notes || undefined,
-        tags: formData.tags
-          ? formData.tags
-              .split(",")
-              .map((tag) => tag.trim())
-              .filter(Boolean)
-          : undefined,
         location: formData.location || undefined,
         currency: settings.currency,
       };
@@ -329,18 +319,6 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
                 setFormData({ ...formData, location: e.target.value })
               }
               placeholder="e.g., Whole Foods Market"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tags">Tags (comma-separated)</Label>
-            <Input
-              id="tags"
-              value={formData.tags}
-              onChange={(e) =>
-                setFormData({ ...formData, tags: e.target.value })
-              }
-              placeholder="e.g., groceries, organic, weekly"
             />
           </div>
 

@@ -9,13 +9,13 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
-  Split,
   Share2,
   Edit,
   Trash2,
   Filter,
   Search,
   X,
+  Split,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -86,7 +86,7 @@ interface Bill {
   status: "pending" | "partial" | "completed";
   category: Category;
   created_by: User;
-  participants: User[];
+  participants: Participant[];
   participant_count?: number;
   payment_progress?: string;
   currency?: string;
@@ -124,9 +124,9 @@ export const Bills: React.FC = () => {
     string[]
   >([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedBillForEdit, setSelectedBillForEdit] = useState<Bill | null>(
-    null
-  );
+  const [selectedBillIdForEdit, setSelectedBillIdForEdit] = useState<
+    string | null
+  >(null);
 
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -154,6 +154,11 @@ export const Bills: React.FC = () => {
     },
   });
 
+  // Get the current bill data from the bills array (ensures fresh data)
+  const selectedBillForEdit = selectedBillIdForEdit
+    ? bills.find((b) => b.id === selectedBillIdForEdit) || null
+    : null;
+
   // Fetch categories for the form
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -180,7 +185,6 @@ export const Bills: React.FC = () => {
       billsAPI.createBill({
         ...data,
         total_amount: parseFloat(data.total_amount),
-        currency: settings.currency,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
@@ -239,13 +243,14 @@ export const Bills: React.FC = () => {
       billId: string;
       participantId: string;
     }) => billsAPI.markPaymentAsPaid(billId, participantId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["bills"] });
+    onSuccess: async () => {
+      // Invalidate and refetch bills - the modal will automatically update via selectedBillForEdit computed value
+      await queryClient.invalidateQueries({ queryKey: ["bills"] });
+
       toast({
         title: "Payment marked as paid!",
         description: "Your payment status has been updated.",
       });
-      setIsEditDialogOpen(false);
     },
     onError: () => {
       toast({
@@ -305,6 +310,73 @@ export const Bills: React.FC = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    // Additional validation for manual split
+    if (formData.split_type === "manual") {
+      const total = parseFloat(formData.total_amount) || 0;
+      const enteredSum = formData.custom_amounts.reduce(
+        (sum, a) => sum + (a || 0),
+        0
+      );
+      const creatorIncluded = formData.participant_ids.includes(user?.id || "");
+
+      if (!creatorIncluded) {
+        // Sum must be strictly less than total so creator gets remaining share.
+        if (enteredSum >= total) {
+          toast({
+            title: "Manual Split Error",
+            description:
+              "Assigned amounts for other participants must be less than the total so your share remains.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // When creator is selected, sums must match exactly.
+        if (Math.abs(enteredSum - total) > 0.01) {
+          toast({
+            title: "Manual Split Error",
+            description:
+              "Manual split amounts must add up exactly to the total when you are included as a participant.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
+    // Additional validation for percentage split
+    if (formData.split_type === "percentage") {
+      const totalPct = formData.percentages.reduce(
+        (sum, p) => sum + (p || 0),
+        0
+      );
+      const creatorIncluded = formData.participant_ids.includes(user?.id || "");
+
+      if (!creatorIncluded) {
+        // Others must be strictly less than 100% so creator has remaining share.
+        if (totalPct >= 100) {
+          toast({
+            title: "Percentage Split Error",
+            description:
+              "Assigned percentages for other participants must total less than 100% so your share remains.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // When creator included, percentage must total exactly 100%.
+        if (Math.abs(totalPct - 100) > 0.01) {
+          toast({
+            title: "Percentage Split Error",
+            description:
+              "Percentages must add up exactly to 100% when you are included as a participant.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
     }
     createBillMutation.mutate(formData);
   };
@@ -676,7 +748,7 @@ export const Bills: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                setSelectedBillForEdit(bill);
+                                setSelectedBillIdForEdit(bill.id);
                                 setIsEditDialogOpen(true);
                               }}
                             >
@@ -856,41 +928,7 @@ export const Bills: React.FC = () => {
 
         {/* Right Sidebar */}
         <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center">
-                <Split className="w-4 h-4 mr-2" />
-                Quick Split
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-              >
-                <Receipt className="w-4 h-4 mr-2" />
-                Split Receipt
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Equal Split
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-              >
-                <DollarSign className="w-4 h-4 mr-2" />
-                Custom Amount
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Quick Split removed - layout adjusted */}
 
           {/* Recent Activity */}
           <Card className="card-financial">
@@ -1298,10 +1336,7 @@ export const Bills: React.FC = () => {
                         <div className="flex items-center justify-between w-full">
                           <span>{bill.name}</span>
                           <span className="text-sm text-muted-foreground ml-2">
-                            {formatAmount(
-                              parseFloat(bill.total_amount),
-                              bill.currency
-                            )}
+                            {formatAmount(parseFloat(bill.total_amount))}
                           </span>
                         </div>
                       </SelectItem>
@@ -1474,10 +1509,7 @@ export const Bills: React.FC = () => {
                 <div className="flex justify-between items-center text-sm">
                   <span>Total Amount:</span>
                   <span className="font-semibold">
-                    {formatAmount(
-                      parseFloat(selectedBillForEdit.total_amount),
-                      selectedBillForEdit.currency
-                    )}
+                    {formatAmount(parseFloat(selectedBillForEdit.total_amount))}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
@@ -1508,13 +1540,13 @@ export const Bills: React.FC = () => {
                         <Avatar className="w-8 h-8">
                           <AvatarFallback>
                             {user?.name?.charAt(0) ||
-                              user?.username?.charAt(0) ||
+                              (user as any)?.username?.charAt(0) ||
                               "U"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium">
-                            {user?.name || user?.username}
+                            {user?.name || (user as any)?.username}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             Your portion
@@ -1525,27 +1557,26 @@ export const Bills: React.FC = () => {
                         <p className="font-semibold">
                           {formatAmount(
                             parseFloat(
-                              currentUserParticipation.amount_owed || "0"
-                            ),
-                            selectedBillForEdit.currency
+                              (currentUserParticipation as any).amount_owed ||
+                                "0"
+                            )
                           )}
                         </p>
                         <Badge
-                          variant={
-                            currentUserParticipation.is_paid
-                              ? "success"
-                              : "warning"
-                          }
-                          className="text-xs"
+                          className={`text-xs ${
+                            (currentUserParticipation as any).status === "paid"
+                              ? "bg-success/10 text-success border-success/20"
+                              : "bg-warning/10 text-warning border-warning/20"
+                          }`}
                         >
-                          {currentUserParticipation.is_paid
+                          {(currentUserParticipation as any).status === "paid"
                             ? "Paid"
                             : "Pending"}
                         </Badge>
                       </div>
                     </div>
 
-                    {!currentUserParticipation.is_paid && (
+                    {(currentUserParticipation as any).status !== "paid" && (
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p className="text-sm text-yellow-800 flex items-center">
                           <AlertCircle className="w-4 h-4 mr-2 text-yellow-600" />
@@ -1574,28 +1605,37 @@ export const Bills: React.FC = () => {
                     (p: any) => p.id === user?.id
                   );
 
-                if (
-                  !currentUserParticipation ||
-                  currentUserParticipation.is_paid
-                ) {
+                if (!currentUserParticipation) {
                   return null;
                 }
+
+                const isAlreadyPaid =
+                  (currentUserParticipation as any).status === "paid";
 
                 return (
                   <Button
                     className="btn-success"
-                    disabled={markPaymentPaidMutation.isPending}
+                    disabled={
+                      isAlreadyPaid || markPaymentPaidMutation.isPending
+                    }
                     onClick={() => {
-                      markPaymentPaidMutation.mutate({
-                        billId: selectedBillForEdit.id,
-                        participantId: currentUserParticipation.id,
-                      });
+                      if (!isAlreadyPaid) {
+                        markPaymentPaidMutation.mutate({
+                          billId: selectedBillForEdit.id,
+                          participantId: currentUserParticipation.id,
+                        });
+                      }
                     }}
                   >
                     {markPaymentPaidMutation.isPending ? (
                       <>
                         <Clock className="w-4 h-4 mr-2 animate-spin" />
                         Marking as Paid...
+                      </>
+                    ) : isAlreadyPaid ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Already Paid
                       </>
                     ) : (
                       <>

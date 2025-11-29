@@ -22,7 +22,7 @@ export class CreateBillDTO {
   @IsNotEmpty()
   total_amount: number;
 
-  @IsEnum(['equal', 'percentage', 'custom'])
+  @IsEnum(['equal', 'percentage', 'manual'])
   @IsNotEmpty()
   split_type: string;
 

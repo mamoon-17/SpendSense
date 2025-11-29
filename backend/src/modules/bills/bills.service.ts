@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -180,6 +181,60 @@ export class BillsService {
       }
     }
 
+    // Reorder participants to match the order of the provided participant_ids (and appended creator if added)
+    // This ensures custom_amounts and percentages align with the intended user assignments.
+    participants.sort(
+      (a, b) =>
+        allParticipantIds.indexOf(a.id) - allParticipantIds.indexOf(b.id),
+    );
+
+    // Manual split validation: ensure sums logic is correct before persisting
+    if (payload.split_type === 'manual') {
+      const total = parseFloat(payload.total_amount.toString()) || 0;
+      const enteredSum = (payload.custom_amounts || []).reduce(
+        (sum, a) => sum + (a || 0),
+        0,
+      );
+      const creatorIncluded = allParticipantIds.includes(userId);
+      if (!creatorIncluded) {
+        // Other participants' sum must be strictly less than total
+        if (enteredSum >= total) {
+          throw new BadRequestException(
+            'Manual split amounts for other participants must be less than total so creator has a remaining share.',
+          );
+        }
+      } else {
+        // When creator included, require exact total match (+/- 0.01 tolerance for floating rounding)
+        if (Math.abs(enteredSum - total) > 0.01) {
+          throw new BadRequestException(
+            'Manual split amounts must add up exactly to total when creator is included.',
+          );
+        }
+      }
+    }
+
+    // Percentage split validation: enforce totals before persisting
+    if (payload.split_type === 'percentage') {
+      const totalPct = (payload.percentages || []).reduce(
+        (sum, p) => sum + (p || 0),
+        0,
+      );
+      const creatorIncluded = allParticipantIds.includes(userId);
+      if (!creatorIncluded) {
+        if (totalPct >= 100) {
+          throw new BadRequestException(
+            'Percentage allocations for other participants must total less than 100% so creator has remaining share.',
+          );
+        }
+      } else {
+        if (Math.abs(totalPct - 100) > 0.01) {
+          throw new BadRequestException(
+            'Percentages must total exactly 100% when creator is included.',
+          );
+        }
+      }
+    }
+
     // Create the bill
     const bill = this.billsRepo.create({
       name: payload.name,
@@ -218,7 +273,6 @@ export class BillsService {
             amount = totalAmount / participantCount; // Default to equal if no percentage provided
           }
           break;
-        case 'custom':
         case 'manual':
           if (
             payload.custom_amounts &&
@@ -226,7 +280,7 @@ export class BillsService {
           ) {
             amount = payload.custom_amounts[index];
           } else {
-            amount = totalAmount / participantCount; // Default to equal if no custom amount provided
+            amount = totalAmount / participantCount; // Default to equal if no manual amount provided
           }
           break;
         case 'equal':
