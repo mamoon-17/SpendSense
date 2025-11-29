@@ -657,10 +657,6 @@ export const Expenses: React.FC = () => {
                   </TabsTrigger>
                 </TabsList>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Import
-                  </Button>
                   <Button variant="outline" size="sm" onClick={handleExportPDF}>
                     <Download className="w-4 h-4 mr-2" />
                     Export
@@ -805,7 +801,7 @@ export const Expenses: React.FC = () => {
                   sortedExpenses.map((expense) => (
                     <Card
                       key={expense.id}
-                      className="card-financial hover:shadow-elevated transition-shadow"
+                      className="card-financial hover:shadow-elevated transition-shadow border-orange-100 dark:border-orange-900/30 bg-gradient-to-br from-white to-orange-50/20 dark:from-slate-950 dark:to-orange-950/10"
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
@@ -821,7 +817,10 @@ export const Expenses: React.FC = () => {
                                 <Calendar className="w-3 h-3 mr-1" />
                                 {formatDate(expense.date)}
                               </span>
-                              <Badge variant="outline">
+                              <Badge
+                                variant="outline"
+                                className="border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300"
+                              >
                                 {expense.category}
                               </Badge>
                               {expense.location && (
@@ -849,7 +848,7 @@ export const Expenses: React.FC = () => {
                                   <Badge
                                     key={tag}
                                     variant="secondary"
-                                    className="text-xs"
+                                    className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
                                   >
                                     {tag}
                                   </Badge>
@@ -941,10 +940,10 @@ export const Expenses: React.FC = () => {
 
               <TabsContent value="analytics" className="mt-6 space-y-6">
                 {/* Spending Trend */}
-                <Card className="card-financial">
+                <Card className="card-financial border-orange-100 dark:border-orange-900/30">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <TrendingUp className="w-5 h-5 mr-2" />
+                      <TrendingUp className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
                       Spending Trend
                     </CardTitle>
                     <CardDescription>
@@ -995,7 +994,7 @@ export const Expenses: React.FC = () => {
                 </Card>
 
                 {/* Category Breakdown */}
-                <Card className="card-financial">
+                <Card className="card-financial border-orange-100 dark:border-orange-900/30">
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <BarChart3 className="w-5 h-5 mr-2" />
@@ -1022,7 +1021,7 @@ export const Expenses: React.FC = () => {
                           </div>
                           <div className="w-full bg-muted rounded-full h-2">
                             <div
-                              className="bg-primary h-2 rounded-full transition-all"
+                              className="bg-orange-500 dark:bg-orange-400 h-2 rounded-full transition-all"
                               style={{ width: `${cat.percentage}%` }}
                             />
                           </div>
@@ -1038,10 +1037,10 @@ export const Expenses: React.FC = () => {
 
                 {/* Top Spending Days */}
                 {analytics.topDays.length > 0 && (
-                  <Card className="card-financial">
+                  <Card className="card-financial border-orange-100 dark:border-orange-900/30">
                     <CardHeader>
                       <CardTitle className="flex items-center">
-                        <Calendar className="w-5 h-5 mr-2" />
+                        <Calendar className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
                         Top Spending Days
                       </CardTitle>
                       <CardDescription>
@@ -1056,8 +1055,8 @@ export const Expenses: React.FC = () => {
                             className="flex items-center justify-between p-3 border border-border rounded-lg"
                           >
                             <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                <span className="text-sm font-bold text-primary">
+                              <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
                                   {index + 1}
                                 </span>
                               </div>
@@ -1136,7 +1135,6 @@ export const Expenses: React.FC = () => {
               </TabsContent>
             </Tabs>
           </div>
-
         </div>
 
         {/* Expense Dialog */}

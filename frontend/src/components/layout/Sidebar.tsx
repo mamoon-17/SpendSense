@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   collapsed?: boolean;
+  onNavigate?: () => void;
 }
 
 const menuItems = [
@@ -67,6 +68,7 @@ const menuItems = [
 
 export const Sidebar: React.FC<SidebarProps> = ({
   collapsed: initialCollapsed = false,
+  onNavigate,
 }) => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(initialCollapsed);
@@ -128,6 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <NavLink
               key={item.href}
               to={item.href}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors group",
                 active

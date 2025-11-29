@@ -179,6 +179,35 @@ export const Bills: React.FC = () => {
     },
   });
 
+  // Create a list of all available participants including the current user
+  const availableParticipants = React.useMemo(() => {
+    const participants = [];
+
+    // Add current user first
+    if (user) {
+      participants.push({
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        isCurrentUser: true,
+      });
+    }
+
+    // Add connections
+    connections.forEach((connection: any) => {
+      const otherUser =
+        connection.requester?.id === user?.id
+          ? connection.receiver
+          : connection.requester;
+      participants.push({
+        ...otherUser,
+        isCurrentUser: false,
+      });
+    });
+
+    return participants;
+  }, [connections, user]);
+
   // Create bill mutation
   const createBillMutation = useMutation({
     mutationFn: (data: typeof formData) =>
@@ -478,13 +507,6 @@ export const Bills: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              className="border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-950/50"
-            >
-              <Receipt className="w-4 h-4 mr-2" />
-              Scan Receipt
-            </Button>
             <Button
               className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 shadow-md h-11 px-6"
               onClick={() => setIsDialogOpen(true)}
@@ -936,22 +958,105 @@ export const Bills: React.FC = () => {
               <CardTitle className="text-sm">Recent Activity</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="text-sm">
-                <p className="font-medium">Sarah paid {formatAmount(40.17)}</p>
-                <p className="text-muted-foreground text-xs">
-                  For Dinner at Italiano
+              {bills.length > 0 ? (
+                (() => {
+                  const activities: Array<{
+                    text: string;
+                    detail: string;
+                    date: Date;
+                  }> = [];
+
+                  // Generate activities from bills
+                  bills
+                    .slice()
+                    .sort(
+                      (a, b) =>
+                        new Date(b.due_date).getTime() -
+                        new Date(a.due_date).getTime()
+                    )
+                    .slice(0, 5)
+                    .forEach((bill) => {
+                      // Check for paid participants
+                      const paidParticipants = bill.participants.filter(
+                        (p) => p.status === "paid"
+                      );
+                      const currentUserParticipant = bill.participants.find(
+                        (p) => p.id === user?.id
+                      );
+
+                      if (bill.status === "completed") {
+                        activities.push({
+                          text: `Bill "${bill.name}" was settled`,
+                          detail: `${formatAmount(
+                            parseFloat(bill.total_amount)
+                          )} total`,
+                          date: new Date(bill.due_date),
+                        });
+                      } else if (paidParticipants.length > 0) {
+                        paidParticipants.forEach((participant) => {
+                          const isCurrentUser = participant.id === user?.id;
+                          activities.push({
+                            text: isCurrentUser
+                              ? `You paid ${formatAmount(
+                                  participant.amount || 0
+                                )}`
+                              : `${
+                                  participant.name || participant.username
+                                } paid ${formatAmount(
+                                  participant.amount || 0
+                                )}`,
+                            detail: `For ${bill.name}`,
+                            date: new Date(bill.due_date),
+                          });
+                        });
+                      } else if (currentUserParticipant?.status === "pending") {
+                        activities.push({
+                          text: `You have a pending payment`,
+                          detail: `${formatAmount(
+                            currentUserParticipant.amount || 0
+                          )} for ${bill.name}`,
+                          date: new Date(bill.due_date),
+                        });
+                      } else if (bill.created_by.id === user?.id) {
+                        activities.push({
+                          text: `You created "${bill.name}"`,
+                          detail: `${formatAmount(
+                            parseFloat(bill.total_amount)
+                          )} with ${
+                            bill.participant_count || bill.participants.length
+                          } ${
+                            bill.participants.length === 1 ? "person" : "people"
+                          }`,
+                          date: new Date(bill.due_date),
+                        });
+                      }
+                    });
+
+                  // Sort by date and take top 3
+                  const recentActivities = activities
+                    .sort((a, b) => b.date.getTime() - a.date.getTime())
+                    .slice(0, 3);
+
+                  return recentActivities.length > 0 ? (
+                    recentActivities.map((activity, index) => (
+                      <div key={index} className="text-sm">
+                        <p className="font-medium">{activity.text}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {activity.detail}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No recent activity
+                    </p>
+                  );
+                })()
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No bills yet. Create your first bill to see activity here.
                 </p>
-              </div>
-              <div className="text-sm">
-                <p className="font-medium">Mike requested {formatAmount(45)}</p>
-                <p className="text-muted-foreground text-xs">Uber to Airport</p>
-              </div>
-              <div className="text-sm">
-                <p className="font-medium">You settled grocery bill</p>
-                <p className="text-muted-foreground text-xs">
-                  {formatAmount(89.3)} total
-                </p>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1078,24 +1183,20 @@ export const Bills: React.FC = () => {
               <div className="space-y-2">
                 <Label>Select Participants *</Label>
                 <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
-                  {connections.length === 0 ? (
+                  {availableParticipants.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       No connections found. Add connections to split bills with
                       them.
                     </p>
                   ) : (
-                    connections.map((connection: any) => {
-                      const otherUser =
-                        connection.requester?.id === user?.id
-                          ? connection.receiver
-                          : connection.requester;
+                    availableParticipants.map((participant: any) => {
                       const isSelected = formData.participant_ids.includes(
-                        otherUser.id
+                        participant.id
                       );
 
                       return (
                         <div
-                          key={otherUser.id}
+                          key={participant.id}
                           className={cn(
                             "p-3 rounded-lg transition-colors",
                             isSelected
@@ -1106,20 +1207,25 @@ export const Bills: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <div
                               className="flex items-center space-x-3 cursor-pointer flex-1"
-                              onClick={() => toggleParticipant(otherUser.id)}
+                              onClick={() => toggleParticipant(participant.id)}
                             >
                               <Avatar className="w-8 h-8">
                                 <AvatarFallback>
-                                  {otherUser.name?.charAt(0) ||
-                                    otherUser.username?.charAt(0)}
+                                  {participant.name?.charAt(0) ||
+                                    participant.username?.charAt(0)}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
                                 <p className="text-sm font-medium">
-                                  {otherUser.name || otherUser.username}
+                                  {participant.name || participant.username}
+                                  {participant.isCurrentUser && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      (You)
+                                    </span>
+                                  )}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  @{otherUser.username}
+                                  @{participant.username}
                                 </p>
                               </div>
                             </div>
@@ -1141,14 +1247,14 @@ export const Bills: React.FC = () => {
                                       value={
                                         formData.percentages[
                                           formData.participant_ids.indexOf(
-                                            otherUser.id
+                                            participant.id
                                           )
                                         ] || ""
                                       }
                                       onChange={(e) => {
                                         const index =
                                           formData.participant_ids.indexOf(
-                                            otherUser.id
+                                            participant.id
                                           );
                                         const newPercentages = [
                                           ...formData.percentages,
@@ -1182,14 +1288,14 @@ export const Bills: React.FC = () => {
                                       value={
                                         formData.custom_amounts[
                                           formData.participant_ids.indexOf(
-                                            otherUser.id
+                                            participant.id
                                           )
                                         ] || ""
                                       }
                                       onChange={(e) => {
                                         const index =
                                           formData.participant_ids.indexOf(
-                                            otherUser.id
+                                            participant.id
                                           );
                                         const newAmounts = [
                                           ...formData.custom_amounts,

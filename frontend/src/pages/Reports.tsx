@@ -3,12 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
   TrendingUp,
+  TrendingDown,
   Download,
   FileText,
   Eye,
   DollarSign,
   Target,
   Printer,
+  Wallet,
+  PiggyBank,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,6 +80,7 @@ export const Reports: React.FC = () => {
   const { formatCurrency, convertAmount, formatAmount, formatDate, settings } =
     useUserSettings();
   const [reportPeriod, setReportPeriod] = useState("month");
+  const [reportType, setReportType] = useState("spending");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState("");
   const [isExporting, setIsExporting] = useState(false);
@@ -623,14 +627,6 @@ export const Reports: React.FC = () => {
           </div>
           <div className="flex gap-3">
             <Button
-              variant="outline"
-              onClick={handlePreview}
-              className="border-sky-200 hover:bg-sky-50 dark:border-sky-800 dark:hover:bg-sky-950/50"
-            >
-              <Eye className="w-5 h-5 mr-2" />
-              Preview
-            </Button>
-            <Button
               className="bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 shadow-md h-11 px-6"
               onClick={handleExportPDF}
               disabled={isExporting}
@@ -667,126 +663,345 @@ export const Reports: React.FC = () => {
               </SelectContent>
             </Select>
 
-            <Select value="spending" disabled>
+            <Select value={reportType} onValueChange={setReportType}>
               <SelectTrigger className="w-full md:w-[180px] border-sky-200 dark:border-sky-900/50">
-                <SelectValue placeholder="Spending Analysis" />
+                <SelectValue placeholder="Report Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="spending">Spending Analysis</SelectItem>
+                <SelectItem value="income">Income Analysis</SelectItem>
+                <SelectItem value="savings">Savings Analysis</SelectItem>
+                <SelectItem value="budget">Budget Performance</SelectItem>
               </SelectContent>
             </Select>
-
-            <div className="flex gap-2 ml-auto">
-              <Button
-                variant="outline"
-                onClick={handlePreview}
-                className="border-sky-200 hover:bg-sky-50 dark:border-sky-800 dark:hover:bg-sky-950/50"
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                Preview
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleExportPDF}
-                disabled={isExporting}
-                className="border-sky-200 hover:bg-sky-50 dark:border-sky-800 dark:hover:bg-sky-950/50"
-              >
-                {isExporting ? (
-                  <>
-                    <Printer className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4 mr-2" />
-                    PDF
-                  </>
-                )}
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="card-financial">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Income
+        {reportType === "spending" && (
+          <>
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Total Expenses
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {formatAmount(Math.round(totalExpenses))}
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-primary" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  +2.1% vs last month
                 </p>
-                <p className="text-2xl font-bold text-success">
-                  {formatAmount(Math.round(totalIncome))}
-                </p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-success" />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              +5.2% vs last month
-            </p>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        <Card className="card-financial">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Expenses
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Top Category
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {categoryData.length > 0 ? categoryData[0].name : "N/A"}
+                    </p>
+                  </div>
+                  <BarChart3 className="w-8 h-8 text-primary" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {categoryData.length > 0
+                    ? formatAmount(categoryData[0].value)
+                    : "No data"}
                 </p>
-                <p className="text-2xl font-bold">
-                  {formatAmount(Math.round(totalExpenses))}
-                </p>
-              </div>
-              <DollarSign className="w-8 h-8 text-primary" />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              +2.1% vs last month
-            </p>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        <Card className="card-financial">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Net Savings
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Daily Average
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {formatAmount(Math.round(totalExpenses / 30))}
+                    </p>
+                  </div>
+                  <TrendingDown className="w-8 h-8 text-warning" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Per day spending
                 </p>
-                <p className="text-2xl font-bold text-success">
-                  {formatAmount(Math.round(totalSavings))}
-                </p>
-              </div>
-              <Target className="w-8 h-8 text-success" />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Savings rate: {savingsRate}%
-            </p>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        <Card className="card-financial">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Budget Health
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Total Categories
+                    </p>
+                    <p className="text-2xl font-bold">{categoryData.length}</p>
+                  </div>
+                  <Target className="w-8 h-8 text-primary" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Active categories
                 </p>
-                <p className="text-2xl font-bold text-warning">
-                  {budgetsOnTrack > budgets.length / 2
-                    ? "Good"
-                    : "Needs Attention"}
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {reportType === "income" && (
+          <>
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Total Income
+                    </p>
+                    <p className="text-2xl font-bold text-success">
+                      {formatAmount(Math.round(totalIncome))}
+                    </p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-success" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  +5.2% vs last month
                 </p>
-              </div>
-              <BarChart3 className="w-8 h-8 text-warning" />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {budgetsOnTrack} budget{budgetsOnTrack !== 1 ? "s" : ""} on track
-            </p>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Net Profit
+                    </p>
+                    <p className="text-2xl font-bold text-success">
+                      {formatAmount(Math.round(totalSavings))}
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-success" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  After expenses
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Monthly Average
+                    </p>
+                    <p className="text-2xl font-bold text-success">
+                      {formatAmount(Math.round(totalIncome / 6))}
+                    </p>
+                  </div>
+                  <Target className="w-8 h-8 text-success" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  6-month average
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Expense Ratio
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {totalIncome > 0
+                        ? Math.round((totalExpenses / totalIncome) * 100)
+                        : 0}
+                      %
+                    </p>
+                  </div>
+                  <BarChart3 className="w-8 h-8 text-warning" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Of total income
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {reportType === "savings" && (
+          <>
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Net Savings
+                    </p>
+                    <p className="text-2xl font-bold text-success">
+                      {formatAmount(Math.round(totalSavings))}
+                    </p>
+                  </div>
+                  <Target className="w-8 h-8 text-success" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Savings rate: {savingsRate}%
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Savings Goals
+                    </p>
+                    <p className="text-2xl font-bold">{savingsGoals.length}</p>
+                  </div>
+                  <PiggyBank className="w-8 h-8 text-success" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Active goals
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Avg. Progress
+                    </p>
+                    <p className="text-2xl font-bold">{averageGoalProgress}%</p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-success" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Goal completion
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Monthly Target
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {formatAmount(Math.round(totalSavings / 6))}
+                    </p>
+                  </div>
+                  <Target className="w-8 h-8 text-success" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  6-month average
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {reportType === "budget" && (
+          <>
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Budget Health
+                    </p>
+                    <p className="text-2xl font-bold text-warning">
+                      {budgetsOnTrack > budgets.length / 2
+                        ? "Good"
+                        : "Needs Attention"}
+                    </p>
+                  </div>
+                  <BarChart3 className="w-8 h-8 text-warning" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {budgetsOnTrack} budget{budgetsOnTrack !== 1 ? "s" : ""} on
+                  track
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Total Budgets
+                    </p>
+                    <p className="text-2xl font-bold">{budgets.length}</p>
+                  </div>
+                  <Wallet className="w-8 h-8 text-primary" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Active budgets
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Total Allocated
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {formatAmount(Math.round(totalIncome))}
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-primary" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Budget amounts
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-financial">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Utilization
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {totalIncome > 0
+                        ? Math.round((totalExpenses / totalIncome) * 100)
+                        : 0}
+                      %
+                    </p>
+                  </div>
+                  <Target className="w-8 h-8 text-warning" />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Of total budget
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

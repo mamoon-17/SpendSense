@@ -30,8 +30,8 @@ export const Layout: React.FC = () => {
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="relative">
-            <Sidebar />
+          <div className="relative z-10 w-64">
+            <Sidebar onNavigate={() => setMobileMenuOpen(false)} />
           </div>
         </div>
       )}

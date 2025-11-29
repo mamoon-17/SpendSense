@@ -308,7 +308,7 @@ export const Settings: React.FC = () => {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="w-4 h-4" />
             Profile
@@ -324,10 +324,6 @@ export const Settings: React.FC = () => {
             <Shield className="w-4 h-4" />
             Security
           </TabsTrigger>
-          <TabsTrigger value="data" className="flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Data
-          </TabsTrigger>
         </TabsList>
 
         {/* Profile Settings */}
@@ -340,34 +336,6 @@ export const Settings: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Avatar Section */}
-              <div className="flex items-center space-x-4">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src={profile.avatar} />
-                  <AvatarFallback className="text-lg">
-                    {profile.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Profile Picture</Label>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
-                      Upload New
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
@@ -537,48 +505,6 @@ export const Settings: React.FC = () => {
                 <Button onClick={handlePasswordChange} disabled={isLoading}>
                   {isLoading ? "Updating..." : "Update Password"}
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* AI Assistant Settings */}
-        {/* Data Settings */}
-        <TabsContent value="data" className="space-y-6">
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle>Data Management</CardTitle>
-              <CardDescription>
-                Export your data or manage your account
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Export Your Data</h4>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Download all your financial data including budgets,
-                    expenses, and reports.
-                  </p>
-                  <Button onClick={handleExportData} variant="outline">
-                    <Download className="w-4 h-4 mr-2" />
-                    Export Data (CSV)
-                  </Button>
-                </div>
-
-                <div className="p-4 bg-destructive-light rounded-lg border border-destructive/20">
-                  <h4 className="text-sm font-medium mb-2 text-destructive">
-                    Danger Zone
-                  </h4>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Once you delete your account, there is no going back. Please
-                    be certain.
-                  </p>
-                  <Button onClick={handleDeleteAccount} variant="destructive">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Account
-                  </Button>
-                </div>
               </div>
             </CardContent>
           </Card>
