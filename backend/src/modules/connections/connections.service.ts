@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Connection, ConnectionStatus } from './connections.entity';
 import { Repository } from 'typeorm';
@@ -8,11 +8,13 @@ import {
   ConnectionRequestEvent,
   ConnectionAcceptedEvent,
 } from 'src/common/events/domain-events';
+import { BillParticipant } from '../bills/bill-participant.entity';
 
 @Injectable()
 export class ConnectionsService {
   constructor(
     @InjectRepository(Connection) private readonly repo: Repository<Connection>,
+    @InjectRepository(BillParticipant) private readonly billParticipantRepo: Repository<BillParticipant>,
     private readonly eventBus: EventBusService,
   ) {}
 
@@ -134,5 +136,41 @@ export class ConnectionsService {
       relations: ['requester', 'receiver'],
       order: { accepted_at: 'DESC' },
     });
+  }
+
+  async removeConnection(id: string, userId: string): Promise<{ success: boolean }> {
+    // Ensure the current user is part of the connection
+    const existing = await this.repo.findOne({
+      where: [
+        { id, requester: { id: userId } },
+        { id, receiver: { id: userId } },
+      ],
+      relations: ['requester', 'receiver'],
+    });
+
+    if (!existing) {
+      throw new BadRequestException('Connection not found or not authorized');
+    }
+
+    // Determine the other user in the connection
+    const otherUserId = existing.requester.id === userId ? existing.receiver.id : existing.requester.id;
+
+    // Check if either user is a participant in any active bills together
+    const sharedBillParticipants = await this.billParticipantRepo
+      .createQueryBuilder('bp')
+      .innerJoin('bp.bill', 'bill')
+      .where('bp.user_id IN (:...userIds)', { userIds: [userId, otherUserId] })
+      .groupBy('bill.id')
+      .having('COUNT(DISTINCT bp.user_id) = 2')
+      .getCount();
+
+    if (sharedBillParticipants > 0) {
+      throw new BadRequestException(
+        'Cannot remove connection. This user is part of one or more bill splits with you. Please settle or remove shared bills first.',
+      );
+    }
+
+    await this.repo.delete({ id });
+    return { success: true };
   }
 }

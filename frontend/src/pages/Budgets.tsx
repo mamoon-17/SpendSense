@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -76,6 +77,7 @@ interface Budget {
 export function Budgets(): JSX.Element {
   const { formatCurrency, convertAmount, formatAmount, formatDate, settings } =
     useUserSettings();
+  const location = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -134,9 +136,15 @@ export function Budgets(): JSX.Element {
     },
     staleTime: 30000, // Cache for 30 seconds
     refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
     retry: 3,
-    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnMount: "always", // Always refetch when component mounts
   });
+
+  // Ensure fresh data when returning to this route under persistent layouts
+  React.useEffect(() => {
+    refetch();
+  }, [location.pathname, refetch]);
 
   // Delete budget mutation
   const deleteMutation = useMutation({

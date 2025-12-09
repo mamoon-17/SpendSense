@@ -164,6 +164,36 @@ const ModernChatApp: React.FC = observer(() => {
       return;
     }
 
+    const convId = chatStore.currentConversationId || selectedConversation;
+    
+    // Validate connection for direct conversations
+    if (currentConversation?.type === "direct" && user) {
+      const otherParticipant = currentConversation.participants?.find(
+        (p: any) => {
+          const pId = typeof p === "string" ? p : p?.id;
+          return pId && pId !== user.id;
+        }
+      );
+      
+      if (otherParticipant) {
+        const otherUserId = typeof otherParticipant === "string" ? otherParticipant : otherParticipant?.id;
+        const isConnected = connections.some((conn: any) => {
+          const isRequester = conn.requester?.id === otherUserId && conn.receiver?.id === user.id;
+          const isReceiver = conn.receiver?.id === otherUserId && conn.requester?.id === user.id;
+          return (isRequester || isReceiver) && conn.status === "connected";
+        });
+        
+        if (!isConnected) {
+          toast({
+            title: "Connection Required",
+            description: "You are no longer connected with this user.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
     // Add message to local state for immediate UI update
     const newMessage = {
       id: Date.now().toString(),
@@ -175,7 +205,6 @@ const ModernChatApp: React.FC = observer(() => {
     };
 
     // Optimistically update UI
-    const convId = chatStore.currentConversationId || selectedConversation;
     if (convId) {
       chatStore.addMessage(convId, newMessage);
     }
@@ -417,19 +446,19 @@ const ModernChatApp: React.FC = observer(() => {
 
             <div
               className={cn(
-                "flex items-center gap-1 mt-1 text-xs text-gray-500",
-                isOwn ? "justify-end" : "justify-start"
+                "flex items-center gap-1 mt-1 text-xs",
+                isOwn ? "justify-end text-white opacity-90" : "justify-start text-gray-500"
               )}
             >
               <span>{formatMessageTime(message.sent_at)}</span>
               {isOwn && (
                 <div className="ml-1">
                   {message.status === "read" ? (
-                    <CheckCheck className="w-3 h-3 text-blue-500" />
+                    <CheckCheck className="w-3 h-3 text-white opacity-90" />
                   ) : message.status === "delivered" ? (
-                    <CheckCheck className="w-3 h-3" />
+                    <CheckCheck className="w-3 h-3 text-white opacity-90" />
                   ) : (
-                    <Check className="w-3 h-3" />
+                    <Check className="w-3 h-3 text-white opacity-90" />
                   )}
                 </div>
               )}
