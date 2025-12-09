@@ -53,10 +53,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Removed tabs in favor of a single Connections view
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { connectionsAPI, invitationsAPI, conversationsAPI, budgetAPI, billsAPI } from "@/lib/api";
+import { connectionsAPI, invitationsAPI, conversationsAPI, budgetAPI, billsAPI, api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
@@ -618,49 +618,24 @@ export const Connections: React.FC = () => {
           </CardContent>
         </Card>
       )}
-      {/* Main Content */}
+      {/* Main Content: Only Connections */}
       <div className="space-y-6">
-        <Tabs
-          defaultValue={pendingRequests.length > 0 ? "requests" : "connections"}
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-3 bg-teal-100/50 dark:bg-teal-950/30">
-            <TabsTrigger
-              value="connections"
-              className="data-[state=active]:bg-teal-600 data-[state=active]:text-white"
-            >
-              Connections
-            </TabsTrigger>
-            <TabsTrigger
-              value="requests"
-              className="data-[state=active]:bg-teal-600 data-[state=active]:text-white"
-            >
-              Connection Requests
-            </TabsTrigger>
-            <TabsTrigger
-              value="invites"
-              className="data-[state=active]:bg-teal-600 data-[state=active]:text-white"
-            >
-              Pending Invites
-            </TabsTrigger>
-          </TabsList>
+        {/* Search */}
+        <Card className="mt-6 border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
+          <CardContent className="pt-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Search connections by name"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Search */}
-          <Card className="mt-6 border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
-            <CardContent className="pt-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Search connections by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <TabsContent value="connections" className="space-y-4 mt-6">
+        <div className="space-y-4 mt-6">
             {filteredConnections.length === 0 ? (
               <Card className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                 <CardContent className="p-4 text-center text-muted-foreground">
@@ -858,162 +833,7 @@ export const Connections: React.FC = () => {
                 );
               })
             )}
-          </TabsContent>
-
-          <TabsContent value="requests" className="space-y-4 mt-6">
-            {pendingRequests.length === 0 ? (
-              <Card className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
-                <CardContent className="p-4 text-center text-muted-foreground">
-                  No pending connection requests.
-                </CardContent>
-              </Card>
-            ) : (
-              pendingRequests.map((connection) => (
-                <Card
-                  key={connection.id}
-                  className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow border-warning/20"
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <Avatar className="w-12 h-12">
-                          <AvatarFallback>
-                            {connection.requester.name
-                              ?.split(" ")
-                              .map((n) => n[0])
-                              .join("") ||
-                              connection.requester.username?.[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">
-                            {connection.requester.name ||
-                              connection.requester.username}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            @{connection.requester.username}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Requested{" "}
-                            {format(
-                              new Date(
-                                connection.created_at ||
-                                  connection.accepted_at ||
-                                  new Date()
-                              ),
-                              "MMM dd, yyyy 'at' h:mm a"
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          size="sm"
-                          onClick={async () => {
-                            try {
-                              await connectionsAPI.acceptRequest(connection.id);
-                              toast({
-                                title: "Connection Accepted",
-                                description: `You are now connected with ${
-                                  connection.requester.name ||
-                                  connection.requester.username
-                                }`,
-                              });
-                              await refetchConnections();
-                            } catch (error) {
-                              toast({
-                                title: "Error",
-                                description:
-                                  "Failed to accept connection request.",
-                                variant: "destructive",
-                              });
-                            }
-                          }}
-                          className="bg-success hover:bg-success/90 text-success-foreground"
-                        >
-                          <Check className="w-4 h-4 mr-2" />
-                          Accept
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            toast({
-                              title: "Connection Declined",
-                              description: `Connection request from ${
-                                connection.requester.name ||
-                                connection.requester.username
-                              } declined.`,
-                            });
-                          }}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="invites" className="space-y-4 mt-6">
-            {pendingInvites.length === 0 ? (
-              <Card className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
-                <CardContent className="p-4 text-center text-muted-foreground">
-                  No pending invites.
-                </CardContent>
-              </Card>
-            ) : (
-              pendingInvites.map((invite) => (
-                <Card key={invite.id} className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold">{invite.email}</h3>
-                          <Badge
-                            variant={
-                              invite.status === "expired"
-                                ? "destructive"
-                                : "secondary"
-                            }
-                          >
-                            {invite.status}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Invited to{" "}
-                          <span className="font-medium">
-                            {invite.budgetName}
-                          </span>{" "}
-                          as {invite.role}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Sent {format(new Date(invite.sentAt), "MMM dd, yyyy")}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <Button size="sm" variant="outline">
-                          Resend
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-destructive hover:text-destructive"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>{" "}
       {/* Remove Connection Alert Dialog */}
       <AlertDialog
@@ -1040,20 +860,54 @@ export const Connections: React.FC = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                const otherUser =
-                  removeConnectionDialog.connection &&
-                  (user?.id === removeConnectionDialog.connection.requester.id
-                    ? removeConnectionDialog.connection.receiver
-                    : removeConnectionDialog.connection.requester);
-                toast({
-                  title: "Connection Removed",
-                  description: `${
-                    otherUser?.name || otherUser?.username
-                  } has been removed from your connections.`,
-                });
-                setRemoveConnectionDialog({ open: false, connection: null });
-              }}
+                onClick={async () => {
+                  try {
+                    const toRemove = removeConnectionDialog.connection;
+                    if (!toRemove || !user) {
+                      setRemoveConnectionDialog({ open: false, connection: null });
+                      return;
+                    }
+                    const otherUser =
+                      user.id === toRemove.requester.id
+                        ? toRemove.receiver
+                        : toRemove.requester;
+
+                    // Block removal if other user is a participant in any bill created by current user
+                    const isInMyBills = (bills || []).some((bill: any) => {
+                      const createdByMe = bill?.created_by?.id === user.id;
+                      const participantIds = Array.isArray(bill?.participants)
+                        ? bill.participants.map((p: any) => p?.id || p)
+                        : [];
+                      return createdByMe && participantIds.includes(otherUser.id);
+                    });
+
+                  if (isInMyBills) {
+                    toast({
+                      title: "Cannot remove connection",
+                      description:
+                        "This user is a participant in one or more of your bills. Remove them from those bills before removing the connection.",
+                      variant: "destructive",
+                    });
+                    setRemoveConnectionDialog({ open: false, connection: null });
+                    return;
+                  }
+
+                  // Backend expects DELETE /connections with body { connection_id }
+                  await api.delete("/connections", { data: { connection_id: toRemove.id } });
+                  await refetchConnections();
+                    toast({
+                      title: "Connection Removed",
+                      description: `${otherUser?.name || otherUser?.username} has been removed from your connections.`,
+                    });
+                    setRemoveConnectionDialog({ open: false, connection: null });
+                  } catch (e: any) {
+                    toast({
+                      title: "Error",
+                      description: e?.response?.data?.message || "Failed to remove connection.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
             >
               Remove
             </AlertDialogAction>
