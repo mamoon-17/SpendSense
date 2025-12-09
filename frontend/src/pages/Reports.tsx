@@ -1010,11 +1010,31 @@ export const Reports: React.FC = () => {
         {/* Main Charts Area */}
         <div className="lg:col-span-3 space-y-6">
           <Tabs defaultValue="trends" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="trends">Trends</TabsTrigger>
-              <TabsTrigger value="categories">Categories</TabsTrigger>
-              <TabsTrigger value="goals">Goals</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 bg-sky-100/50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900/50">
+              <TabsTrigger
+                value="trends"
+                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+              >
+                Trends
+              </TabsTrigger>
+              <TabsTrigger
+                value="categories"
+                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+              >
+                Categories
+              </TabsTrigger>
+              <TabsTrigger
+                value="goals"
+                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+              >
+                Goals
+              </TabsTrigger>
+              <TabsTrigger
+                value="insights"
+                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+              >
+                Insights
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="trends" className="mt-6">
