@@ -8,6 +8,7 @@ import {
   Users,
   TrendingUp,
 } from "lucide-react";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -118,9 +119,10 @@ export const Notifications: React.FC = () => {
     }
   };
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <PageTransition>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
             variant="ghost"
@@ -233,6 +235,7 @@ export const Notifications: React.FC = () => {
           ))
         )}
       </div>
-    </div>
+      </div>
+    </PageTransition>
   );
 };

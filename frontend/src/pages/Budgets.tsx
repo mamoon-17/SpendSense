@@ -11,9 +11,13 @@ import {
   DollarSign,
   Target,
   PieChart,
-  Filter,
+  Activity,
   Search,
+  Wallet,
+  ArrowUpRight,
+  MoreHorizontal,
 } from "lucide-react";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -42,6 +46,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { InviteDialog } from "@/components/collaboration/InviteDialog";
 import { BudgetDialog } from "@/components/budgets/BudgetDialog";
 import { budgetAPI, categoriesAPI } from "@/lib/api";
@@ -63,7 +73,7 @@ interface Budget {
   currency: string;
 }
 
-export const Budgets: React.FC = () => {
+export function Budgets(): JSX.Element {
   const { formatCurrency, convertAmount, formatAmount, formatDate, settings } =
     useUserSettings();
   const { toast } = useToast();
@@ -268,332 +278,442 @@ export const Budgets: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 p-2">
-      {/* Header with Gradient Background */}
-      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/30 dark:to-cyan-950/30 rounded-2xl p-8 shadow-sm border border-emerald-100/50 dark:border-emerald-900/30">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-3">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl">
-                <Target className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+    <PageTransition>
+      <div className="space-y-6 p-6">
+        {/* Header - coherent with Expenses */}
+        <Card className="border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-900/10 dark:to-transparent">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
+                <Wallet className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-emerald-700 to-teal-600 dark:from-emerald-300 dark:to-teal-300 bg-clip-text text-transparent">
-                Budget Management
-              </h1>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-emerald-700 dark:text-emerald-300">Budget Tracking</h1>
+                <p className="mt-1 text-emerald-600 dark:text-emerald-400">
+                  Monitor budgets, stay on track, and optimize your goals
+                </p>
+              </div>
             </div>
-            <p className="text-muted-foreground ml-20 text-base">
-              Set financial goals, track spending, and stay within your limits
-            </p>
-          </div>
-          <div className="flex gap-3">
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 shadow-md h-11 px-6"
+              className="bg-emerald-600 hover:bg-emerald-700 shadow-sm"
               onClick={() => setIsCreateDialogOpen(true)}
             >
-              <Plus className="w-5 h-5 mr-2" />
-              Create Budget
+              <Plus className="w-4 h-4 mr-2" />
+              New Budget
             </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Overview Cards with Enhanced Styling */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-emerald-100 dark:border-emerald-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-emerald-50/30 dark:from-slate-950 dark:to-emerald-950/10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
-              Total Budget
-            </CardTitle>
-            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-              <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
-              {formatAmount(totalBudgetAmount)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Across {budgets.length} active budgets
-            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-cyan-100 dark:border-cyan-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-cyan-50/30 dark:from-slate-950 dark:to-cyan-950/10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-cyan-900 dark:text-cyan-100">
-              Total Spent
-            </CardTitle>
-            <div className="p-2 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Budget</p>
+              <p className="text-3xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">
+                {formatAmount(totalBudgetAmount)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Across {budgets.length} active budgets
+              </p>
+            </div>
+            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
+              <DollarSign className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-cyan-700 dark:text-cyan-300">
-              {formatAmount(totalSpent)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {((totalSpent / totalBudgetAmount) * 100).toFixed(1)}% of total
-              budget
-            </p>
-          </CardContent>
         </Card>
 
-        <Card className="border-teal-100 dark:border-teal-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-teal-50/30 dark:from-slate-950 dark:to-teal-950/10">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-teal-900 dark:text-teal-100">
-              Remaining
-            </CardTitle>
-            <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-              <Target className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Spent</p>
+              <p className="text-3xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">
+                {formatAmount(totalSpent)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {totalBudgetAmount > 0
+                  ? ((totalSpent / totalBudgetAmount) * 100).toFixed(1)
+                  : 0}
+                % of total budget
+              </p>
+            </div>
+            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
+              <TrendingUp className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-teal-700 dark:text-teal-300">
-              {formatAmount(totalRemaining)}
+        </Card>
+
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div>
+              <p className="text-sm text-muted-foreground">Remaining</p>
+              <p className="text-3xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">
+                {formatAmount(totalRemaining)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Available to spend
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Available to spend
-            </p>
-          </CardContent>
+            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
+              <Target className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </CardHeader>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Budget List */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Filters with Enhanced Styling */}
-          <Card className="border-emerald-100/50 dark:border-emerald-900/20 shadow-sm bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
-            <CardContent className="pt-6">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-500 w-4 h-4" />
-                    <Input
-                      placeholder="Search budgets..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 border-emerald-200 focus-visible:ring-emerald-400 dark:border-emerald-900/50"
-                    />
-                  </div>
-                </div>
-                <Select
-                  value={filterCategory}
-                  onValueChange={setFilterCategory}
-                >
-                  <SelectTrigger className="w-full md:w-[180px] border-emerald-200 dark:border-emerald-900/50">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px] overflow-y-auto">
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((cat: any) => (
-                      <SelectItem key={cat.id} value={cat.name}>
-                        {cat.icon && <span className="mr-2">{cat.icon}</span>}
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-                  <SelectTrigger className="w-full md:w-[150px] border-emerald-200 dark:border-emerald-900/50">
-                    <SelectValue placeholder="Period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Periods</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="lg:col-span-2 space-y-4">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search budgets..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px] overflow-y-auto">
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((cat: any) => (
+                  <SelectItem key={cat.id} value={cat.name}>
+                    {cat.icon && <span className="mr-2">{cat.icon}</span>}
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+              <SelectTrigger className="w-full sm:w-[150px]">
+                <SelectValue placeholder="All Periods" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Periods</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          {/* Budget Cards */}
+          {/* Budget Cards with Circular Progress */}
           <div className="space-y-4">
-            {filteredBudgets.map((budget) => {
-              const spent = budget.spent ?? 0;
-              const totalAmount = budget.totalAmount ?? 0;
-              const remaining = budget.remaining ?? 0;
-              const status = getBudgetStatus(budget);
-              const percentage =
-                totalAmount > 0 ? (spent / totalAmount) * 100 : 0;
+            {filteredBudgets.length === 0 ? (
+              <Card className="p-12">
+                <div className="text-center text-muted-foreground">
+                  <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No budgets found</p>
+                  <p className="text-sm mt-1">
+                    Create your first budget to start tracking your spending
+                  </p>
+                </div>
+              </Card>
+            ) : (
+              filteredBudgets.map((budget) => {
+                const spent = budget.spent ?? 0;
+                const totalAmount = budget.totalAmount ?? 0;
+                const remaining = budget.remaining ?? 0;
+                const status = getBudgetStatus(budget);
+                const percentage =
+                  totalAmount > 0 ? (spent / totalAmount) * 100 : 0;
 
-              return (
-                <Card
-                  key={budget.id}
-                  className="border-emerald-100 dark:border-emerald-900/30 shadow-md hover:shadow-xl hover:border-emerald-200 dark:hover:border-emerald-800 transition-all duration-200 bg-gradient-to-br from-white via-white to-emerald-50/20 dark:from-slate-950 dark:via-slate-950 dark:to-emerald-950/10"
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg text-emerald-900 dark:text-emerald-100">
-                          {budget.name}
-                        </CardTitle>
-                        <CardDescription className="flex items-center space-x-4">
-                          <Badge
-                            variant="secondary"
-                            className="capitalize bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                          >
-                            {budget.period}
-                          </Badge>
-                          <span className="flex items-center">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            Until {formatDate(new Date(budget.endDate))}
-                          </span>
-                          <span className="flex items-center">
-                            <Users className="w-3 h-3 mr-1" />
-                            {budget.participants.length} participant
-                            {budget.participants.length > 1 ? "s" : ""}
-                          </span>
-                        </CardDescription>
-                      </div>
+                // Determine color based on status
+                const getProgressColor = () => {
+                  if (percentage >= 100) return "text-red-500";
+                  if (percentage >= 80) return "text-orange-500";
+                  return "text-emerald-500";
+                };
 
-                      <div className="flex items-center space-x-2">
-                        {status === "warning" && (
-                          <AlertCircle className="w-5 h-5 text-warning" />
-                        )}
-                        {status === "over" && (
-                          <AlertCircle className="w-5 h-5 text-destructive" />
-                        )}
-                        <InviteDialog
-                          budgetId={budget.id}
-                          budgetName={budget.name}
-                          trigger={
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-primary hover:text-primary"
+                const getProgressBg = () => {
+                  if (percentage >= 100) return "bg-red-100 dark:bg-red-950/30";
+                  if (percentage >= 80)
+                    return "bg-orange-100 dark:bg-orange-950/30";
+                  return "bg-emerald-100 dark:bg-emerald-950/30";
+                };
+
+                return (
+                  <Card
+                    key={budget.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-6">
+                        {/* Circular Progress */}
+                        <div className="relative flex items-center justify-center">
+                          <svg className="w-24 h-24 transform -rotate-90">
+                            <circle
+                              cx="48"
+                              cy="48"
+                              r="42"
+                              stroke="currentColor"
+                              strokeWidth="8"
+                              fill="none"
+                              className={getProgressBg()}
+                            />
+                            <circle
+                              cx="48"
+                              cy="48"
+                              r="42"
+                              stroke="currentColor"
+                              strokeWidth="8"
+                              fill="none"
+                              strokeDasharray={`${(Math.min(percentage, 100) / 100) * 264} 264`}
+                              className={getProgressColor()}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span
+                              className={cn(
+                                "text-2xl font-bold",
+                                getProgressColor()
+                              )}
                             >
-                              <Users className="w-4 h-4 mr-2" />
-                              Invite
-                            </Button>
-                          }
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingBudget(budget);
-                            setIsCreateDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() =>
-                            handleDeleteBudget(budget.id, budget.name)
-                          }
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                              {Math.round(percentage)}%
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              USED
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Budget Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-lg mb-1">
+                                {budget.name}
+                              </h3>
+                              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                                <Badge
+                                  variant="secondary"
+                                  className="capitalize"
+                                >
+                                  {budget.period}
+                                </Badge>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  Until {formatDate(new Date(budget.endDate))}
+                                </span>
+                              </div>
+                            </div>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setEditingBudget(budget);
+                                    setIsCreateDialogOpen(true);
+                                  }}
+                                >
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() =>
+                                    handleDeleteBudget(budget.id, budget.name)
+                                  }
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4 mt-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">
+                                Budget
+                              </p>
+                              <p className="font-semibold">
+                                {formatCurrency(
+                                  totalAmount,
+                                  budget.currency || "USD"
+                                )}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">
+                                Spent
+                              </p>
+                              <p className="font-semibold">
+                                {formatCurrency(spent, budget.currency || "USD")}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">
+                                Remaining
+                              </p>
+                              <p
+                                className={cn(
+                                  "font-semibold",
+                                  getProgressColor()
+                                )}
+                              >
+                                {formatCurrency(
+                                  remaining,
+                                  budget.currency || "USD"
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                {typeof budget.category === "string"
+                                  ? budget.category
+                                  : budget.category?.name ?? "Uncategorized"}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="flex items-center text-sm text-muted-foreground">
+                                <Users className="w-4 h-4 mr-1" />
+                                {budget.participants.length} participant
+                                {budget.participants.length !== 1 ? "s" : ""}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">
-                        {formatCurrency(spent, budget.currency || "USD")} spent
-                      </span>
-                      <span
-                        className={cn("font-medium", getBudgetColor(status))}
-                      >
-                        {formatCurrency(remaining, budget.currency || "USD")}{" "}
-                        remaining
-                      </span>
-                    </div>
-
-                    <Progress
-                      value={Math.min(percentage, 100)}
-                      className={cn(
-                        "h-3.5 bg-emerald-100 dark:bg-emerald-950/50",
-                        status === "over"
-                          ? "[&>div]:bg-gradient-to-r [&>div]:from-red-500 [&>div]:to-red-600"
-                          : status === "warning"
-                          ? "[&>div]:bg-gradient-to-r [&>div]:from-yellow-500 [&>div]:to-orange-500"
-                          : "[&>div]:bg-gradient-to-r [&>div]:from-emerald-500 [&>div]:to-teal-500"
-                      )}
-                    />
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">
-                        {percentage.toFixed(1)}% used
-                      </span>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline">
-                          {typeof budget.category === "string"
-                            ? budget.category
-                            : budget.category?.name ?? "Uncategorized"}
-                        </Badge>
-                        <span className="text-2xl font-bold">
-                          {formatCurrency(
-                            totalAmount,
-                            budget.currency || "USD"
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
           </div>
         </div>
 
         {/* Right Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Stats */}
-          <Card className="card-financial">
+        <div className="space-y-4">
+          {/* Budget Health */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-sm flex items-center">
-                <PieChart className="w-4 h-4 mr-2" />
+              <CardTitle className="text-base flex items-center gap-2">
+                <Activity className="w-5 h-5 text-emerald-600" />
                 Budget Health
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-success">On Track</span>
-                  <span className="font-medium">2</span>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm font-medium">On Track</span>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-16 bg-emerald-500 rounded-full" />
+                  <span className="text-sm font-semibold text-emerald-600">
+                    {
+                      budgets.filter((b) => getBudgetStatus(b) === "good")
+                        .length
+                    }
+                  </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-warning">Warning</span>
-                  <span className="font-medium">1</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm font-medium">Warning</span>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-16 bg-orange-500 rounded-full" />
+                  <span className="text-sm font-semibold text-orange-600">
+                    {
+                      budgets.filter((b) => getBudgetStatus(b) === "warning")
+                        .length
+                    }
+                  </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-destructive">Over Budget</span>
-                  <span className="font-medium">0</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-sm font-medium">Over Budget</span>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-16 bg-red-500 rounded-full" />
+                  <span className="text-sm font-semibold text-red-600">
+                    {
+                      budgets.filter((b) => getBudgetStatus(b) === "over")
+                        .length
+                    }
+                  </span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Category Breakdown */}
-          <Card className="card-financial">
+          {/* Top Categories */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Top Categories</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <PieChart className="w-5 h-5 text-purple-600" />
+                Top Categories
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { name: "Food & Dining", amount: 800, color: "bg-primary" },
-                { name: "Travel", amount: 3000, color: "bg-success" },
-                { name: "Entertainment", amount: 200, color: "bg-warning" },
-              ].map((category, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <div className={cn("w-3 h-3 rounded-full", category.color)} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {category.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatAmount(category.amount)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <CardContent className="space-y-4">
+              {(() => {
+                // Calculate top categories from budgets
+                const categoryMap = new Map<
+                  string,
+                  { name: string; amount: number }
+                >();
+                budgets.forEach((budget) => {
+                  const categoryName =
+                    typeof budget.category === "string"
+                      ? budget.category
+                      : budget.category?.name ?? "Uncategorized";
+                  const existing = categoryMap.get(categoryName);
+                  if (existing) {
+                    existing.amount += budget.totalAmount ?? 0;
+                  } else {
+                    categoryMap.set(categoryName, {
+                      name: categoryName,
+                      amount: budget.totalAmount ?? 0,
+                    });
+                  }
+                });
+
+                const topCategories = Array.from(categoryMap.values())
+                  .sort((a, b) => b.amount - a.amount)
+                  .slice(0, 4);
+
+                const colors = [
+                  "bg-emerald-500",
+                  "bg-purple-500",
+                  "bg-orange-500",
+                  "bg-blue-500",
+                ];
+
+                return topCategories.length > 0 ? (
+                  topCategories.map((category, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "w-2 h-2 rounded-full",
+                          colors[index % colors.length]
+                        )}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {category.name}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold">
+                        {formatAmount(category.amount)}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No categories yet
+                  </p>
+                );
+              })()}
             </CardContent>
           </Card>
         </div>
@@ -632,6 +752,7 @@ export const Budgets: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </PageTransition>
   );
-};
+}

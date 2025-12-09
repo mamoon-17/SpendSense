@@ -27,6 +27,11 @@ export class BudgetsController {
     return this.budgetsService.getAllBudgets(user.id);
   }
 
+  @Get('enhanced/analytics')
+  async getAllBudgetsEnhanced(@CurrentUser() user: any) {
+    return this.budgetsService.getAllBudgetsEnhanced(user.id);
+  }
+
   @Post()
   async createBudget(
     @Body() payload: CreateBudgetDTO,

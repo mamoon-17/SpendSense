@@ -260,7 +260,6 @@ export const Register: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Submit Button */}
                 <Button
                   type="submit"
                   className="w-full h-12 bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-500 hover:to-purple-600 text-white font-semibold rounded-lg transition-all duration-300"
@@ -273,39 +272,10 @@ export const Register: React.FC = () => {
                   )}
                 </Button>
 
-                {/* Social Login */}
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-4">Or Sign Up Using</p>
-                  <div className="flex justify-center space-x-4">
-                    <button
-                      type="button"
-                      className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors"
-                    >
-                      <span className="text-sm font-bold">f</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="w-10 h-10 bg-sky-400 rounded-full flex items-center justify-center text-white hover:bg-sky-500 transition-colors"
-                    >
-                      <span className="text-sm font-bold">t</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 transition-colors"
-                    >
-                      <span className="text-sm font-bold">G</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Login Link */}
                 <div className="text-center">
                   <p className="text-sm text-gray-600">
                     Already have an account?{" "}
-                    <Link
-                      to="/login"
-                      className="text-primary hover:text-primary/80 font-medium transition-colors uppercase"
-                    >
+                    <Link to="/login" className="text-primary hover:opacity-80 font-medium transition-colors uppercase">
                       SIGN IN
                     </Link>
                   </p>

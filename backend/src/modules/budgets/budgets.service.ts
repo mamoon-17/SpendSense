@@ -29,6 +29,68 @@ export class BudgetsService {
     });
   }
 
+  async getAllBudgetsEnhanced(userId: string): Promise<any> {
+    const budgets = await this.budgetsRepo.find({
+      where: { created_by: { id: userId } },
+      relations: ['category', 'created_by', 'participants'],
+    });
+
+    // Calculate enhanced data for each budget
+    const enhancedBudgets = budgets.map((budget) => {
+      const totalAmount = parseFloat(budget.total_amount as any);
+      const spentAmount = parseFloat(budget.spent_amount as any);
+      const remaining = totalAmount - spentAmount;
+      const percentage = totalAmount > 0 ? (spentAmount / totalAmount) * 100 : 0;
+
+      let status = 'on-track';
+      if (percentage >= 100) status = 'over-budget';
+      else if (percentage >= 80) status = 'warning';
+
+      return {
+        ...budget,
+        totalAmount,
+        spent: spentAmount,
+        remaining,
+        percentage: Math.round(percentage),
+        status,
+        participantCount: budget.participants?.length || 0,
+      };
+    });
+
+    // Calculate budget health summary
+    const healthSummary = {
+      onTrack: enhancedBudgets.filter((b) => b.status === 'on-track').length,
+      warning: enhancedBudgets.filter((b) => b.status === 'warning').length,
+      overBudget: enhancedBudgets.filter((b) => b.status === 'over-budget')
+        .length,
+    };
+
+    // Calculate category breakdown
+    const categoryMap = new Map<string, { name: string; amount: number }>();
+    enhancedBudgets.forEach((budget) => {
+      const categoryName = budget.category?.name || 'Uncategorized';
+      const existing = categoryMap.get(categoryName);
+      if (existing) {
+        existing.amount += budget.totalAmount;
+      } else {
+        categoryMap.set(categoryName, {
+          name: categoryName,
+          amount: budget.totalAmount,
+        });
+      }
+    });
+
+    const topCategories = Array.from(categoryMap.values())
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 4);
+
+    return {
+      budgets: enhancedBudgets,
+      healthSummary,
+      topCategories,
+    };
+  }
+
   async getBudgetById(id: string, userId?: string): Promise<Budget> {
     const budget = await this.budgetsRepo.findOne({
       where: { id },

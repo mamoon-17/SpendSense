@@ -7,6 +7,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
+import { PageTransition } from "@/components/layout/PageTransition";
 import {
   Users,
   UserPlus,
@@ -271,9 +272,10 @@ export const Connections: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header with Teal/Cyan/Sky Theme */}
-      <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-sky-50 dark:from-teal-950/30 dark:via-cyan-950/30 dark:to-sky-950/30 rounded-2xl p-8 shadow-sm border border-teal-100/50 dark:border-teal-900/30">
+    <PageTransition>
+      <div className="space-y-6">
+        {/* Header with Teal/Cyan/Sky Theme */}
+        <div className="bg-gradient-to-r from-teal-50 via-cyan-50 to-sky-50 dark:from-teal-950/30 dark:via-cyan-950/30 dark:to-sky-950/30 rounded-2xl p-8 shadow-sm border border-teal-100/50 dark:border-teal-900/30">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-3">
             <div className="flex items-center gap-4">
@@ -1014,6 +1016,7 @@ export const Connections: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </PageTransition>
   );
 };

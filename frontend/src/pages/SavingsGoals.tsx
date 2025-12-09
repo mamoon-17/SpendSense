@@ -15,6 +15,7 @@ import {
   PiggyBank,
   TrendingDown,
 } from "lucide-react";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -443,9 +444,10 @@ export const SavingsGoals: React.FC = () => {
   );
 
   return (
-    <div className="space-y-8 p-2">
-      {/* Header with Rose/Pink Gradient */}
-      <div className="bg-gradient-to-r from-rose-50 via-pink-50 to-fuchsia-50 dark:from-rose-950/30 dark:via-pink-950/30 dark:to-fuchsia-950/30 rounded-2xl p-8 shadow-sm border border-rose-100/50 dark:border-rose-900/30">
+    <PageTransition>
+      <div className="space-y-8 p-2">
+        {/* Header with Rose/Pink Gradient */}
+        <div className="bg-gradient-to-r from-rose-50 via-pink-50 to-fuchsia-50 dark:from-rose-950/30 dark:via-pink-950/30 dark:to-fuchsia-950/30 rounded-2xl p-8 shadow-sm border border-rose-100/50 dark:border-rose-900/30">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-3">
             <div className="flex items-center gap-4">
@@ -1239,6 +1241,7 @@ export const SavingsGoals: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </PageTransition>
   );
 };

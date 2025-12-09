@@ -20,6 +20,7 @@ import {
   FileUp,
   Tags,
 } from "lucide-react";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -514,17 +515,20 @@ export const Expenses: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading expenses...</div>
-      </div>
+      <PageTransition>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-muted-foreground">Loading expenses...</div>
+        </div>
+      </PageTransition>
     );
   }
 
   return (
-    <TooltipProvider>
-      <div className="space-y-8 p-2">
-        {/* Header with Orange/Amber Gradient */}
-        <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 rounded-2xl p-8 shadow-sm border border-orange-100/50 dark:border-orange-900/30">
+    <PageTransition>
+      <TooltipProvider>
+        <div className="space-y-8 p-2">
+          {/* Header with Orange/Amber Gradient */}
+          <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 rounded-2xl p-8 shadow-sm border border-orange-100/50 dark:border-orange-900/30">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="space-y-3">
               <div className="flex items-center gap-4">
@@ -755,40 +759,47 @@ export const Expenses: React.FC = () => {
 
               <TabsContent value="list" className="space-y-4 mt-6">
                 {sortedExpenses.length === 0 ? (
-                  <Card className="card-financial">
-                    <CardContent className="py-12 text-center">
+                  <Card className="border-orange-100 dark:border-orange-900/30 bg-gradient-to-br from-white to-orange-50/20 dark:from-slate-950 dark:to-orange-950/10">
+                    <CardContent className="py-16 text-center">
                       {expenses.length === 0 ? (
-                        <div className="space-y-4">
-                          <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                            <Receipt className="w-8 h-8 text-muted-foreground" />
+                        <div className="space-y-6">
+                          <div className="mx-auto w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                            <Receipt className="w-10 h-10 text-orange-600 dark:text-orange-400" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-semibold mb-1">
+                            <h3 className="text-xl font-semibold mb-2 text-orange-900 dark:text-orange-100">
                               No expenses yet
                             </h3>
-                            <p className="text-muted-foreground mb-4">
+                            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                               Start tracking your spending by adding your first
                               expense
                             </p>
-                            <Button onClick={handleCreateClick}>
+                            <Button 
+                              onClick={handleCreateClick}
+                              className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 shadow-md"
+                            >
                               <Plus className="w-4 h-4 mr-2" />
                               Add Your First Expense
                             </Button>
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-4">
-                          <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                            <Search className="w-8 h-8 text-muted-foreground" />
+                        <div className="space-y-6">
+                          <div className="mx-auto w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                            <Search className="w-10 h-10 text-orange-600 dark:text-orange-400" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-semibold mb-1">
+                            <h3 className="text-xl font-semibold mb-2 text-orange-900 dark:text-orange-100">
                               No expenses match your filters
                             </h3>
-                            <p className="text-muted-foreground mb-4">
+                            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                               Try adjusting your search or filters
                             </p>
-                            <Button variant="outline" onClick={clearFilters}>
+                            <Button 
+                              variant="outline" 
+                              onClick={clearFilters}
+                              className="border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                            >
                               <X className="w-4 h-4 mr-2" />
                               Clear Filters
                             </Button>
@@ -1169,6 +1180,7 @@ export const Expenses: React.FC = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </TooltipProvider>
+      </TooltipProvider>
+    </PageTransition>
   );
 };

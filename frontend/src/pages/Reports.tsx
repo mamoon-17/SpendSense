@@ -13,6 +13,7 @@ import {
   Wallet,
   PiggyBank,
 } from "lucide-react";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -608,9 +609,10 @@ export const Reports: React.FC = () => {
   const isLoading = isLoadingExpenses || isLoadingBudgets || isLoadingGoals;
 
   return (
-    <div className="space-y-8 p-2">
-      {/* Header with Blue/Slate Gradient */}
-      <div className="bg-gradient-to-r from-slate-50 via-sky-50 to-indigo-50 dark:from-slate-900/40 dark:via-sky-950/30 dark:to-indigo-950/30 rounded-2xl p-8 shadow-sm border border-sky-100/50 dark:border-sky-900/30">
+    <PageTransition>
+      <div className="space-y-8 p-2">
+        {/* Header with Blue/Slate Gradient */}
+        <div className="bg-gradient-to-r from-slate-50 via-sky-50 to-indigo-50 dark:from-slate-900/40 dark:via-sky-950/30 dark:to-indigo-950/30 rounded-2xl p-8 shadow-sm border border-sky-100/50 dark:border-sky-900/30">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-3">
             <div className="flex items-center gap-4">
@@ -1541,6 +1543,7 @@ export const Reports: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </PageTransition>
   );
 };

@@ -13,6 +13,7 @@ import {
   Check,
   X,
 } from "lucide-react";
+import { PageTransition } from "@/components/layout/PageTransition";
 import {
   Card,
   CardContent,
@@ -39,6 +40,15 @@ import { useTheme } from "@/components/layout/ThemeProvider";
 import { toast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authAPI, userProfilesAPI } from "@/lib/api";
+
+// Strongly-typed notification preferences
+type NotificationPrefs = {
+  budgetAlerts: boolean;
+  expenseReminders: boolean;
+  weeklyReports: boolean;
+  monthlyReports: boolean;
+  collaboratorActivity: boolean;
+};
 
 export const Settings: React.FC = () => {
   const { user } = useAuthStore();
@@ -112,7 +122,7 @@ export const Settings: React.FC = () => {
   });
 
   // Notification settings
-  const [notifications, setNotifications] = useState({
+  const [notifications, setNotifications] = useState<NotificationPrefs>({
     budgetAlerts: true,
     expenseReminders: false,
     weeklyReports: true,
@@ -123,7 +133,7 @@ export const Settings: React.FC = () => {
   const queryClient = useQueryClient();
 
   const updatePreferencesMutation = useMutation({
-    mutationFn: async (prefs: Record<string, boolean>) => {
+    mutationFn: async (prefs: NotificationPrefs) => {
       if (!userProfileId) {
         const createResponse = await userProfilesAPI.createUserProfile({
           user_id: user?.id,
@@ -298,14 +308,15 @@ export const Settings: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your account preferences and application settings
-        </p>
-      </div>
+    <PageTransition>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your account preferences and application settings
+          </p>
+        </div>
 
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
@@ -404,29 +415,38 @@ export const Settings: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                {Object.entries(notifications).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-medium capitalize">
-                        {key.replace(/([A-Z])/g, " $1").toLowerCase()}
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {getNotificationDescription(key)}
-                      </p>
+                {([
+                  "budgetAlerts",
+                  "expenseReminders",
+                  "weeklyReports",
+                  "monthlyReports",
+                  "collaboratorActivity",
+                ] as (keyof NotificationPrefs)[]).map((key) => {
+                  const value = notifications[key];
+                  return (
+                    <div key={key} className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm font-medium capitalize">
+                          {key.replace(/([A-Z])/g, " $1").toLowerCase()}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {getNotificationDescription(key)}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={value}
+                        onCheckedChange={(checked) => {
+                          const next: NotificationPrefs = {
+                            ...notifications,
+                            [key]: checked,
+                          } as NotificationPrefs;
+                          setNotifications(next);
+                          updatePreferencesMutation.mutate(next);
+                        }}
+                      />
                     </div>
-                    <Switch
-                      checked={value}
-                      onCheckedChange={(checked) => {
-                        const next = {
-                          ...notifications,
-                          [key]: checked,
-                        } as Record<string, boolean>;
-                        setNotifications(next);
-                        updatePreferencesMutation.mutate(next);
-                      }}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -510,7 +530,8 @@ export const Settings: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </PageTransition>
   );
 };
 

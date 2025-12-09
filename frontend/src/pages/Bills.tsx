@@ -17,6 +17,7 @@ import {
   X,
   Split,
 } from "lucide-react";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -488,9 +489,10 @@ export const Bills: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 p-2">
-      {/* Header with Purple/Indigo Gradient */}
-      <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-violet-50 dark:from-purple-950/30 dark:via-indigo-950/30 dark:to-violet-950/30 rounded-2xl p-8 shadow-sm border border-purple-100/50 dark:border-purple-900/30">
+    <PageTransition>
+      <div className="space-y-8 p-2">
+        {/* Header with Purple/Indigo Gradient */}
+        <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-violet-50 dark:from-purple-950/30 dark:via-indigo-950/30 dark:to-violet-950/30 rounded-2xl p-8 shadow-sm border border-purple-100/50 dark:border-purple-900/30">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-3">
             <div className="flex items-center gap-4">
@@ -1755,6 +1757,7 @@ export const Bills: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </PageTransition>
   );
 };

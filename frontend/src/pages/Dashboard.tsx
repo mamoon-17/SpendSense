@@ -11,6 +11,7 @@ import {
   Plus,
   Wallet,
 } from "lucide-react";
+import { PageTransition } from "@/components/layout/PageTransition";
 import {
   Card,
   CardContent,
@@ -90,13 +91,14 @@ export const Dashboard: React.FC = () => {
     totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Welcome back, {user?.name?.split(" ")[0]}! 👋
-          </h1>
+    <PageTransition>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Welcome back, {user?.name?.split(" ")[0]}! 👋
+            </h1>
           <p className="text-muted-foreground mt-1">
             Here's your financial overview for this month
           </p>
@@ -248,6 +250,7 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </PageTransition>
   );
 };

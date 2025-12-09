@@ -184,16 +184,6 @@ export const Login: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Forgot Password Link */}
-                <div className="text-right">
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm text-gray-600 hover:text-primary transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-
                 {/* Login Button */}
                 <Button
                   type="submit"
