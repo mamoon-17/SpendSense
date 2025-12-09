@@ -684,7 +684,7 @@ export const Reports: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {reportType === "spending" && (
           <>
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -703,7 +703,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -724,7 +724,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -743,7 +743,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -764,7 +764,7 @@ export const Reports: React.FC = () => {
 
         {reportType === "income" && (
           <>
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -783,7 +783,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -802,7 +802,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -821,7 +821,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -847,7 +847,7 @@ export const Reports: React.FC = () => {
 
         {reportType === "savings" && (
           <>
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1010,11 +1010,31 @@ export const Reports: React.FC = () => {
         {/* Main Charts Area */}
         <div className="lg:col-span-3 space-y-6">
           <Tabs defaultValue="trends" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="trends">Trends</TabsTrigger>
-              <TabsTrigger value="categories">Categories</TabsTrigger>
-              <TabsTrigger value="goals">Goals</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 bg-sky-100/50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900/50">
+              <TabsTrigger
+                value="trends"
+                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+              >
+                Trends
+              </TabsTrigger>
+              <TabsTrigger
+                value="categories"
+                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+              >
+                Categories
+              </TabsTrigger>
+              <TabsTrigger
+                value="goals"
+                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+              >
+                Goals
+              </TabsTrigger>
+              <TabsTrigger
+                value="insights"
+                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+              >
+                Insights
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="trends" className="mt-6">

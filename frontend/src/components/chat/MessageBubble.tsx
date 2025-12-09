@@ -13,7 +13,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) => {
         <span className="sender">
           {isOwn ? "You" : message.senderName || message.sender}
         </span>
-        <span className="timestamp !text-white opacity-90 text-xs font-normal">
+        <span className="timestamp">
           {new Date(message.sent_at).toLocaleTimeString()}
         </span>
         {message.status && (

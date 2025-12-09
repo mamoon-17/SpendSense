@@ -56,7 +56,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { connectionsAPI, invitationsAPI, conversationsAPI, budgetAPI } from "@/lib/api";
+import { connectionsAPI, invitationsAPI, conversationsAPI, budgetAPI, billsAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
@@ -139,9 +139,9 @@ export const Connections: React.FC = () => {
         .catch(() => []),
   });
 
-  // Fetch budgets to calculate truly shared budgets (budgets with other participants)
+  // Fetch budgets to compute shared budgets count
   const { data: budgets = [] } = useQuery({
-    queryKey: ["budgets-for-connections"],
+    queryKey: ["budgets"],
     queryFn: async () => {
       try {
         const res = await budgetAPI.getBudgets();
@@ -151,21 +151,60 @@ export const Connections: React.FC = () => {
       }
     },
     staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Also fetch bills to infer shared budget-like collaborations
+  const { data: bills = [] } = useQuery({
+    queryKey: ["bills"],
+    queryFn: async () => {
+      try {
+        const res = await billsAPI.getBills();
+        return res.data || [];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
   const sharedBudgetsCount = React.useMemo(() => {
-    if (!budgets || budgets.length === 0) return 0;
-    const currentUserId = user?.id;
-    return budgets.filter((b: any) => {
-      const participants = Array.isArray(b.participants) ? b.participants : [];
-      if (participants.length === 0) return false;
-      // Check if there is at least one participant other than current user
-      return participants.some((p: any) => {
-        const pid = typeof p === "string" ? p : p?.id || p?.user_id;
-        return pid && pid !== currentUserId;
+    if (!user) return 0;
+    try {
+      // Prefer budgets-based count when participants are present
+      const budgetCount = (budgets || []).filter((b: any) => {
+        const participants = Array.isArray(b?.participants) ? b.participants : [];
+        const ids = participants
+          .map((p: any) => (typeof p === "string" ? p : p?.id))
+          .filter(Boolean);
+        const includesCurrent = ids.includes(user.id);
+        const others = ids.filter((id: string) => id && id !== user.id);
+        return includesCurrent && others.length > 0;
+      }).length;
+
+      if (budgetCount > 0) return budgetCount;
+
+      // Fallback: infer shared groups from bills participation
+      const sharedBillGroups = new Set<string>();
+      (bills || []).forEach((bill: any) => {
+        const participants = Array.isArray(bill?.participants) ? bill.participants : [];
+        const ids = participants
+          .map((p: any) => (typeof p === "string" ? p : p?.id))
+          .filter(Boolean);
+        const includesCurrent = ids.includes(user.id);
+        const others = ids.filter((id: string) => id && id !== user.id);
+        if (includesCurrent && others.length > 0) {
+          // Use bill name as group identifier; if budgets are linked, prefer bill.budget_id
+          const key = bill?.budget_id || bill?.name || bill?.id;
+          if (key) sharedBillGroups.add(String(key));
+        }
       });
-    }).length;
-  }, [budgets, user?.id]);
+      return sharedBillGroups.size;
+    } catch {
+      return 0;
+    }
+  }, [budgets, bills, user?.id]);
 
   // Separate pending requests that the current user received
   const pendingRequests = connections.filter((connection) => {
@@ -420,7 +459,7 @@ export const Connections: React.FC = () => {
         </DialogContent>
       </Dialog>
       {/* Stats Cards with Teal/Cyan/Sky Theme */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-teal-100 dark:border-teal-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-teal-50/30 dark:from-slate-950 dark:to-teal-950/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -477,30 +516,7 @@ export const Connections: React.FC = () => {
             </p>
           </CardContent>
         </Card>
-
-        <Card className="border-teal-100 dark:border-teal-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-teal-50/30 dark:from-slate-950 dark:to-teal-950/10">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Active Now
-                </p>
-                <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">
-                  {
-                    connections.filter(
-                      (c) =>
-                        c.status === "connected" &&
-                        c.last_active &&
-                        new Date(c.last_active) > new Date(Date.now() - 3600000)
-                    ).length
-                  }
-                </p>
-              </div>
-              <MessageCircle className="w-8 h-8 text-teal-500" />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">Online users</p>
-          </CardContent>
-        </Card>
+        {/* Removed Active Now card for cleaner three-card layout */}
       </div>
       {/* Pending Connection Requests - Prominent Display */}
       {pendingRequests.length > 0 && (
@@ -630,7 +646,7 @@ export const Connections: React.FC = () => {
           </TabsList>
 
           {/* Search */}
-          <Card className="card-financial mt-6">
+          <Card className="mt-6 border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
             <CardContent className="pt-6">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -646,7 +662,7 @@ export const Connections: React.FC = () => {
 
           <TabsContent value="connections" className="space-y-4 mt-6">
             {filteredConnections.length === 0 ? (
-              <Card className="card-financial">
+              <Card className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                 <CardContent className="p-4 text-center text-muted-foreground">
                   No connections found.
                 </CardContent>
@@ -661,7 +677,7 @@ export const Connections: React.FC = () => {
                 const isPending = connection.status === "pending";
 
                 return (
-                  <Card key={connection.id} className="card-financial">
+                  <Card key={connection.id} className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-4">
@@ -846,7 +862,7 @@ export const Connections: React.FC = () => {
 
           <TabsContent value="requests" className="space-y-4 mt-6">
             {pendingRequests.length === 0 ? (
-              <Card className="card-financial">
+              <Card className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                 <CardContent className="p-4 text-center text-muted-foreground">
                   No pending connection requests.
                 </CardContent>
@@ -855,7 +871,7 @@ export const Connections: React.FC = () => {
               pendingRequests.map((connection) => (
                 <Card
                   key={connection.id}
-                  className="card-financial border-warning/20"
+                  className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow border-warning/20"
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -944,14 +960,14 @@ export const Connections: React.FC = () => {
 
           <TabsContent value="invites" className="space-y-4 mt-6">
             {pendingInvites.length === 0 ? (
-              <Card className="card-financial">
+              <Card className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                 <CardContent className="p-4 text-center text-muted-foreground">
                   No pending invites.
                 </CardContent>
               </Card>
             ) : (
               pendingInvites.map((invite) => (
-                <Card key={invite.id} className="card-financial">
+                <Card key={invite.id} className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">

@@ -135,8 +135,7 @@ export function Budgets(): JSX.Element {
     staleTime: 30000, // Cache for 30 seconds
     refetchOnWindowFocus: false,
     retry: 3,
-    // Force refetch on every mount so navigating back shows fresh data
-    refetchOnMount: "always",
+    refetchOnMount: true, // Always refetch when component mounts
   });
 
   // Delete budget mutation
@@ -282,32 +281,34 @@ export function Budgets(): JSX.Element {
     <PageTransition>
       <div className="space-y-6 p-6">
         {/* Header - coherent with Expenses */}
-        <Card className="border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-900/10 dark:to-transparent">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
-                <Wallet className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+        <div className="bg-gradient-to-r from-emerald-50 via-green-50 to-lime-50 dark:from-emerald-950/30 dark:via-green-950/30 dark:to-lime-950/30 rounded-2xl p-8 shadow-sm border border-emerald-100/50 dark:border-emerald-900/30">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl">
+                  <Wallet className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-emerald-700 to-green-600 dark:from-emerald-300 dark:to-green-300 bg-clip-text text-transparent">
+                  Budget Tracking
+                </h1>
               </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-emerald-700 dark:text-emerald-300">Budget Tracking</h1>
-                <p className="mt-1 text-emerald-600 dark:text-emerald-400">
-                  Monitor budgets, stay on track, and optimize your goals
-                </p>
-              </div>
+              <p className="text-muted-foreground ml-20 text-base">
+                Monitor budgets, stay on track, and optimize your goals
+              </p>
             </div>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 shadow-sm"
+              className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 shadow-md h-11 px-6"
               onClick={() => setIsCreateDialogOpen(true)}
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-5 h-5 mr-2" />
               New Budget
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+        <Card className="border-emerald-100 dark:border-emerald-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-emerald-50/30 dark:from-slate-950 dark:to-emerald-950/10">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <p className="text-sm text-muted-foreground">Total Budget</p>
@@ -324,7 +325,7 @@ export function Budgets(): JSX.Element {
           </CardHeader>
         </Card>
 
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+        <Card className="border-emerald-100 dark:border-emerald-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-emerald-50/30 dark:from-slate-950 dark:to-emerald-950/10">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <p className="text-sm text-muted-foreground">Total Spent</p>
@@ -344,7 +345,7 @@ export function Budgets(): JSX.Element {
           </CardHeader>
         </Card>
 
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+        <Card className="border-emerald-100 dark:border-emerald-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-emerald-50/30 dark:from-slate-950 dark:to-emerald-950/10">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <p className="text-sm text-muted-foreground">Remaining</p>
@@ -368,16 +369,16 @@ export function Budgets(): JSX.Element {
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
               <Input
                 placeholder="Search budgets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
+                className="pl-9 border-emerald-200 focus-visible:ring-emerald-400 dark:border-emerald-900/50"
               />
             </div>
             <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px] border-emerald-200 dark:border-emerald-900/50">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent className="max-h-[300px] overflow-y-auto">
@@ -391,7 +392,7 @@ export function Budgets(): JSX.Element {
               </SelectContent>
             </Select>
             <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-              <SelectTrigger className="w-full sm:w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px] border-emerald-200 dark:border-emerald-900/50">
                 <SelectValue placeholder="All Periods" />
               </SelectTrigger>
               <SelectContent>
@@ -406,9 +407,9 @@ export function Budgets(): JSX.Element {
           {/* Budget Cards with Circular Progress */}
           <div className="space-y-4">
             {filteredBudgets.length === 0 ? (
-              <Card className="p-12">
+              <Card className="p-12 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-white to-emerald-50/20 dark:from-slate-950 dark:to-emerald-950/10">
                 <div className="text-center text-muted-foreground">
-                  <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <Target className="w-12 h-12 mx-auto mb-4 text-emerald-500" />
                   <p className="text-lg font-medium">No budgets found</p>
                   <p className="text-sm mt-1">
                     Create your first budget to start tracking your spending
@@ -441,7 +442,7 @@ export function Budgets(): JSX.Element {
                 return (
                   <Card
                     key={budget.id}
-                    className="hover:shadow-md transition-shadow"
+                    className="card-financial hover:shadow-elevated transition-shadow border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-white to-emerald-50/20 dark:from-slate-950 dark:to-emerald-950/10"
                   >
                     <CardContent className="p-6">
                       <div className="flex items-start gap-6">
@@ -601,7 +602,7 @@ export function Budgets(): JSX.Element {
         {/* Right Sidebar */}
         <div className="space-y-4">
           {/* Budget Health */}
-          <Card>
+          <Card className="border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-white to-emerald-50/20 dark:from-slate-950 dark:to-emerald-950/10 hover:shadow-elevated transition-shadow">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Activity className="w-5 h-5 text-emerald-600" />
@@ -649,7 +650,7 @@ export function Budgets(): JSX.Element {
           </Card>
 
           {/* Top Categories */}
-          <Card>
+          <Card className="border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-white to-emerald-50/20 dark:from-slate-950 dark:to-emerald-950/10 hover:shadow-elevated transition-shadow">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <PieChart className="w-5 h-5 text-purple-600" />

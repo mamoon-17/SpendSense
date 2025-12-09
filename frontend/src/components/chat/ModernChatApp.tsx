@@ -417,23 +417,19 @@ const ModernChatApp: React.FC = observer(() => {
 
             <div
               className={cn(
-                "flex items-center gap-1 mt-1 text-xs",
-                isOwn
-                  ? "justify-end text-white/90"
-                  : "justify-start text-gray-500 dark:text-gray-400"
+                "flex items-center gap-1 mt-1 text-xs text-gray-500",
+                isOwn ? "justify-end" : "justify-start"
               )}
             >
-              <span className={cn(isOwn ? "text-white/90" : undefined)}>
-                {formatMessageTime(message.sent_at)}
-              </span>
+              <span>{formatMessageTime(message.sent_at)}</span>
               {isOwn && (
                 <div className="ml-1">
                   {message.status === "read" ? (
-                    <CheckCheck className="w-3 h-3 text-white/90" />
+                    <CheckCheck className="w-3 h-3 text-blue-500" />
                   ) : message.status === "delivered" ? (
-                    <CheckCheck className="w-3 h-3 text-white/90" />
+                    <CheckCheck className="w-3 h-3" />
                   ) : (
-                    <Check className="w-3 h-3 text-white/90" />
+                    <Check className="w-3 h-3" />
                   )}
                 </div>
               )}

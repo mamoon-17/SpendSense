@@ -180,21 +180,10 @@ export const Bills: React.FC = () => {
     },
   });
 
-  // Create a list of all available participants including the current user
+  // Create a list of available participants excluding the current user
   const availableParticipants = React.useMemo(() => {
     const participants = [];
-
-    // Add current user first
-    if (user) {
-      participants.push({
-        id: user.id,
-        name: user.name,
-        username: user.username,
-        isCurrentUser: true,
-      });
-    }
-
-    // Add connections
+    // Add connections (others only)
     connections.forEach((connection: any) => {
       const otherUser =
         connection.requester?.id === user?.id
@@ -609,7 +598,7 @@ export const Bills: React.FC = () => {
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
           <Tabs defaultValue="bills" className="w-full">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
               <TabsList className="grid w-full sm:w-fit grid-cols-3 bg-purple-100/50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50">
                 <TabsTrigger
                   value="bills"
@@ -922,7 +911,7 @@ export const Bills: React.FC = () => {
                 {filteredBills
                   .filter((bill) => bill.status === "completed")
                   .map((bill) => (
-                    <Card key={bill.id} className="card-financial">
+                    <Card key={bill.id} className="border-purple-100 dark:border-purple-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-purple-50/20 dark:from-slate-950 dark:to-purple-950/10">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="space-y-1">
@@ -955,17 +944,27 @@ export const Bills: React.FC = () => {
           {/* Quick Split removed - layout adjusted */}
 
           {/* Recent Activity */}
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle className="text-sm">Recent Activity</CardTitle>
+          <Card className="border-purple-200/60 dark:border-purple-900/40 shadow-md hover:shadow-lg transition-all bg-gradient-to-br from-white via-white to-purple-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-purple-950/20">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/40 border border-purple-200/60 dark:border-purple-800">
+                    <Clock className="w-4 h-4 text-purple-600 dark:text-purple-300" />
+                  </div>
+                  <CardTitle className="text-sm text-purple-900 dark:text-purple-100">Recent Activity</CardTitle>
+                </div>
+                <Badge className="bg-purple-600/90 text-white">Live</Badge>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               {bills.length > 0 ? (
                 (() => {
                   const activities: Array<{
                     text: string;
                     detail: string;
                     date: Date;
+                    kind?: "settled" | "paid" | "pending" | "created";
+                    amount?: number;
                   }> = [];
 
                   // Generate activities from bills
@@ -993,6 +992,8 @@ export const Bills: React.FC = () => {
                             parseFloat(bill.total_amount)
                           )} total`,
                           date: new Date(bill.due_date),
+                          kind: "settled",
+                          amount: parseFloat(bill.total_amount),
                         });
                       } else if (paidParticipants.length > 0) {
                         paidParticipants.forEach((participant) => {
@@ -1009,6 +1010,8 @@ export const Bills: React.FC = () => {
                                 )}`,
                             detail: `For ${bill.name}`,
                             date: new Date(bill.due_date),
+                            kind: "paid",
+                            amount: participant.amount || 0,
                           });
                         });
                       } else if (currentUserParticipant?.status === "pending") {
@@ -1018,6 +1021,8 @@ export const Bills: React.FC = () => {
                             currentUserParticipant.amount || 0
                           )} for ${bill.name}`,
                           date: new Date(bill.due_date),
+                          kind: "pending",
+                          amount: currentUserParticipant.amount || 0,
                         });
                       } else if (bill.created_by.id === user?.id) {
                         activities.push({
@@ -1030,6 +1035,8 @@ export const Bills: React.FC = () => {
                             bill.participants.length === 1 ? "person" : "people"
                           }`,
                           date: new Date(bill.due_date),
+                          kind: "created",
+                          amount: parseFloat(bill.total_amount),
                         });
                       }
                     });
@@ -1039,15 +1046,66 @@ export const Bills: React.FC = () => {
                     .sort((a, b) => b.date.getTime() - a.date.getTime())
                     .slice(0, 3);
 
+                  const chipFor = (kind?: string) => {
+                    switch (kind) {
+                      case "settled":
+                        return (
+                          <div className="p-2 rounded-md bg-emerald-100/70 dark:bg-emerald-900/30 border border-emerald-200/60 dark:border-emerald-800">
+                            <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
+                          </div>
+                        );
+                      case "paid":
+                        return (
+                          <div className="p-2 rounded-md bg-indigo-100/70 dark:bg-indigo-900/30 border border-indigo-200/60 dark:border-indigo-800">
+                            <DollarSign className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
+                          </div>
+                        );
+                      case "pending":
+                        return (
+                          <div className="p-2 rounded-md bg-amber-100/70 dark:bg-amber-900/30 border border-amber-200/60 dark:border-amber-800">
+                            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+                          </div>
+                        );
+                      case "created":
+                        return (
+                          <div className="p-2 rounded-md bg-purple-100/70 dark:bg-purple-900/30 border border-purple-200/60 dark:border-purple-800">
+                            <Receipt className="w-4 h-4 text-purple-600 dark:text-purple-300" />
+                          </div>
+                        );
+                      default:
+                        return (
+                          <div className="p-2 rounded-md bg-purple-100/70 dark:bg-purple-900/30 border border-purple-200/60 dark:border-purple-800">
+                            <Clock className="w-4 h-4 text-purple-600 dark:text-purple-300" />
+                          </div>
+                        );
+                    }
+                  };
+
                   return recentActivities.length > 0 ? (
-                    recentActivities.map((activity, index) => (
-                      <div key={index} className="text-sm">
-                        <p className="font-medium">{activity.text}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {activity.detail}
-                        </p>
-                      </div>
-                    ))
+                    <div className="divide-y divide-purple-200/60 dark:divide-purple-900/40">
+                      {recentActivities.map((activity, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 py-3 hover:bg-purple-50/40 dark:hover:bg-purple-950/20 px-2 rounded-lg transition-colors"
+                        >
+                          {chipFor(activity.kind)}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                              {activity.text}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{activity.detail}</p>
+                          </div>
+                          {typeof activity.amount === "number" && activity.amount > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-300"
+                            >
+                              {formatAmount(activity.amount)}
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
                       No recent activity

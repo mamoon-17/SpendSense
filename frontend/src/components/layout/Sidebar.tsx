@@ -75,6 +75,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const isActive = (path: string) => location.pathname === path;
 
+  const activeClassesFor = (path: string) => {
+    if (path.startsWith("/app/budgets")) return "bg-emerald-600 text-white";
+    if (path.startsWith("/app/expenses")) return "bg-orange-600 text-white";
+    if (path.startsWith("/app/savings")) return "bg-rose-600 text-white";
+    if (path.startsWith("/app/bills")) return "bg-purple-600 text-white";
+    if (path.startsWith("/app/reports")) return "bg-sky-600 text-white";
+    if (path.startsWith("/app/connections")) return "bg-teal-600 text-white";
+    if (path.startsWith("/app/messages")) return "bg-indigo-600 text-white";
+    // Dashboard and default
+    return "bg-blue-600 text-white";
+  };
+
   return (
     <aside
       className={cn(
@@ -134,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={cn(
                 "flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors group",
                 active
-                  ? "bg-primary text-primary-foreground shadow-sm"
+                  ? cn(activeClassesFor(item.href), "shadow-sm")
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
               title={collapsed ? item.label : undefined}
@@ -143,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={cn(
                   "flex-shrink-0 w-5 h-5",
                   active
-                    ? "text-primary-foreground"
+                    ? "text-white"
                     : "text-muted-foreground group-hover:text-foreground"
                 )}
               />
