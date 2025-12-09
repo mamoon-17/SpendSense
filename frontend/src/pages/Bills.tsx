@@ -180,21 +180,10 @@ export const Bills: React.FC = () => {
     },
   });
 
-  // Create a list of all available participants including the current user
+  // Create a list of available participants excluding the current user
   const availableParticipants = React.useMemo(() => {
     const participants = [];
-
-    // Add current user first
-    if (user) {
-      participants.push({
-        id: user.id,
-        name: user.name,
-        username: user.username,
-        isCurrentUser: true,
-      });
-    }
-
-    // Add connections
+    // Add connections (others only)
     connections.forEach((connection: any) => {
       const otherUser =
         connection.requester?.id === user?.id
