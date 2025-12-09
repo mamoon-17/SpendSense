@@ -4,6 +4,7 @@ import {
   Patch,
   Post,
   Get,
+  Delete,
   UseGuards,
   Inject,
 } from '@nestjs/common';
@@ -59,5 +60,14 @@ export class ConnectionsController {
   @Get()
   getConnections(@CurrentUser() user: User) {
     return this.connectionService.getUserConnections(user.id);
+  }
+
+  @Delete()
+  async deleteConnection(
+    @Body() body: { connection_id: string },
+    @CurrentUser() user: User,
+  ) {
+    await this.connectionService.deleteConnection(body.connection_id, user.id);
+    return { message: 'Connection deleted successfully' };
   }
 }

@@ -135,4 +135,28 @@ export class ConnectionsService {
       order: { accepted_at: 'DESC' },
     });
   }
+
+  async deleteConnection(
+    connection_id: string,
+    user_id: string,
+  ): Promise<void> {
+    const connection = await this.repo.findOne({
+      where: { id: connection_id },
+      relations: ['requester', 'receiver'],
+    });
+
+    if (!connection) {
+      throw new Error('Connection not found');
+    }
+
+    // Verify that the user is part of this connection
+    if (
+      connection.requester.id !== user_id &&
+      connection.receiver.id !== user_id
+    ) {
+      throw new Error('Unauthorized to delete this connection');
+    }
+
+    await this.repo.remove(connection);
+  }
 }
