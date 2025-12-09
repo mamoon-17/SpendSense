@@ -38,13 +38,13 @@ export class Bill {
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: false })
   total_amount: string;
 
-  @Column({ type: 'enum', enum: BillSplitType, nullable: false })
+  @Column({ type: 'text', nullable: false })
   split_type: BillSplitType;
 
   @Column({ type: 'date', nullable: false })
   due_date: string;
 
-  @Column({ type: 'enum', enum: BillStatus, default: BillStatus.PENDING })
+  @Column({ type: 'text', default: BillStatus.PENDING })
   status: BillStatus;
 
   @Column({ type: 'varchar', length: 10, default: 'USD' })

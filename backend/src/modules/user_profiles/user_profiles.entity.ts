@@ -35,13 +35,9 @@ export class UserProfile {
   timezone: string;
 
   // 📅 Strict date format selection
-  @Column({
-    type: 'enum',
-    enum: DateFormat,
-    default: DateFormat.MM_DD_YYYY,
-  })
+  @Column({ type: 'text', default: DateFormat.MM_DD_YYYY })
   date_format: DateFormat;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'simple-json', nullable: true })
   preferences: Record<string, unknown> | null;
 }

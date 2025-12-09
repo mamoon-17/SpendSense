@@ -33,19 +33,15 @@ export class Notification {
   @Column({ type: 'text', nullable: false })
   message: string;
 
-  @Column({ type: 'enum', enum: NotificationPriority, nullable: false })
+  @Column({ type: 'text', nullable: false })
   priority: NotificationPriority;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'simple-json', nullable: true })
   data: any;
 
   @Column({ type: 'boolean', default: false })
   read: boolean;
 
-  @CreateDateColumn({
-    name: 'created_at',
-    type: 'timestamp with time zone',
-    default: () => 'CURRENT_TIMESTAMP',
-  })
+  @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   created_at: Date;
 }

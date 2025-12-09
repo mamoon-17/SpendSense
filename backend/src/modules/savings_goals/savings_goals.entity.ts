@@ -48,12 +48,7 @@ export class SavingsGoal {
   @Column('uuid', { name: 'category_id', nullable: false })
   category_id: string;
 
-  @Column({
-    type: 'enum',
-    enum: SavingsGoalPriority,
-    enumName: 'savings_goal_priority',
-    nullable: false,
-  })
+  @Column({ type: 'text', nullable: false })
   priority: SavingsGoalPriority;
 
   @Column('numeric', { precision: 12, scale: 2, nullable: true })
@@ -65,20 +60,16 @@ export class SavingsGoal {
   @Column({ type: 'varchar', length: 10, default: 'USD' })
   currency: string;
 
-  @Column({
-    type: 'enum',
-    enum: SavingsGoalStatus,
-    default: SavingsGoalStatus.ACTIVE,
-  })
+  @Column({ type: 'text', default: SavingsGoalStatus.ACTIVE })
   status: SavingsGoalStatus;
 
   @Column('uuid', { name: 'user_id', nullable: false })
   user_id: string;
 
-  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({ type: 'datetime' })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @UpdateDateColumn({ type: 'datetime' })
   updated_at: Date;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })

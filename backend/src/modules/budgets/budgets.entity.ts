@@ -31,7 +31,7 @@ export class Budget {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   spent_amount: string;
 
-  @Column({ type: 'enum', enum: BudgetPeriod, nullable: false })
+  @Column({ type: 'text', nullable: false })
   period: BudgetPeriod;
 
   @ManyToOne(() => Category, {

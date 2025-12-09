@@ -30,12 +30,7 @@ export class Conversation {
   @Column({ type: 'varchar', length: 255, nullable: false })
   name: string;
 
-  @Column({
-    type: 'enum',
-    enum: ConversationType,
-    enumName: 'conversation_type',
-    nullable: false,
-  })
+  @Column({ type: 'text', nullable: false })
   type: ConversationType;
 
   @Column('uuid', { name: 'budget_id', nullable: true })
@@ -56,15 +51,15 @@ export class Conversation {
   @JoinColumn({ name: 'last_message_id' })
   last_message: Message | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   last_message_at: Date | null;
 
   @Column({ type: 'int', default: 0 })
   unread_count: number;
 
-  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updated_at: Date;
 }

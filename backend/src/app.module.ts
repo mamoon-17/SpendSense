@@ -32,8 +32,8 @@ import { Category } from './modules/categories/categories.entity';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.get<string>('DATABASE_URL'),
+        type: 'sqlite',
+        database: configService.get<string>('SQLITE_DB_PATH'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: true,
         autoLoadEntities: true,

@@ -41,6 +41,6 @@ export class BillParticipant {
   @Column({ type: 'boolean', default: false })
   is_paid: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   paid_at: Date;
 }

@@ -42,23 +42,19 @@ export class Invitation {
   @Column({ type: 'varchar', length: 255, unique: true, nullable: false })
   token: string;
 
-  @Column({type: 'enum', enum: InvitationStatus, enumName: 'invitation_status', default: InvitationStatus.Pending,})
+  @Column({ type: 'text', default: InvitationStatus.Pending })
   status: InvitationStatus;
 
   // Timestamp when invitation was sent
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'datetime', nullable: false })
   sent_at: Date;
 
   // Expiration timestamp
-  @Column({
-    type: 'timestamp',
-    nullable: false,
-    default: () => "CURRENT_TIMESTAMP + INTERVAL '7 days'",
-  })
+  @Column({ type: 'datetime', nullable: false })
   expires_at: Date;
 
   // Timestamp when the invitation was accepted
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   accepted_at: Date | null;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })

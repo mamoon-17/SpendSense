@@ -43,22 +43,18 @@ export class Message {
   @Column({ type: 'text', nullable: false })
   content: string;
 
-  @Column({
-    type: 'enum',
-    enum: MessageStatus,
-    default: MessageStatus.SENT,
-  })
+  @Column({ type: 'text', default: MessageStatus.SENT })
   status: MessageStatus;
 
   @Column({ type: 'boolean', default: false })
   is_read: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   delivered_at: Date | null;
 
-  @CreateDateColumn({ type: 'timestamp', name: 'sent_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'sent_at' })
   sent_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updated_at: Date;
 }

@@ -21,7 +21,7 @@ export class Expense {
   @Column('uuid', { name: 'category_id', nullable: false })
   category_id: string;
 
-  @Column({ type: 'timestamp', nullable: false })
+  @Column({ type: 'datetime', nullable: false })
   date: Date;
 
   @Column({ type: 'text', array: true, nullable: true })

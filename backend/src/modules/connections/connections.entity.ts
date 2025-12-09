@@ -29,16 +29,12 @@ export class Connection {
   @JoinColumn({ name: 'receiver_id' })
   receiver: User;
 
-  @Column({
-    type: 'enum',
-    enum: ConnectionStatus,
-    default: ConnectionStatus.Pending,
-  })
+  @Column({ type: 'text', default: ConnectionStatus.Pending })
   status: ConnectionStatus;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   accepted_at: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   last_active: Date | null;
 }
