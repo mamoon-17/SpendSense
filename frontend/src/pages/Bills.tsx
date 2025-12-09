@@ -609,7 +609,7 @@ export const Bills: React.FC = () => {
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
           <Tabs defaultValue="bills" className="w-full">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
               <TabsList className="grid w-full sm:w-fit grid-cols-3 bg-purple-100/50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50">
                 <TabsTrigger
                   value="bills"
@@ -922,7 +922,7 @@ export const Bills: React.FC = () => {
                 {filteredBills
                   .filter((bill) => bill.status === "completed")
                   .map((bill) => (
-                    <Card key={bill.id} className="card-financial">
+                    <Card key={bill.id} className="border-purple-100 dark:border-purple-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-purple-50/20 dark:from-slate-950 dark:to-purple-950/10">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="space-y-1">
@@ -955,7 +955,7 @@ export const Bills: React.FC = () => {
           {/* Quick Split removed - layout adjusted */}
 
           {/* Recent Activity */}
-          <Card className="card-financial">
+          <Card className="border-purple-100 dark:border-purple-900/30 bg-gradient-to-br from-white to-purple-50/20 dark:from-slate-950 dark:to-purple-950/10 hover:shadow-elevated transition-shadow">
             <CardHeader>
               <CardTitle className="text-sm">Recent Activity</CardTitle>
             </CardHeader>

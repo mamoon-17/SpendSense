@@ -562,24 +562,42 @@ export const SavingsGoals: React.FC = () => {
         <div className="lg:col-span-3 space-y-6">
           <Tabs defaultValue="goals" className="w-full">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <TabsList className="grid w-full sm:w-fit grid-cols-2">
-                <TabsTrigger value="goals">Goals</TabsTrigger>
-                <TabsTrigger value="progress">Progress</TabsTrigger>
+              <TabsList className="grid w-full sm:w-fit grid-cols-2 bg-rose-100/50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
+                <TabsTrigger
+                  value="goals"
+                  className="data-[state=active]:bg-rose-600 data-[state=active]:text-white"
+                >
+                  Goals
+                </TabsTrigger>
+                <TabsTrigger
+                  value="progress"
+                  className="data-[state=active]:bg-rose-600 data-[state=active]:text-white"
+                >
+                  Progress
+                </TabsTrigger>
               </TabsList>
 
               <div className="flex gap-2">
                 {["all", "active", "completed", "behind"].map(
-                  (filterOption) => (
-                    <Button
-                      key={filterOption}
-                      variant={filter === filterOption ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFilter(filterOption as any)}
-                      className="capitalize"
-                    >
-                      {filterOption}
-                    </Button>
-                  )
+                  (filterOption) => {
+                    const active = filter === filterOption;
+                    return (
+                      <Button
+                        key={filterOption}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFilter(filterOption as any)}
+                        className={
+                          "capitalize " +
+                          (active
+                            ? "bg-rose-600 text-white hover:bg-rose-700 border-rose-600"
+                            : "border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/30")
+                        }
+                      >
+                        {filterOption}
+                      </Button>
+                    );
+                  }
                 )}
               </div>
             </div>
@@ -624,7 +642,10 @@ export const SavingsGoals: React.FC = () => {
                   );
 
                   return (
-                    <Card key={goal.id} className="card-financial">
+                    <Card
+                      key={goal.id}
+                      className="card-financial hover:shadow-elevated transition-shadow border-rose-100 dark:border-rose-900/30 bg-gradient-to-br from-white to-rose-50/20 dark:from-slate-950 dark:to-rose-950/10"
+                    >
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="space-y-2 flex-1">
@@ -691,7 +712,7 @@ export const SavingsGoals: React.FC = () => {
 
                           <Progress
                             value={Math.min(progress, 100)}
-                            className="h-2"
+                            className="h-2 [&>div]:bg-rose-600"
                           />
                         </div>
 
@@ -821,7 +842,7 @@ export const SavingsGoals: React.FC = () => {
         {/* Right Sidebar */}
         <div className="space-y-6">
           {/* Goal Statistics */}
-          <Card className="card-financial">
+          <Card className="card-financial border-rose-100 dark:border-rose-900/30 bg-gradient-to-br from-white to-rose-50/20 dark:from-slate-950 dark:to-rose-950/10 hover:shadow-elevated transition-shadow">
             <CardHeader>
               <CardTitle className="text-sm">Goal Statistics</CardTitle>
             </CardHeader>
@@ -866,7 +887,7 @@ export const SavingsGoals: React.FC = () => {
           </Card>
 
           {/* Category Breakdown */}
-          <Card className="card-financial">
+          <Card className="card-financial border-rose-100 dark:border-rose-900/30 bg-gradient-to-br from-white to-rose-50/20 dark:from-slate-950 dark:to-rose-950/10 hover:shadow-elevated transition-shadow">
             <CardHeader>
               <CardTitle className="text-sm">By Category</CardTitle>
             </CardHeader>

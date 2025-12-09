@@ -684,7 +684,7 @@ export const Reports: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {reportType === "spending" && (
           <>
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -703,7 +703,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -724,7 +724,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -743,7 +743,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -764,7 +764,7 @@ export const Reports: React.FC = () => {
 
         {reportType === "income" && (
           <>
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -783,7 +783,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -802,7 +802,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -821,7 +821,7 @@ export const Reports: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -847,7 +847,7 @@ export const Reports: React.FC = () => {
 
         {reportType === "savings" && (
           <>
-            <Card className="card-financial">
+            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>

@@ -13,6 +13,7 @@ import {
   TrendingDown,
   X,
   BarChart3,
+  PieChart,
   ArrowUpRight,
   ArrowDownRight,
   Upload,
@@ -639,7 +640,7 @@ export const Expenses: React.FC = () => {
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
             <Tabs defaultValue="list" className="w-full">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
                 <TabsList className="grid w-full sm:w-fit grid-cols-3 bg-orange-100/50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50">
                   <TabsTrigger
                     value="list"
@@ -661,7 +662,12 @@ export const Expenses: React.FC = () => {
                   </TabsTrigger>
                 </TabsList>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportPDF}
+                    className="border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30 shadow-sm hover:shadow-md bg-white/60 dark:bg-slate-950/40 backdrop-blur"
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Export
                   </Button>
@@ -1145,6 +1151,34 @@ export const Expenses: React.FC = () => {
                 </div>
               </TabsContent>
             </Tabs>
+          </div>
+          {/* Right Sidebar: Top Categories */}
+          <div className="space-y-6">
+            <Card className="card-financial border-orange-100 dark:border-orange-900/30">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-purple-600" />
+                  Top Categories
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {analytics.categoryBreakdown.length > 0 ? (
+                  analytics.categoryBreakdown.slice(0, 5).map((cat) => (
+                    <div key={cat.category} className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-orange-500" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{cat.category}</p>
+                      </div>
+                      <p className="text-sm font-semibold">{formatAmount(cat.amount)}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No categories yet
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
 

@@ -602,7 +602,7 @@ export const Connections: React.FC = () => {
           </TabsList>
 
           {/* Search */}
-          <Card className="card-financial mt-6">
+          <Card className="mt-6 border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
             <CardContent className="pt-6">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -618,7 +618,7 @@ export const Connections: React.FC = () => {
 
           <TabsContent value="connections" className="space-y-4 mt-6">
             {filteredConnections.length === 0 ? (
-              <Card className="card-financial">
+              <Card className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                 <CardContent className="p-4 text-center text-muted-foreground">
                   No connections found.
                 </CardContent>
@@ -633,7 +633,7 @@ export const Connections: React.FC = () => {
                 const isPending = connection.status === "pending";
 
                 return (
-                  <Card key={connection.id} className="card-financial">
+                  <Card key={connection.id} className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-4">
@@ -818,7 +818,7 @@ export const Connections: React.FC = () => {
 
           <TabsContent value="requests" className="space-y-4 mt-6">
             {pendingRequests.length === 0 ? (
-              <Card className="card-financial">
+              <Card className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                 <CardContent className="p-4 text-center text-muted-foreground">
                   No pending connection requests.
                 </CardContent>
@@ -827,7 +827,7 @@ export const Connections: React.FC = () => {
               pendingRequests.map((connection) => (
                 <Card
                   key={connection.id}
-                  className="card-financial border-warning/20"
+                  className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow border-warning/20"
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -916,14 +916,14 @@ export const Connections: React.FC = () => {
 
           <TabsContent value="invites" className="space-y-4 mt-6">
             {pendingInvites.length === 0 ? (
-              <Card className="card-financial">
+              <Card className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                 <CardContent className="p-4 text-center text-muted-foreground">
                   No pending invites.
                 </CardContent>
               </Card>
             ) : (
               pendingInvites.map((invite) => (
-                <Card key={invite.id} className="card-financial">
+                <Card key={invite.id} className="border-teal-100 dark:border-teal-900/30 bg-gradient-to-br from-white to-teal-50/20 dark:from-slate-950 dark:to-teal-950/10 hover:shadow-elevated transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
