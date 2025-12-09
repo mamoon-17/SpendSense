@@ -56,7 +56,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { connectionsAPI, invitationsAPI, conversationsAPI } from "@/lib/api";
+import { connectionsAPI, invitationsAPI, conversationsAPI, budgetAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
@@ -138,6 +138,38 @@ export const Connections: React.FC = () => {
         .then((res) => res.data)
         .catch(() => []),
   });
+
+  // Fetch budgets to compute shared budgets count
+  const { data: budgets = [] } = useQuery({
+    queryKey: ["budgets"],
+    queryFn: async () => {
+      try {
+        const res = await budgetAPI.getBudgets();
+        return res.data || [];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+
+  const sharedBudgetsCount = React.useMemo(() => {
+    if (!budgets || !user) return 0;
+    try {
+      return budgets.filter((b: any) => {
+        const participants = Array.isArray(b?.participants)
+          ? b.participants
+          : [];
+        const ids = participants
+          .map((p: any) => (typeof p === "string" ? p : p?.id))
+          .filter(Boolean);
+        return ids.some((id: string) => id && id !== user.id);
+      }).length;
+    } catch {
+      return 0;
+    }
+  }, [budgets, user?.id]);
 
   // Separate pending requests that the current user received
   const pendingRequests = connections.filter((connection) => {
@@ -439,7 +471,7 @@ export const Connections: React.FC = () => {
                   Shared Budgets
                 </p>
                 <p className="text-2xl font-bold text-sky-600 dark:text-sky-400">
-                  8
+                  {sharedBudgetsCount}
                 </p>
               </div>
               <Share className="w-8 h-8 text-sky-500" />

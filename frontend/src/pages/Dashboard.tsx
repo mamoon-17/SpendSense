@@ -185,10 +185,10 @@ export const Dashboard: React.FC = () => {
           <CardContent className="flex items-center gap-3 p-4">
             <AlertTriangle className="h-5 w-5 text-warning" />
             <div>
-              <p className="font-medium text-warning-foreground">
+              <p className="font-medium text-foreground">
                 High Spending Alert
               </p>
-              <p className="text-sm text-warning-foreground/80">
+              <p className="text-sm text-foreground/80">
                 You've used {spendingProgress.toFixed(1)}% of your monthly
                 budget. Consider reviewing your expenses.
               </p>
