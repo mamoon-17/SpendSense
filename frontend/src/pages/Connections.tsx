@@ -56,7 +56,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { connectionsAPI, invitationsAPI, conversationsAPI } from "@/lib/api";
+import { connectionsAPI, invitationsAPI, conversationsAPI, budgetAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
@@ -138,6 +138,34 @@ export const Connections: React.FC = () => {
         .then((res) => res.data)
         .catch(() => []),
   });
+
+  // Fetch budgets to calculate truly shared budgets (budgets with other participants)
+  const { data: budgets = [] } = useQuery({
+    queryKey: ["budgets-for-connections"],
+    queryFn: async () => {
+      try {
+        const res = await budgetAPI.getBudgets();
+        return res.data || [];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 30000,
+  });
+
+  const sharedBudgetsCount = React.useMemo(() => {
+    if (!budgets || budgets.length === 0) return 0;
+    const currentUserId = user?.id;
+    return budgets.filter((b: any) => {
+      const participants = Array.isArray(b.participants) ? b.participants : [];
+      if (participants.length === 0) return false;
+      // Check if there is at least one participant other than current user
+      return participants.some((p: any) => {
+        const pid = typeof p === "string" ? p : p?.id || p?.user_id;
+        return pid && pid !== currentUserId;
+      });
+    }).length;
+  }, [budgets, user?.id]);
 
   // Separate pending requests that the current user received
   const pendingRequests = connections.filter((connection) => {
@@ -439,7 +467,7 @@ export const Connections: React.FC = () => {
                   Shared Budgets
                 </p>
                 <p className="text-2xl font-bold text-sky-600 dark:text-sky-400">
-                  8
+                  {sharedBudgetsCount}
                 </p>
               </div>
               <Share className="w-8 h-8 text-sky-500" />

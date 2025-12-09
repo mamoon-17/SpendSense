@@ -135,7 +135,8 @@ export function Budgets(): JSX.Element {
     staleTime: 30000, // Cache for 30 seconds
     refetchOnWindowFocus: false,
     retry: 3,
-    refetchOnMount: true, // Always refetch when component mounts
+    // Force refetch on every mount so navigating back shows fresh data
+    refetchOnMount: "always",
   });
 
   // Delete budget mutation
