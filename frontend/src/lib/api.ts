@@ -20,7 +20,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
@@ -35,7 +35,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // API endpoints
@@ -204,7 +204,7 @@ export const billsAPI = {
   updateBill: (id: string, data: any) => api.patch(`/bills/${id}`, data),
   updateBillStatus: (
     id: string,
-    data: { status: string; participant_id?: string }
+    data: { status: string; participant_id?: string },
   ) => api.patch(`/bills/${id}/status`, data),
   deleteBill: (id: string) => api.delete(`/bills/${id}`),
   getBillsSummary: () => api.get("/bills/summary/dashboard"),
@@ -216,6 +216,13 @@ export const billsAPI = {
     api.patch(`/bills/${billId}/payment/${participantId}/mark-paid`),
   requestPayment: (
     billId: string,
-    data: { userIds: string[]; message?: string }
+    data: { userIds: string[]; message?: string },
   ) => api.post(`/bills/${billId}/request-payment`, data),
+};
+
+export const aiAPI = {
+  getConversation: () => api.get("/ai/conversation"),
+  getMessages: () => api.get("/ai/messages"),
+  chat: (message: string) => api.post("/ai/chat", { message }),
+  getInsights: () => api.get("/ai/insights"),
 };

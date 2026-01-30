@@ -15,6 +15,7 @@ import {
   TrendingDown,
   MessageCircle,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,11 @@ const menuItems = [
     icon: BarChart3,
   },
   {
+    label: "AI Insights",
+    href: "/app/insights",
+    icon: Sparkles,
+  },
+  {
     label: "Messages",
     href: "/app/messages",
     icon: MessageCircle,
@@ -91,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside
       className={cn(
         "bg-card border-r border-border h-screen flex flex-col transition-all duration-300 sticky top-0",
-        collapsed ? "w-20" : "w-64"
+        collapsed ? "w-20" : "w-64",
       )}
     >
       {/* Header */}
@@ -100,13 +106,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           "px-4 py-3",
           collapsed
             ? "flex items-center justify-between"
-            : "flex items-center justify-between"
+            : "flex items-center justify-between",
         )}
       >
         <div
           className={cn(
             "flex items-center",
-            collapsed ? "space-x-0" : "space-x-3"
+            collapsed ? "space-x-0" : "space-x-3",
           )}
         >
           <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -126,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <ChevronRight
             className={cn(
               "w-4 h-4 text-muted-foreground transition-transform",
-              collapsed ? "rotate-0" : "rotate-180"
+              collapsed ? "rotate-0" : "rotate-180",
             )}
           />
         </button>
@@ -147,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 "flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors group",
                 active
                   ? cn(activeClassesFor(item.href), "shadow-sm")
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary",
               )}
               title={collapsed ? item.label : undefined}
             >
@@ -156,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   "flex-shrink-0 w-5 h-5",
                   active
                     ? "text-white"
-                    : "text-muted-foreground group-hover:text-foreground"
+                    : "text-muted-foreground group-hover:text-foreground",
                 )}
               />
               {!collapsed && (

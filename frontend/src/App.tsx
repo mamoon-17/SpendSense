@@ -2,7 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Layout } from "@/components/layout/Layout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -22,6 +28,7 @@ import { Settings } from "@/pages/Settings";
 import { Notifications } from "@/pages/Notifications";
 import NotFound from "./pages/NotFound";
 import { Messages } from "./pages/Messages";
+import { AIInsightsPage as AIInsights } from "./pages/AIInsights";
 
 // Export queryClient so it can be used to clear cache on logout
 export const queryClient = new QueryClient({
@@ -66,6 +73,7 @@ const App = () => (
             <Route path="messages" element={<Messages />} />
             <Route path="bills" element={<Bills />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="insights" element={<AIInsights />} />
             <Route path="connections" element={<Connections />} />
             <Route path="settings" element={<Settings />} />
             <Route path="notifications" element={<Notifications />} />

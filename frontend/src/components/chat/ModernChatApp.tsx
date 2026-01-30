@@ -16,6 +16,8 @@ import {
   Bot,
   Send,
   X,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,16 +39,20 @@ import { useChat } from "../../hooks/useChat";
 import { sanitizeText } from "../../utils/sanitize";
 import { isValidId, isValidMessage } from "../../utils/validate";
 import { useLocation } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { connectionsAPI, conversationsAPI } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { connectionsAPI, conversationsAPI, aiAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/components/layout/ThemeProvider";
+
+// Special ID for AI conversation
+const AI_CONVERSATION_ID = "ai-assistant-conversation";
 
 const ModernChatApp: React.FC = observer(() => {
   const { chatStore, socket } = useChat();
   const location = useLocation();
   const { theme } = useTheme();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedConversation, setSelectedConversation] = useState<
     string | null
@@ -61,17 +67,113 @@ const ModernChatApp: React.FC = observer(() => {
   const [showGroupMembers, setShowGroupMembers] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
-    []
+    [],
   );
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiMessages, setAiMessages] = useState<any[]>([]);
   const { toast } = useToast();
   const { user } = useAuthStore();
-  const conversations: any[] = chatStore.conversations;
-  const currentConversation = conversations.find(
-    (c) => c.id === (chatStore.currentConversationId || selectedConversation)
+  // Filter out AI type conversations from regular list (we add our own AI entry)
+  const conversations: any[] = chatStore.conversations.filter(
+    (c: any) => c.type !== "ai",
   );
+
+  // Check if current conversation is AI
+  const isAiConversation = selectedConversation === AI_CONVERSATION_ID;
+
+  const currentConversation = isAiConversation
+    ? {
+        id: AI_CONVERSATION_ID,
+        type: "ai",
+        name: "AI Financial Advisor",
+        messages: aiMessages,
+      }
+    : conversations.find(
+        (c) =>
+          c.id === (chatStore.currentConversationId || selectedConversation),
+      );
   const messages: any[] = currentConversation?.messages || [];
+
+  // Fetch AI conversation on mount
+  const { data: aiConversation } = useQuery({
+    queryKey: ["ai-conversation"],
+    queryFn: async () => {
+      try {
+        const res = await aiAPI.getConversation();
+        return res.data;
+      } catch (error) {
+        console.error("Failed to fetch AI conversation:", error);
+        return null;
+      }
+    },
+  });
+
+  // Fetch AI messages when AI conversation is selected
+  useEffect(() => {
+    if (isAiConversation && aiConversation) {
+      refetchAiMessages();
+    }
+  }, [isAiConversation, aiConversation, user?.id]);
+
+  // Helper to fetch and format AI messages from database
+  const refetchAiMessages = async () => {
+    try {
+      const res = await aiAPI.getMessages();
+      const msgs = res.data?.messages || [];
+      const formattedMsgs = msgs.map((msg: any) => {
+        const isAiMessage =
+          msg.ai_sender_id === "ai-assistant" ||
+          msg.sender?.id === "ai-assistant" ||
+          (!msg.sender && msg.ai_sender_id);
+
+        return {
+          id: msg.id,
+          content: msg.content,
+          sender: isAiMessage ? "ai-assistant" : user?.id,
+          senderName: isAiMessage ? "AI Financial Advisor" : "You",
+          sent_at: msg.sent_at || msg.created_at,
+          status: "read",
+        };
+      });
+      setAiMessages(formattedMsgs);
+    } catch (error) {
+      console.error("Failed to refetch AI messages:", error);
+    }
+  };
+
+  // AI chat mutation
+  const aiChatMutation = useMutation({
+    mutationFn: async (message: string) => {
+      const res = await aiAPI.chat(message);
+      return res.data;
+    },
+    onSuccess: async (data) => {
+      // Refetch messages from database to get properly stored messages
+      await refetchAiMessages();
+
+      // Show toast for specific actions
+      if (data.action === "created") {
+        toast({
+          title: "Success!",
+          description: "Your request was completed successfully.",
+        });
+        // Invalidate related queries
+        queryClient.invalidateQueries({ queryKey: ["budgets"] });
+        queryClient.invalidateQueries({ queryKey: ["expenses"] });
+        queryClient.invalidateQueries({ queryKey: ["savings-goals"] });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to get AI response",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Fetch connections for group chat creation
   const { data: connections = [] } = useQuery({
@@ -107,7 +209,8 @@ const ModernChatApp: React.FC = observer(() => {
     if (convId && currentConversation) {
       // Mark all unread messages as read when viewing
       const unreadMessages = currentConversation.messages.filter(
-        (msg) => msg.sender !== chatStore.currentUserId && msg.status !== "read"
+        (msg) =>
+          msg.sender !== chatStore.currentUserId && msg.status !== "read",
       );
 
       if (unreadMessages.length > 0) {
@@ -127,6 +230,13 @@ const ModernChatApp: React.FC = observer(() => {
 
   const handleSelectConversation = (id: string) => {
     setSelectedConversation(id);
+
+    // Handle AI conversation separately
+    if (id === AI_CONVERSATION_ID) {
+      chatStore.setCurrentConversation("");
+      return;
+    }
+
     if (isValidId(id)) {
       // First, clear the current conversation to force a fresh render
       chatStore.setCurrentConversation("");
@@ -164,25 +274,52 @@ const ModernChatApp: React.FC = observer(() => {
       return;
     }
 
+    // Handle AI conversation separately
+    if (isAiConversation) {
+      // Add user message to local state immediately
+      const userMessage = {
+        id: Date.now().toString(),
+        content: sanitized,
+        sender: user?.id || "user",
+        senderName: "You",
+        sent_at: new Date().toISOString(),
+        status: "sent",
+      };
+      setAiMessages((prev) => [...prev, userMessage]);
+      setMessageText("");
+      setIsAiLoading(true);
+
+      // Send to AI
+      aiChatMutation.mutate(sanitized, {
+        onSettled: () => setIsAiLoading(false),
+      });
+      return;
+    }
+
     const convId = chatStore.currentConversationId || selectedConversation;
-    
+
     // Validate connection for direct conversations
     if (currentConversation?.type === "direct" && user) {
       const otherParticipant = currentConversation.participants?.find(
         (p: any) => {
           const pId = typeof p === "string" ? p : p?.id;
           return pId && pId !== user.id;
-        }
+        },
       );
-      
+
       if (otherParticipant) {
-        const otherUserId = typeof otherParticipant === "string" ? otherParticipant : otherParticipant?.id;
+        const otherUserId =
+          typeof otherParticipant === "string"
+            ? otherParticipant
+            : otherParticipant?.id;
         const isConnected = connections.some((conn: any) => {
-          const isRequester = conn.requester?.id === otherUserId && conn.receiver?.id === user.id;
-          const isReceiver = conn.receiver?.id === otherUserId && conn.requester?.id === user.id;
+          const isRequester =
+            conn.requester?.id === otherUserId && conn.receiver?.id === user.id;
+          const isReceiver =
+            conn.receiver?.id === otherUserId && conn.requester?.id === user.id;
           return (isRequester || isReceiver) && conn.status === "connected";
         });
-        
+
         if (!isConnected) {
           toast({
             title: "Connection Required",
@@ -273,7 +410,7 @@ const ModernChatApp: React.FC = observer(() => {
     setSelectedParticipants((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+        : [...prev, userId],
     );
   };
 
@@ -331,13 +468,13 @@ const ModernChatApp: React.FC = observer(() => {
       if (conversationsRes.data) {
         console.log(
           "Refreshed conversations after group creation:",
-          conversationsRes.data
+          conversationsRes.data,
         );
         chatStore.setConversationsFromServer(conversationsRes.data);
 
         // Log the newly created conversation
         const newConv = conversationsRes.data.find(
-          (c: any) => c.id === res.data.id
+          (c: any) => c.id === res.data.id,
         );
         if (newConv) {
           console.log("New group conversation data:", {
@@ -360,7 +497,7 @@ const ModernChatApp: React.FC = observer(() => {
         setTimeout(() => {
           // Find the conversation again after refresh
           const newConv = chatStore.conversations.find(
-            (c) => c.id === newConvId
+            (c) => c.id === newConvId,
           );
           if (newConv) {
             // Ensure it starts with empty messages
@@ -389,11 +526,17 @@ const ModernChatApp: React.FC = observer(() => {
   };
 
   const renderMessage = (message: any) => {
+    const isAiMessage = message.sender === "ai-assistant";
     const isOwn =
-      message.sender === chatStore.currentUserId || message.sender === "user_1";
+      !isAiMessage &&
+      (message.sender === chatStore.currentUserId ||
+        message.sender === "user_1" ||
+        message.sender === user?.id);
     const isSystem = message.isSystem;
     const isGroup = currentConversation?.type === "group";
-    const senderName = message.senderName || "Unknown";
+    const senderName = isAiMessage
+      ? "AI Financial Advisor"
+      : message.senderName || "Unknown";
 
     return (
       <div
@@ -403,13 +546,29 @@ const ModernChatApp: React.FC = observer(() => {
         <div
           className={cn(
             "flex max-w-[70%] gap-2",
-            isOwn ? "flex-row-reverse" : "flex-row"
+            isOwn ? "flex-row-reverse" : "flex-row",
           )}
         >
           {!isOwn && !isSystem && (
-            <Avatar className="w-8 h-8 mt-1">
-              <AvatarFallback className="text-xs">
-                {senderName.charAt(0).toUpperCase()}
+            <Avatar
+              className={cn(
+                "w-8 h-8 mt-1",
+                isAiMessage &&
+                  "bg-gradient-to-br from-purple-500 to-indigo-600",
+              )}
+            >
+              <AvatarFallback
+                className={cn(
+                  "text-xs",
+                  isAiMessage &&
+                    "bg-gradient-to-br from-purple-500 to-indigo-600 text-white",
+                )}
+              >
+                {isAiMessage ? (
+                  <Sparkles className="w-4 h-4" />
+                ) : (
+                  senderName.charAt(0).toUpperCase()
+                )}
               </AvatarFallback>
             </Avatar>
           )}
@@ -419,9 +578,11 @@ const ModernChatApp: React.FC = observer(() => {
               "rounded-2xl px-4 py-2",
               isOwn
                 ? "bg-primary text-primary-foreground"
-                : isSystem
-                ? "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100"
-                : "bg-muted text-foreground"
+                : isAiMessage
+                  ? "bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950 border border-purple-200 dark:border-purple-800 text-purple-900 dark:text-purple-100"
+                  : isSystem
+                    ? "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100"
+                    : "bg-muted text-foreground",
             )}
           >
             {isSystem && message.budgetData && (
@@ -447,7 +608,9 @@ const ModernChatApp: React.FC = observer(() => {
             <div
               className={cn(
                 "flex items-center gap-1 mt-1 text-xs",
-                isOwn ? "justify-end text-white opacity-90" : "justify-start text-gray-500"
+                isOwn
+                  ? "justify-end text-white opacity-90"
+                  : "justify-start text-gray-500",
               )}
             >
               <span>{formatMessageTime(message.sent_at)}</span>
@@ -469,6 +632,26 @@ const ModernChatApp: React.FC = observer(() => {
     );
   };
 
+  // Create AI conversation entry for the sidebar
+  const aiConversationEntry = {
+    id: AI_CONVERSATION_ID,
+    type: "ai",
+    name: "AI Financial Advisor",
+    lastMessage:
+      aiMessages.length > 0
+        ? {
+            content:
+              aiMessages[aiMessages.length - 1]?.content?.substring(0, 50) +
+              "...",
+            timestamp: aiMessages[aiMessages.length - 1]?.sent_at,
+          }
+        : {
+            content: "Ask me anything about your finances!",
+            timestamp: new Date().toISOString(),
+          },
+    unreadCount: 0,
+  };
+
   const filteredConversations = conversations.filter((conv) => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
@@ -480,6 +663,13 @@ const ModernChatApp: React.FC = observer(() => {
       displayName.includes(searchLower) || storedName.includes(searchLower)
     );
   });
+
+  // Add AI conversation at the top if matches search
+  const allConversations = searchTerm
+    ? aiConversationEntry.name.toLowerCase().includes(searchTerm.toLowerCase())
+      ? [aiConversationEntry, ...filteredConversations]
+      : filteredConversations
+    : [aiConversationEntry, ...filteredConversations];
 
   // Auto-select conversation if navigated from connections
   useEffect(() => {
@@ -502,7 +692,7 @@ const ModernChatApp: React.FC = observer(() => {
           if (conv.type !== "direct") return false;
           const participants = conv.participants || [];
           return participants.some(
-            (p: any) => p.id === userId || p.user_id === userId
+            (p: any) => p.id === userId || p.user_id === userId,
           );
         });
 
@@ -528,7 +718,7 @@ const ModernChatApp: React.FC = observer(() => {
       if (conv.type !== "direct") return false;
       const participants = conv.participants || [];
       return participants.some(
-        (p: any) => p.id === pendingUserId || p.user_id === pendingUserId
+        (p: any) => p.id === pendingUserId || p.user_id === pendingUserId,
       );
     });
 
@@ -602,30 +792,43 @@ const ModernChatApp: React.FC = observer(() => {
           <CardContent className="p-0">
             <ScrollArea className="h-[calc(100vh-12rem)] max-h-[600px]">
               <div className="space-y-1 px-3 py-2">
-                {filteredConversations.length === 0 ? (
+                {allConversations.length === 0 ? (
                   <div className="text-center text-muted-foreground py-8">
                     No conversations found.
                   </div>
                 ) : (
-                  filteredConversations.map((conversation) => (
+                  allConversations.map((conversation) => (
                     <div
                       key={conversation.id}
                       onClick={() => handleSelectConversation(conversation.id)}
                       className={cn(
                         "px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 hover:bg-accent/50",
                         selectedConversation === conversation.id &&
-                          "bg-primary/10 border border-primary/20 shadow-sm"
+                          "bg-primary/10 border border-primary/20 shadow-sm",
+                        conversation.type === "ai" &&
+                          "border-l-4 border-l-purple-500",
                       )}
                     >
                       <div className="flex items-center gap-3 w-full">
                         <div className="relative flex-shrink-0">
-                          <Avatar className="w-11 h-11 border-2 border-background shadow-sm">
-                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold">
-                              {conversation.type === "group" ? (
+                          <Avatar
+                            className={cn(
+                              "w-11 h-11 border-2 border-background shadow-sm",
+                              conversation.type === "ai" &&
+                                "bg-gradient-to-br from-purple-500 to-indigo-600",
+                            )}
+                          >
+                            <AvatarFallback
+                              className={cn(
+                                "bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold",
+                                conversation.type === "ai" &&
+                                  "bg-gradient-to-br from-purple-500 to-indigo-600 text-white",
+                              )}
+                            >
+                              {conversation.type === "ai" ? (
+                                <Sparkles className="w-5 h-5" />
+                              ) : conversation.type === "group" ? (
                                 <Users className="w-5 h-5" />
-                              ) : conversation.name ===
-                                "AI Financial Advisor" ? (
-                                <Bot className="w-5 h-5" />
                               ) : (
                                 (
                                   getConversationDisplayName(conversation) ||
@@ -661,7 +864,7 @@ const ModernChatApp: React.FC = observer(() => {
                               </p>
                               <span className="text-[10px] text-muted-foreground flex-shrink-0 font-medium">
                                 {formatMessageTime(
-                                  conversation.lastMessage.timestamp
+                                  conversation.lastMessage.timestamp,
                                 )}
                               </span>
                             </div>
@@ -685,9 +888,22 @@ const ModernChatApp: React.FC = observer(() => {
               {/* Chat Header */}
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarFallback>
-                      {currentConversation.type === "group" ? (
+                  <Avatar
+                    className={cn(
+                      "w-10 h-10",
+                      isAiConversation &&
+                        "bg-gradient-to-br from-purple-500 to-indigo-600",
+                    )}
+                  >
+                    <AvatarFallback
+                      className={cn(
+                        isAiConversation &&
+                          "bg-gradient-to-br from-purple-500 to-indigo-600 text-white",
+                      )}
+                    >
+                      {isAiConversation ? (
+                        <Sparkles className="w-5 h-5" />
+                      ) : currentConversation.type === "group" ? (
                         <Users className="w-5 h-5" />
                       ) : (
                         (
@@ -697,7 +913,17 @@ const ModernChatApp: React.FC = observer(() => {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    {currentConversation.type === "group" ? (
+                    {isAiConversation ? (
+                      <h3 className="font-semibold text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                        AI Financial Advisor
+                        <Badge
+                          variant="secondary"
+                          className="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-xs"
+                        >
+                          AI Powered
+                        </Badge>
+                      </h3>
+                    ) : currentConversation.type === "group" ? (
                       <h3
                         className="font-semibold cursor-pointer hover:text-blue-600 transition-colors"
                         onClick={() => setShowGroupMembers(true)}
@@ -711,16 +937,18 @@ const ModernChatApp: React.FC = observer(() => {
                       </h3>
                     )}
                     <p className="text-sm text-gray-600">
-                      {currentConversation.type === "group" &&
-                      currentConversation.participants
-                        ? (() => {
-                            const totalMembers =
-                              currentConversation.participants.length;
-                            return `${totalMembers} member${
-                              totalMembers !== 1 ? "s" : ""
-                            } • Click name to view`;
-                          })()
-                        : ""}
+                      {isAiConversation
+                        ? "I can help you manage finances, create budgets, and more!"
+                        : currentConversation.type === "group" &&
+                            currentConversation.participants
+                          ? (() => {
+                              const totalMembers =
+                                currentConversation.participants.length;
+                              return `${totalMembers} member${
+                                totalMembers !== 1 ? "s" : ""
+                              } • Click name to view`;
+                            })()
+                          : ""}
                     </p>
                   </div>
                 </div>
@@ -742,10 +970,52 @@ const ModernChatApp: React.FC = observer(() => {
                     )}
                     {messages.length === 0 ? (
                       <div className="text-center text-muted-foreground py-8">
-                        No messages yet.
+                        {isAiConversation ? (
+                          <div className="space-y-4">
+                            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+                              <Sparkles className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-foreground mb-2">
+                                AI Financial Advisor
+                              </h3>
+                              <p className="text-sm max-w-sm mx-auto">
+                                I can help you manage your finances! Try asking
+                                me to:
+                              </p>
+                              <ul className="text-sm mt-3 space-y-1 text-left max-w-xs mx-auto">
+                                <li>• "Create a $500 budget for groceries"</li>
+                                <li>• "Add a $50 expense for lunch"</li>
+                                <li>• "Send a message to John about dinner"</li>
+                                <li>• "How can I save more money?"</li>
+                              </ul>
+                            </div>
+                          </div>
+                        ) : (
+                          "No messages yet."
+                        )}
                       </div>
                     ) : (
                       messages.map(renderMessage)
+                    )}
+                    {isAiLoading && (
+                      <div className="flex justify-start mb-4">
+                        <div className="flex max-w-[70%] gap-2">
+                          <Avatar className="w-8 h-8 mt-1 bg-gradient-to-br from-purple-500 to-indigo-600">
+                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white">
+                              <Sparkles className="w-4 h-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="rounded-2xl px-4 py-3 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950 border border-purple-200 dark:border-purple-800">
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                              <span className="text-sm text-purple-700 dark:text-purple-300">
+                                Thinking...
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     )}
                     <div ref={messagesEndRef} />
                   </div>
@@ -760,8 +1030,17 @@ const ModernChatApp: React.FC = observer(() => {
                       value={messageText}
                       onChange={(e) => setMessageText(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Type a message..."
-                      className="resize-none"
+                      placeholder={
+                        isAiConversation
+                          ? "Ask me anything about your finances..."
+                          : "Type a message..."
+                      }
+                      className={cn(
+                        "resize-none",
+                        isAiConversation &&
+                          "border-purple-300 focus:border-purple-500",
+                      )}
+                      disabled={isAiLoading}
                     />
                   </div>
                   <div className="relative">
@@ -777,12 +1056,12 @@ const ModernChatApp: React.FC = observer(() => {
                         <EmojiPicker
                           onEmojiClick={handleEmojiClick}
                           theme={
-                            theme === "dark" ||
+                            (theme === "dark" ||
                             (theme === "system" &&
                               window.matchMedia("(prefers-color-scheme: dark)")
                                 .matches)
                               ? "dark"
-                              : "light"
+                              : "light") as import("emoji-picker-react").Theme
                           }
                           searchDisabled
                           previewConfig={{ showPreview: false }}
@@ -792,10 +1071,17 @@ const ModernChatApp: React.FC = observer(() => {
                   </div>
                   <Button
                     onClick={handleSendMessage}
-                    className="bg-blue-600 hover:bg-blue-700"
-                    disabled={!messageText.trim()}
+                    className={cn(
+                      "bg-blue-600 hover:bg-blue-700",
+                      isAiConversation && "bg-purple-600 hover:bg-purple-700",
+                    )}
+                    disabled={!messageText.trim() || isAiLoading}
                   >
-                    <Send className="w-4 h-4" />
+                    {isAiLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
 
@@ -882,7 +1168,7 @@ const ModernChatApp: React.FC = observer(() => {
                           "flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200",
                           selectedParticipants.includes(user.id)
                             ? "bg-blue-600 text-white border-2 border-blue-700 shadow-md"
-                            : "hover:bg-gray-100 border-2 border-transparent"
+                            : "hover:bg-gray-100 border-2 border-transparent",
                         )}
                       >
                         <Avatar className="w-10 h-10">
@@ -898,7 +1184,7 @@ const ModernChatApp: React.FC = observer(() => {
                               "font-medium text-sm truncate",
                               selectedParticipants.includes(user.id)
                                 ? "text-white"
-                                : ""
+                                : "",
                             )}
                           >
                             {user.name || user.username}
@@ -909,7 +1195,7 @@ const ModernChatApp: React.FC = observer(() => {
                                 "text-xs truncate",
                                 selectedParticipants.includes(user.id)
                                   ? "text-blue-100"
-                                  : "text-muted-foreground"
+                                  : "text-muted-foreground",
                               )}
                             >
                               @{user.username}
@@ -970,7 +1256,7 @@ const ModernChatApp: React.FC = observer(() => {
                 "min-w-[120px]",
                 selectedParticipants.length < 2 || !groupName.trim()
                   ? "opacity-50"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-blue-600 hover:bg-blue-700 text-white",
               )}
               type="button"
             >
@@ -1049,7 +1335,7 @@ const ModernChatApp: React.FC = observer(() => {
                   try {
                     // API call to leave group
                     await conversationsAPI.leaveConversation(
-                      currentConversation.id
+                      currentConversation.id,
                     );
 
                     toast({
@@ -1061,7 +1347,7 @@ const ModernChatApp: React.FC = observer(() => {
 
                     // Remove conversation from local state
                     chatStore.conversations = chatStore.conversations.filter(
-                      (c) => c.id !== currentConversation.id
+                      (c) => c.id !== currentConversation.id,
                     );
 
                     // Clear selection

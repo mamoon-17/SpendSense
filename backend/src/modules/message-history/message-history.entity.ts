@@ -33,12 +33,16 @@ export class Message {
   conversation: Conversation;
 
   @ManyToOne(() => User, {
-    nullable: false,
+    nullable: true, // Allow null for AI messages
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
   @JoinColumn({ name: 'sender_id' })
-  sender: User;
+  sender: User | null;
+
+  // Store sender_id as string for AI messages (when sender relation is null)
+  @Column({ type: 'varchar', nullable: true, name: 'ai_sender_id' })
+  ai_sender_id: string | null;
 
   @Column({ type: 'text', nullable: false })
   content: string;

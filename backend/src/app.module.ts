@@ -16,6 +16,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { CategoriesModule } from './modules/categories/categories.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EventsModule } from './common/events/events.module';
+import { AiModule } from './modules/ai/ai.module';
 
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CurrentUserInterceptor } from './common/interceptors/current-user.interceptor';
@@ -60,6 +61,7 @@ import { Category } from './modules/categories/categories.entity';
     CategoriesModule,
     AuthModule,
     ChatModule,
+    AiModule,
   ],
   // When DI-dependent interceptor is needed globally, provide it here
   providers: [

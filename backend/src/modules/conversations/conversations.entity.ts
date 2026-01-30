@@ -18,6 +18,7 @@ import { Message } from '../message-history/message-history.entity';
 export enum ConversationType {
   Direct = 'direct',
   Group = 'group',
+  AI = 'ai',
 }
 
 @Entity('conversations')

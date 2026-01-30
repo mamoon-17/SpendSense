@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './users.entity';
-import { Repository, In } from 'typeorm';
+import { Repository, In, ILike } from 'typeorm';
 import { CreateUserDTO } from 'src/modules/users/dtos/createUser.dto';
 import { UpdateUserDTO } from 'src/modules/users/dtos/updateUser.dto';
 import type { IPasswordService } from 'src/common/interfaces/password.interface';
@@ -27,7 +27,21 @@ export class UsersService {
   }
 
   async getUserByUsername(username: string): Promise<User | null> {
-    return this.usersRepo.findOne({ where: { username } });
+    // Try exact match first
+    let user = await this.usersRepo.findOne({ where: { username } });
+    if (user) return user;
+
+    // Try case-insensitive username match
+    user = await this.usersRepo.findOne({
+      where: { username: ILike(username) },
+    });
+    if (user) return user;
+
+    // Try case-insensitive name match (for searching by display name)
+    user = await this.usersRepo.findOne({
+      where: { name: ILike(`%${username}%`) },
+    });
+    return user;
   }
 
   async findByIds(ids: string[]): Promise<User[]> {

@@ -100,6 +100,27 @@ export class ConversationsService {
     return savedConversation;
   }
 
+  async createAiConversation(
+    userId: string,
+    data: { name: string; type: ConversationType },
+  ): Promise<Conversation> {
+    // Get the user
+    const user = await this.usersService.getUserById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Create AI conversation (no connection validation needed)
+    const conversation = this.conversationRepository.create({
+      name: data.name,
+      type: data.type,
+      participants: [user], // Only the user is a participant
+      unread_count: 0,
+    });
+
+    return this.conversationRepository.save(conversation);
+  }
+
   async getActiveConversationsForUser(userId: string): Promise<Conversation[]> {
     // We need to load ALL participants, not just the current user
     // First get the conversation IDs where the user is a participant
