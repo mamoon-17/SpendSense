@@ -110,6 +110,10 @@ export const expenseAPI = {
   createExpense: (data: any) => api.post("/expenses", data),
   updateExpense: (id: string, data: any) => api.patch(`/expenses/${id}`, data),
   deleteExpense: (id: string) => api.delete(`/expenses/${id}`),
+  unlinkExpense: (
+    id: string,
+    data: { budget_ids?: string[]; savings_goal_ids?: string[] },
+  ) => api.patch(`/expenses/${id}/unlink`, data),
   getExpensesSummary: (period?: string) =>
     api.get("/expenses/summary", { params: { period } }),
   searchExpenses: (query: string) =>

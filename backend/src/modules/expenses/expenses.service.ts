@@ -8,7 +8,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Expense } from './expenses.entity';
 import { Category } from '../categories/categories.entity';
-import { CreateExpenseDTO } from './dtos/createExpense.dto';
+import {
+  CreateExpenseDTO,
+  DistributionType,
+  LinkItemDTO,
+} from './dtos/createExpense.dto';
 import { UpdateExpenseDTO } from './dtos/updateExpense.dto';
 import { Budget } from '../budgets/budgets.entity';
 import { SavingsGoal } from '../savings_goals/savings_goals.entity';
@@ -70,56 +74,25 @@ export class ExpensesService {
 
     await this.expensesRepo.save(expense);
 
-    // Link to budgets if provided
-    if (payload.budget_ids && payload.budget_ids.length > 0) {
-      for (const budgetId of payload.budget_ids) {
-        const budget = await this.budgetsRepo.findOne({
-          where: { id: budgetId },
-        });
-        if (!budget) {
-          throw new NotFoundException(`Budget ${budgetId} not found`);
-        }
+    // Handle budget linking with distribution types
+    await this.linkBudgetsToExpense(
+      expense.id,
+      payload.amount,
+      userId,
+      payload.budget_distribution,
+      payload.budget_links,
+      payload.budget_ids,
+    );
 
-        // Create link
-        const link = this.expenseBudgetRepo.create({
-          expense_id: expense.id,
-          budget_id: budgetId,
-          amount: payload.amount.toString(),
-        });
-        await this.expenseBudgetRepo.save(link);
-
-        // Update budget spent amount
-        await this.updateBudgetSpentAmount(budgetId, payload.amount, 'add');
-        await this.budgetsService.checkBudgetAndNotify(budgetId, userId);
-      }
-    }
-
-    // Link to savings goals if provided
-    if (payload.savings_goal_ids && payload.savings_goal_ids.length > 0) {
-      for (const goalId of payload.savings_goal_ids) {
-        const goal = await this.savingsGoalRepo.findOne({
-          where: { id: goalId, user_id: userId },
-        });
-        if (!goal) {
-          throw new NotFoundException(`Savings goal ${goalId} not found`);
-        }
-
-        // Create link
-        const link = this.expenseSavingsGoalRepo.create({
-          expense_id: expense.id,
-          savings_goal_id: goalId,
-          amount: payload.amount.toString(),
-        });
-        await this.expenseSavingsGoalRepo.save(link);
-
-        // Withdraw from savings goal
-        await this.savingsGoalsService.withdrawFromSavingsGoal(
-          userId,
-          goalId,
-          payload.amount,
-        );
-      }
-    }
+    // Handle savings goal linking with distribution types
+    await this.linkSavingsGoalsToExpense(
+      expense.id,
+      payload.amount,
+      userId,
+      payload.savings_goal_distribution,
+      payload.savings_goal_links,
+      payload.savings_goal_ids,
+    );
 
     // Check if there's a budget for this category and trigger notifications
     const budgets = await this.budgetsRepo.find({
@@ -135,6 +108,172 @@ export class ExpensesService {
     }
 
     return { msg: 'Expense created successfully', expense };
+  }
+
+  // Helper method to link budgets to expense with distribution
+  private async linkBudgetsToExpense(
+    expenseId: string,
+    totalAmount: number,
+    userId: string,
+    distributionType?: DistributionType,
+    budgetLinks?: LinkItemDTO[],
+    budgetIds?: string[],
+  ): Promise<void> {
+    // Skip if distribution is none
+    if (distributionType === DistributionType.NONE) {
+      return;
+    }
+
+    // Handle new budget_links format
+    if (budgetLinks && budgetLinks.length > 0) {
+      const linkCount = budgetLinks.length;
+
+      for (const linkItem of budgetLinks) {
+        const budget = await this.budgetsRepo.findOne({
+          where: { id: linkItem.id },
+        });
+        if (!budget) {
+          throw new NotFoundException(`Budget ${linkItem.id} not found`);
+        }
+
+        // Calculate amount based on distribution type
+        let linkAmount: number;
+        switch (distributionType) {
+          case DistributionType.MANUAL:
+            linkAmount = linkItem.amount ?? totalAmount;
+            break;
+          case DistributionType.EQUAL_SPLIT:
+            linkAmount = totalAmount / linkCount;
+            break;
+          case DistributionType.HALF:
+            linkAmount = totalAmount / 2;
+            break;
+          default:
+            linkAmount = totalAmount;
+        }
+
+        // Create link
+        const link = this.expenseBudgetRepo.create({
+          expense_id: expenseId,
+          budget_id: linkItem.id,
+          amount: linkAmount.toFixed(2),
+        });
+        await this.expenseBudgetRepo.save(link);
+
+        // Update budget spent amount
+        await this.updateBudgetSpentAmount(linkItem.id, linkAmount, 'add');
+        await this.budgetsService.checkBudgetAndNotify(linkItem.id, userId);
+      }
+    }
+    // Legacy support for budget_ids
+    else if (budgetIds && budgetIds.length > 0) {
+      for (const budgetId of budgetIds) {
+        const budget = await this.budgetsRepo.findOne({
+          where: { id: budgetId },
+        });
+        if (!budget) {
+          throw new NotFoundException(`Budget ${budgetId} not found`);
+        }
+
+        // Create link with full amount (legacy behavior)
+        const link = this.expenseBudgetRepo.create({
+          expense_id: expenseId,
+          budget_id: budgetId,
+          amount: totalAmount.toString(),
+        });
+        await this.expenseBudgetRepo.save(link);
+
+        // Update budget spent amount
+        await this.updateBudgetSpentAmount(budgetId, totalAmount, 'add');
+        await this.budgetsService.checkBudgetAndNotify(budgetId, userId);
+      }
+    }
+  }
+
+  // Helper method to link savings goals to expense with distribution
+  private async linkSavingsGoalsToExpense(
+    expenseId: string,
+    totalAmount: number,
+    userId: string,
+    distributionType?: DistributionType,
+    savingsGoalLinks?: LinkItemDTO[],
+    savingsGoalIds?: string[],
+  ): Promise<void> {
+    // Skip if distribution is none
+    if (distributionType === DistributionType.NONE) {
+      return;
+    }
+
+    // Handle new savings_goal_links format
+    if (savingsGoalLinks && savingsGoalLinks.length > 0) {
+      const linkCount = savingsGoalLinks.length;
+
+      for (const linkItem of savingsGoalLinks) {
+        const goal = await this.savingsGoalRepo.findOne({
+          where: { id: linkItem.id, user_id: userId },
+        });
+        if (!goal) {
+          throw new NotFoundException(`Savings goal ${linkItem.id} not found`);
+        }
+
+        // Calculate amount based on distribution type
+        let linkAmount: number;
+        switch (distributionType) {
+          case DistributionType.MANUAL:
+            linkAmount = linkItem.amount ?? totalAmount;
+            break;
+          case DistributionType.EQUAL_SPLIT:
+            linkAmount = totalAmount / linkCount;
+            break;
+          case DistributionType.HALF:
+            linkAmount = totalAmount / 2;
+            break;
+          default:
+            linkAmount = totalAmount;
+        }
+
+        // Create link
+        const link = this.expenseSavingsGoalRepo.create({
+          expense_id: expenseId,
+          savings_goal_id: linkItem.id,
+          amount: linkAmount.toFixed(2),
+        });
+        await this.expenseSavingsGoalRepo.save(link);
+
+        // Withdraw from savings goal
+        await this.savingsGoalsService.withdrawFromSavingsGoal(
+          userId,
+          linkItem.id,
+          linkAmount,
+        );
+      }
+    }
+    // Legacy support for savings_goal_ids
+    else if (savingsGoalIds && savingsGoalIds.length > 0) {
+      for (const goalId of savingsGoalIds) {
+        const goal = await this.savingsGoalRepo.findOne({
+          where: { id: goalId, user_id: userId },
+        });
+        if (!goal) {
+          throw new NotFoundException(`Savings goal ${goalId} not found`);
+        }
+
+        // Create link with full amount (legacy behavior)
+        const link = this.expenseSavingsGoalRepo.create({
+          expense_id: expenseId,
+          savings_goal_id: goalId,
+          amount: totalAmount.toString(),
+        });
+        await this.expenseSavingsGoalRepo.save(link);
+
+        // Withdraw from savings goal
+        await this.savingsGoalsService.withdrawFromSavingsGoal(
+          userId,
+          goalId,
+          totalAmount,
+        );
+      }
+    }
   }
 
   // Helper method to update budget spent_amount
@@ -251,8 +390,28 @@ export class ExpensesService {
       (link) => link.savings_goal_id,
     );
 
-    // Link NEW budgets (only ones not already linked)
-    if (payload.budget_ids && payload.budget_ids.length > 0) {
+    // Handle budget linking with distribution types (new format)
+    if (
+      payload.budget_links &&
+      payload.budget_links.length > 0 &&
+      payload.budget_distribution !== DistributionType.NONE
+    ) {
+      const newBudgetLinks = payload.budget_links.filter(
+        (link) => !existingBudgetIds.includes(link.id),
+      );
+      if (newBudgetLinks.length > 0) {
+        await this.linkBudgetsToExpense(
+          id,
+          expenseAmount,
+          userId,
+          payload.budget_distribution,
+          newBudgetLinks,
+          undefined,
+        );
+      }
+    }
+    // Legacy support for budget_ids
+    else if (payload.budget_ids && payload.budget_ids.length > 0) {
       for (const budgetId of payload.budget_ids) {
         // Skip if already linked
         if (existingBudgetIds.includes(budgetId)) {
@@ -280,8 +439,28 @@ export class ExpensesService {
       }
     }
 
-    // Link NEW savings goals (only ones not already linked)
-    if (payload.savings_goal_ids && payload.savings_goal_ids.length > 0) {
+    // Handle savings goal linking with distribution types (new format)
+    if (
+      payload.savings_goal_links &&
+      payload.savings_goal_links.length > 0 &&
+      payload.savings_goal_distribution !== DistributionType.NONE
+    ) {
+      const newSavingsLinks = payload.savings_goal_links.filter(
+        (link) => !existingSavingsIds.includes(link.id),
+      );
+      if (newSavingsLinks.length > 0) {
+        await this.linkSavingsGoalsToExpense(
+          id,
+          expenseAmount,
+          userId,
+          payload.savings_goal_distribution,
+          newSavingsLinks,
+          undefined,
+        );
+      }
+    }
+    // Legacy support for savings_goal_ids
+    else if (payload.savings_goal_ids && payload.savings_goal_ids.length > 0) {
       for (const goalId of payload.savings_goal_ids) {
         // Skip if already linked
         if (existingSavingsIds.includes(goalId)) {
@@ -489,5 +668,78 @@ export class ExpensesService {
       (total, expense) => total + parseFloat(expense.amount),
       0,
     );
+  }
+
+  // Unlink expense from budgets and/or savings goals (restores money)
+  async unlinkExpense(
+    expenseId: string,
+    userId: string,
+    budgetIds?: string[],
+    savingsGoalIds?: string[],
+  ): Promise<object> {
+    const expense = await this.expensesRepo.findOne({
+      where: { id: expenseId, user_id: userId },
+    });
+
+    if (!expense) {
+      throw new NotFoundException('Expense not found');
+    }
+
+    const unlinkedBudgets: string[] = [];
+    const unlinkedSavingsGoals: string[] = [];
+
+    // Unlink from budgets and restore spent_amount
+    if (budgetIds && budgetIds.length > 0) {
+      for (const budgetId of budgetIds) {
+        const link = await this.expenseBudgetRepo.findOne({
+          where: { expense_id: expenseId, budget_id: budgetId },
+        });
+
+        if (link) {
+          const linkedAmount = parseFloat(link.amount) || 0;
+
+          // Restore budget spent_amount
+          await this.updateBudgetSpentAmount(
+            budgetId,
+            linkedAmount,
+            'subtract',
+          );
+
+          // Delete the link
+          await this.expenseBudgetRepo.remove(link);
+          unlinkedBudgets.push(budgetId);
+        }
+      }
+    }
+
+    // Unlink from savings goals and restore current_amount
+    if (savingsGoalIds && savingsGoalIds.length > 0) {
+      for (const goalId of savingsGoalIds) {
+        const link = await this.expenseSavingsGoalRepo.findOne({
+          where: { expense_id: expenseId, savings_goal_id: goalId },
+        });
+
+        if (link) {
+          const linkedAmount = parseFloat(link.amount) || 0;
+
+          // Restore savings goal current_amount (add back the withdrawn amount)
+          await this.savingsGoalsService.addToSavingsGoal(
+            userId,
+            goalId,
+            linkedAmount,
+          );
+
+          // Delete the link
+          await this.expenseSavingsGoalRepo.remove(link);
+          unlinkedSavingsGoals.push(goalId);
+        }
+      }
+    }
+
+    return {
+      msg: 'Expense unlinked successfully',
+      unlinkedBudgets,
+      unlinkedSavingsGoals,
+    };
   }
 }

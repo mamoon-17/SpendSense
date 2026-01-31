@@ -69,7 +69,7 @@ interface BackendExpense {
   id: string;
   description: string;
   amount: string;
-  category_id: string;
+  category_id: string | null;
   date: string;
   payment_method?: string;
   notes?: string;

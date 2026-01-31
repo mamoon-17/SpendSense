@@ -6,7 +6,28 @@ import {
   IsOptional,
   IsDateString,
   IsArray,
+  IsEnum,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+// Distribution types for linking expenses to budgets/savings goals
+export enum DistributionType {
+  NONE = 'none',
+  MANUAL = 'manual',
+  EQUAL_SPLIT = 'equal_split',
+  HALF = 'half',
+}
+
+// DTO for individual budget/savings goal link with custom amount
+export class LinkItemDTO {
+  @IsUUID()
+  id: string;
+
+  @IsNumber()
+  @IsOptional()
+  amount?: number; // Custom amount for manual distribution
+}
 
 export class CreateExpenseDTO {
   @IsString()
@@ -46,13 +67,37 @@ export class CreateExpenseDTO {
   @IsOptional()
   currency?: string;
 
-  // Budget linking - array of budget IDs to link
+  // Budget distribution type
+  @IsEnum(DistributionType)
+  @IsOptional()
+  budget_distribution?: DistributionType;
+
+  // Budget linking - array of budget objects with optional custom amounts
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LinkItemDTO)
+  @IsOptional()
+  budget_links?: LinkItemDTO[];
+
+  // Legacy support - array of budget IDs (will use full amount)
   @IsArray()
   @IsUUID('4', { each: true })
   @IsOptional()
   budget_ids?: string[];
 
-  // Savings goal linking - array of savings goal IDs to link
+  // Savings goal distribution type
+  @IsEnum(DistributionType)
+  @IsOptional()
+  savings_goal_distribution?: DistributionType;
+
+  // Savings goal linking - array of savings goal objects with optional custom amounts
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LinkItemDTO)
+  @IsOptional()
+  savings_goal_links?: LinkItemDTO[];
+
+  // Legacy support - array of savings goal IDs (will use full amount)
   @IsArray()
   @IsUUID('4', { each: true })
   @IsOptional()

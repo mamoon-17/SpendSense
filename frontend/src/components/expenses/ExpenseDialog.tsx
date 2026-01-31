@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect, useMemo } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -34,13 +34,25 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { expenseAPI, categoriesAPI, budgetAPI, savingsAPI } from "@/lib/api";
 import { useUserSettings } from "@/hooks/useUserSettings";
-import { Wallet, PiggyBank, Info, X, Minus } from "lucide-react";
+import {
+  Wallet,
+  PiggyBank,
+  Info,
+  X,
+  Minus,
+  Split,
+  DollarSign,
+} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+// Distribution types
+type DistributionType = "none" | "manual" | "equal_split" | "half";
 
 interface ExpenseDialogProps {
   open: boolean;
@@ -49,7 +61,7 @@ interface ExpenseDialogProps {
     id: string;
     description: string;
     amount: string;
-    category_id: string;
+    category_id: string | null;
     date: string;
     payment_method?: string;
     notes?: string;
@@ -86,17 +98,87 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
     location: "",
   });
 
-  // Selected budgets and savings goals to ADD (new links only)
-  const [selectedBudgetIds, setSelectedBudgetIds] = useState<string[]>([]);
-  const [selectedSavingsGoalIds, setSelectedSavingsGoalIds] = useState<
-    string[]
+  // Distribution type states
+  const [budgetDistribution, setBudgetDistribution] =
+    useState<DistributionType>("none");
+  const [savingsGoalDistribution, setSavingsGoalDistribution] =
+    useState<DistributionType>("none");
+
+  // Selected budgets and savings goals with custom amounts for manual distribution
+  const [selectedBudgets, setSelectedBudgets] = useState<
+    { id: string; amount: string }[]
+  >([]);
+  const [selectedSavingsGoals, setSelectedSavingsGoals] = useState<
+    { id: string; amount: string }[]
   >([]);
 
-  // Fetch categories (use budget type since expenses and budgets share categories)
+  // Track linked budgets/savings goals that can be unlinked
+  const [linkedBudgetIds, setLinkedBudgetIds] = useState<string[]>([]);
+  const [linkedSavingsGoalIds, setLinkedSavingsGoalIds] = useState<string[]>(
+    [],
+  );
+
+  // Unlink confirmation dialog
+  const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false);
+  const [itemToUnlink, setItemToUnlink] = useState<{
+    type: "budget" | "savings_goal";
+    id: string;
+    name: string;
+  } | null>(null);
+
+  // Unlink mutation
+  const unlinkMutation = useMutation({
+    mutationFn: async ({
+      budgetIds,
+      savingsGoalIds,
+    }: {
+      budgetIds?: string[];
+      savingsGoalIds?: string[];
+    }) => {
+      if (!expense) return;
+      return expenseAPI.unlinkExpense(expense.id, {
+        budget_ids: budgetIds,
+        savings_goal_ids: savingsGoalIds,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Successfully unlinked and restored the amount.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["savings-goals"] });
+
+      // Update local state to reflect the unlink
+      if (itemToUnlink) {
+        if (itemToUnlink.type === "budget") {
+          setLinkedBudgetIds((prev) =>
+            prev.filter((id) => id !== itemToUnlink.id),
+          );
+        } else {
+          setLinkedSavingsGoalIds((prev) =>
+            prev.filter((id) => id !== itemToUnlink.id),
+          );
+        }
+      }
+      setItemToUnlink(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to unlink expense.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Fetch categories (all categories for expenses)
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories", "budget"],
+    queryKey: ["categories"],
     queryFn: async () => {
-      const response = await categoriesAPI.getCategoriesByType("budget");
+      const response = await categoriesAPI.getCategories();
       return response.data;
     },
     enabled: open,
@@ -128,19 +210,24 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
       setShowCustomInput(false);
       setCustomCategoryName("");
       setCategoryToDelete(null);
+      setBudgetDistribution("none");
+      setSavingsGoalDistribution("none");
+      setSelectedBudgets([]);
+      setSelectedSavingsGoals([]);
+
       if (expense) {
         setFormData({
           description: expense.description,
           amount: expense.amount,
-          category_id: expense.category_id,
+          category_id: expense.category_id || "",
           date: expense.date.split("T")[0],
           payment_method: expense.payment_method || "",
           notes: expense.notes || "",
           location: expense.location || "",
         });
-        // Reset selections - don't pre-select already linked ones
-        setSelectedBudgetIds([]);
-        setSelectedSavingsGoalIds([]);
+        // Initialize linked IDs for unlinking
+        setLinkedBudgetIds(expense.linkedBudgetIds || []);
+        setLinkedSavingsGoalIds(expense.linkedSavingsGoalIds || []);
       } else {
         // Reset form for new expense
         const today = new Date().toISOString().split("T")[0];
@@ -153,37 +240,209 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
           notes: "",
           location: "",
         });
-        setSelectedBudgetIds([]);
-        setSelectedSavingsGoalIds([]);
+        setLinkedBudgetIds([]);
+        setLinkedSavingsGoalIds([]);
       }
     }
   }, [open, expense]);
 
-  // Get already linked IDs (for existing expense)
-  const alreadyLinkedBudgetIds = expense?.linkedBudgetIds || [];
-  const alreadyLinkedSavingsGoalIds = expense?.linkedSavingsGoalIds || [];
+  // Get currently linked IDs (use local state to reflect unlinks)
+  const alreadyLinkedBudgetIds = linkedBudgetIds;
+  const alreadyLinkedSavingsGoalIds = linkedSavingsGoalIds;
 
-  // Filter out already linked budgets/savings goals from available options
-  const availableBudgets = budgets.filter(
-    (b: any) => !alreadyLinkedBudgetIds.includes(b.id),
-  );
-  const availableSavingsGoals = savingsGoals.filter(
-    (g: any) => !alreadyLinkedSavingsGoalIds.includes(g.id),
-  );
+  // Get all available budgets (not already linked)
+  const availableBudgets = useMemo(() => {
+    return budgets.filter((b: any) => !alreadyLinkedBudgetIds.includes(b.id));
+  }, [budgets, alreadyLinkedBudgetIds]);
 
-  const handleBudgetToggle = (budgetId: string) => {
-    setSelectedBudgetIds((prev) =>
-      prev.includes(budgetId)
-        ? prev.filter((id) => id !== budgetId)
-        : [...prev, budgetId],
+  // Get all available savings goals (not already linked)
+  const availableSavingsGoals = useMemo(() => {
+    return savingsGoals.filter(
+      (g: any) => !alreadyLinkedSavingsGoalIds.includes(g.id),
+    );
+  }, [savingsGoals, alreadyLinkedSavingsGoalIds]);
+
+  // Calculate preview amounts based on distribution type
+  const expenseAmount = parseFloat(formData.amount) || 0;
+
+  // Calculate the amount each budget gets based on selection count and distribution type
+  const getBudgetAmount = (budgetId: string) => {
+    if (selectedBudgets.length === 0) return 0;
+
+    // If only one budget selected, it gets the full expense amount
+    if (selectedBudgets.length === 1) {
+      return expenseAmount;
+    }
+
+    // Multiple budgets - use distribution type
+    const selectedItem = selectedBudgets.find((item) => item.id === budgetId);
+    switch (budgetDistribution) {
+      case "manual":
+        return parseFloat(selectedItem?.amount || "0") || 0;
+      case "equal_split":
+        // Each budget gets the full expense amount
+        return expenseAmount;
+      case "half":
+        // Each budget gets half of the expense amount
+        return expenseAmount / 2;
+      default:
+        return expenseAmount;
+    }
+  };
+
+  // Calculate total budget distribution (informational - can exceed expense amount)
+  const totalBudgetDistribution = useMemo(() => {
+    if (selectedBudgets.length === 0) return 0;
+    if (selectedBudgets.length === 1) return expenseAmount;
+
+    if (budgetDistribution === "manual") {
+      return selectedBudgets.reduce(
+        (sum, item) => sum + (parseFloat(item.amount) || 0),
+        0,
+      );
+    } else if (budgetDistribution === "equal_split") {
+      // Each gets full amount
+      return expenseAmount * selectedBudgets.length;
+    } else if (budgetDistribution === "half") {
+      // Each gets half amount
+      return (expenseAmount / 2) * selectedBudgets.length;
+    }
+    return 0;
+  }, [selectedBudgets, budgetDistribution, expenseAmount]);
+
+  const calculateBudgetAmounts = () => {
+    if (selectedBudgets.length === 0) return [];
+
+    return selectedBudgets.map((item) => {
+      return { id: item.id, amount: getBudgetAmount(item.id).toFixed(2) };
+    });
+  };
+
+  // Calculate the amount each savings goal gets based on selection count and distribution type
+  const getSavingsGoalAmount = (goalId: string) => {
+    if (selectedSavingsGoals.length === 0) return 0;
+
+    // If only one goal selected, it gets the full expense amount
+    if (selectedSavingsGoals.length === 1) {
+      return expenseAmount;
+    }
+
+    // Multiple goals - use distribution type
+    const selectedItem = selectedSavingsGoals.find(
+      (item) => item.id === goalId,
+    );
+    switch (savingsGoalDistribution) {
+      case "manual":
+        return parseFloat(selectedItem?.amount || "0") || 0;
+      case "equal_split":
+        // Each goal gets the full expense amount
+        return expenseAmount;
+      case "half":
+        // Each goal gets half of the expense amount
+        return expenseAmount / 2;
+      default:
+        return expenseAmount;
+    }
+  };
+
+  // Calculate total savings goal distribution (informational - can exceed expense amount)
+  const totalSavingsGoalDistribution = useMemo(() => {
+    if (selectedSavingsGoals.length === 0) return 0;
+    if (selectedSavingsGoals.length === 1) return expenseAmount;
+
+    if (savingsGoalDistribution === "manual") {
+      return selectedSavingsGoals.reduce(
+        (sum, item) => sum + (parseFloat(item.amount) || 0),
+        0,
+      );
+    } else if (savingsGoalDistribution === "equal_split") {
+      // Each gets full amount
+      return expenseAmount * selectedSavingsGoals.length;
+    } else if (savingsGoalDistribution === "half") {
+      // Each gets half amount
+      return (expenseAmount / 2) * selectedSavingsGoals.length;
+    }
+    return 0;
+  }, [selectedSavingsGoals, savingsGoalDistribution, expenseAmount]);
+
+  const calculateSavingsGoalAmounts = () => {
+    if (selectedSavingsGoals.length === 0) return [];
+
+    return selectedSavingsGoals.map((item) => {
+      return { id: item.id, amount: getSavingsGoalAmount(item.id).toFixed(2) };
+    });
+  };
+
+  const handleUnlinkBudget = (budgetId: string, budgetName: string) => {
+    setItemToUnlink({ type: "budget", id: budgetId, name: budgetName });
+    setUnlinkConfirmOpen(true);
+  };
+
+  const handleUnlinkSavingsGoal = (goalId: string, goalName: string) => {
+    setItemToUnlink({ type: "savings_goal", id: goalId, name: goalName });
+    setUnlinkConfirmOpen(true);
+  };
+
+  const confirmUnlink = () => {
+    if (!itemToUnlink) return;
+
+    if (itemToUnlink.type === "budget") {
+      unlinkMutation.mutate({ budgetIds: [itemToUnlink.id] });
+    } else {
+      unlinkMutation.mutate({ savingsGoalIds: [itemToUnlink.id] });
+    }
+    setUnlinkConfirmOpen(false);
+  };
+
+  const handleBudgetToggle = (budgetId: string, checked: boolean) => {
+    if (checked) {
+      const newSelected = [...selectedBudgets, { id: budgetId, amount: "" }];
+      setSelectedBudgets(newSelected);
+      // Reset distribution type to equal_split when going from 1 to multiple
+      if (newSelected.length === 2) {
+        setBudgetDistribution("equal_split");
+      }
+    } else {
+      const newSelected = selectedBudgets.filter(
+        (item) => item.id !== budgetId,
+      );
+      setSelectedBudgets(newSelected);
+      // Reset distribution when going back to single selection
+      if (newSelected.length <= 1) {
+        setBudgetDistribution("none");
+      }
+    }
+  };
+
+  const handleBudgetAmountChange = (budgetId: string, amount: string) => {
+    setSelectedBudgets((prev) =>
+      prev.map((item) => (item.id === budgetId ? { ...item, amount } : item)),
     );
   };
 
-  const handleSavingsGoalToggle = (goalId: string) => {
-    setSelectedSavingsGoalIds((prev) =>
-      prev.includes(goalId)
-        ? prev.filter((id) => id !== goalId)
-        : [...prev, goalId],
+  const handleSavingsGoalToggle = (goalId: string, checked: boolean) => {
+    if (checked) {
+      const newSelected = [...selectedSavingsGoals, { id: goalId, amount: "" }];
+      setSelectedSavingsGoals(newSelected);
+      // Reset distribution type to equal_split when going from 1 to multiple
+      if (newSelected.length === 2) {
+        setSavingsGoalDistribution("equal_split");
+      }
+    } else {
+      const newSelected = selectedSavingsGoals.filter(
+        (item) => item.id !== goalId,
+      );
+      setSelectedSavingsGoals(newSelected);
+      // Reset distribution when going back to single selection
+      if (newSelected.length <= 1) {
+        setSavingsGoalDistribution("none");
+      }
+    }
+  };
+
+  const handleSavingsGoalAmountChange = (goalId: string, amount: string) => {
+    setSelectedSavingsGoals((prev) =>
+      prev.map((item) => (item.id === goalId ? { ...item, amount } : item)),
     );
   };
 
@@ -227,6 +486,34 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
     try {
       let categoryId = formData.category_id;
 
+      // Validate manual distribution amounts
+      if (selectedBudgets.length > 1 && budgetDistribution === "manual") {
+        if (Math.abs(totalBudgetDistribution - expenseAmount) >= 0.01) {
+          toast({
+            title: "Validation Error",
+            description: `Budget distribution total (${totalBudgetDistribution.toFixed(2)}) must equal expense amount (${expenseAmount.toFixed(2)}).`,
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      if (
+        selectedSavingsGoals.length > 1 &&
+        savingsGoalDistribution === "manual"
+      ) {
+        if (Math.abs(totalSavingsGoalDistribution - expenseAmount) >= 0.01) {
+          toast({
+            title: "Validation Error",
+            description: `Savings goal distribution total (${totalSavingsGoalDistribution.toFixed(2)}) must equal expense amount (${expenseAmount.toFixed(2)}).`,
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // If "other" is selected, create a custom category first
       if (formData.category_id === "other" && customCategoryName.trim()) {
         const response = await categoriesAPI.createCustomCategory({
@@ -261,14 +548,33 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
         notes: formData.notes || undefined,
         location: formData.location || undefined,
         currency: settings.currency,
-        // Arrays of budget/savings goal IDs to link
-        budget_ids:
-          selectedBudgetIds.length > 0 ? selectedBudgetIds : undefined,
-        savings_goal_ids:
-          selectedSavingsGoalIds.length > 0
-            ? selectedSavingsGoalIds
-            : undefined,
       };
+
+      // Add budget links if any budgets are selected
+      if (selectedBudgets.length > 0) {
+        // For single budget, use full amount with "manual" distribution; for multiple, use the calculated amounts
+        const budgetAmounts = calculateBudgetAmounts();
+        payload.budget_distribution =
+          selectedBudgets.length === 1 ? "manual" : budgetDistribution;
+        payload.budget_links = budgetAmounts.map((item) => ({
+          id: item.id,
+          amount: parseFloat(item.amount),
+        }));
+      }
+
+      // Add savings goal links if any are selected
+      if (selectedSavingsGoals.length > 0) {
+        // For single goal, use full amount with "manual" distribution; for multiple, use the calculated amounts
+        const savingsAmounts = calculateSavingsGoalAmounts();
+        payload.savings_goal_distribution =
+          selectedSavingsGoals.length === 1
+            ? "manual"
+            : savingsGoalDistribution;
+        payload.savings_goal_links = savingsAmounts.map((item) => ({
+          id: item.id,
+          amount: parseFloat(item.amount),
+        }));
+      }
 
       if (expense) {
         await expenseAPI.updateExpense(expense.id, payload);
@@ -552,9 +858,8 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
                       <p>
-                        Link this expense to one or more budgets/savings goals.
-                        Once linked, they cannot be linked again to the same
-                        expense.
+                        Only budgets and savings goals with matching categories
+                        are shown. Choose how to distribute the expense amount.
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -567,8 +872,21 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
                   <div className="flex items-center gap-2">
                     <Wallet className="h-4 w-4 text-blue-500" />
                     <Label className="text-sm font-medium">
-                      Already Linked Budgets
+                      Linked Budgets
                     </Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>
+                            Click the unlink button to remove the connection and
+                            restore the budget's spent amount.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {alreadyLinkedBudgetIds.map((id) => {
@@ -577,9 +895,18 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
                         <Badge
                           key={id}
                           variant="secondary"
-                          className="bg-blue-500/20"
+                          className="bg-blue-500/20 flex items-center gap-1 pr-1"
                         >
                           {budget.name}
+                          <button
+                            type="button"
+                            className="h-4 w-4 ml-1 flex items-center justify-center hover:bg-destructive/20 hover:text-destructive rounded-full text-muted-foreground"
+                            onClick={() => handleUnlinkBudget(id, budget.name)}
+                            disabled={unlinkMutation.isPending}
+                            title="Unlink from budget"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
                         </Badge>
                       ) : null;
                     })}
@@ -587,53 +914,185 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
                 </div>
               )}
 
-              {/* Add New Budgets */}
+              {/* Add New Budgets with Distribution Options */}
               <div className="space-y-3 p-3 rounded-lg bg-secondary/30 border">
                 <div className="flex items-center gap-2">
                   <Wallet className="h-4 w-4 text-blue-500" />
                   <Label className="text-sm font-medium">
                     {expense ? "Add More Budgets" : "Link to Budgets"}
                   </Label>
+                  {availableBudgets.length > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      {availableBudgets.length} available
+                    </Badge>
+                  )}
                 </div>
 
                 {availableBudgets.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    {alreadyLinkedBudgetIds.length > 0
-                      ? "All budgets are already linked to this expense."
-                      : "No budgets available."}
+                    No budgets available to link.
                   </p>
                 ) : (
-                  <div className="space-y-2 max-h-[150px] overflow-y-auto">
-                    {availableBudgets.map((budget: any) => (
-                      <div
-                        key={budget.id}
-                        className="flex items-center space-x-2 p-2 rounded hover:bg-secondary/50"
-                      >
-                        <Checkbox
-                          id={`budget-${budget.id}`}
-                          checked={selectedBudgetIds.includes(budget.id)}
-                          onCheckedChange={() => handleBudgetToggle(budget.id)}
-                        />
-                        <label
-                          htmlFor={`budget-${budget.id}`}
-                          className="text-sm flex-1 cursor-pointer"
-                        >
-                          {budget.name}{" "}
-                          <span className="text-muted-foreground">
-                            ({parseFloat(budget.spent_amount || 0).toFixed(2)} /{" "}
-                            {parseFloat(budget.total_amount).toFixed(2)})
-                          </span>
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  <>
+                    {/* Budget Selection Checkboxes */}
+                    <div className="space-y-2 max-h-[180px] overflow-y-auto">
+                      {availableBudgets.map((budget: any) => {
+                        const isSelected = selectedBudgets.some(
+                          (item) => item.id === budget.id,
+                        );
+                        const selectedItem = selectedBudgets.find(
+                          (item) => item.id === budget.id,
+                        );
+                        const calculatedAmount = getBudgetAmount(budget.id);
 
-                {selectedBudgetIds.length > 0 && (
-                  <p className="text-xs text-blue-600">
-                    ✓ {selectedBudgetIds.length} budget(s) will have this
-                    expense added to their spending.
-                  </p>
+                        return (
+                          <div
+                            key={budget.id}
+                            className={`p-2 rounded border ${isSelected ? "border-blue-500 bg-blue-500/10" : "hover:bg-secondary/50"}`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`budget-${budget.id}`}
+                                checked={isSelected}
+                                onCheckedChange={(checked) =>
+                                  handleBudgetToggle(budget.id, !!checked)
+                                }
+                              />
+                              <label
+                                htmlFor={`budget-${budget.id}`}
+                                className="text-sm flex-1 cursor-pointer"
+                              >
+                                {budget.name}{" "}
+                                <span className="text-muted-foreground">
+                                  (
+                                  {parseFloat(budget.spent_amount || 0).toFixed(
+                                    2,
+                                  )}{" "}
+                                  / {parseFloat(budget.total_amount).toFixed(2)}
+                                  )
+                                </span>
+                              </label>
+                            </div>
+
+                            {/* Manual amount input - only show when multiple budgets selected and manual distribution */}
+                            {isSelected &&
+                              selectedBudgets.length > 1 &&
+                              budgetDistribution === "manual" && (
+                                <div className="mt-2 ml-6 flex items-center gap-2">
+                                  <Label className="text-xs">Amount:</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    max={expenseAmount}
+                                    value={selectedItem?.amount || ""}
+                                    onChange={(e) =>
+                                      handleBudgetAmountChange(
+                                        budget.id,
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="h-7 w-24 text-sm"
+                                    placeholder="0.00"
+                                  />
+                                </div>
+                              )}
+
+                            {/* Preview calculated amount */}
+                            {isSelected && (
+                              <div className="mt-1 ml-6 text-xs text-blue-600">
+                                Will deduct: {getCurrencySymbol()}
+                                {calculatedAmount.toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Distribution Type Selection - only show when more than 1 budget is selected */}
+                    {selectedBudgets.length > 1 && (
+                      <div className="space-y-2 p-2 rounded bg-blue-500/5 border border-blue-500/20">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">
+                            Distribution Type
+                          </Label>
+                          <span className="text-xs font-medium text-blue-600">
+                            Expense: {getCurrencySymbol()}
+                            {expenseAmount.toFixed(2)}
+                          </span>
+                        </div>
+                        <RadioGroup
+                          value={budgetDistribution}
+                          onValueChange={(value) => {
+                            setBudgetDistribution(value as DistributionType);
+                          }}
+                          className="flex flex-wrap gap-3"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem
+                              value="equal_split"
+                              id="budget-equal"
+                            />
+                            <Label
+                              htmlFor="budget-equal"
+                              className="text-sm cursor-pointer"
+                            >
+                              Equal Split
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="half" id="budget-half" />
+                            <Label
+                              htmlFor="budget-half"
+                              className="text-sm cursor-pointer"
+                            >
+                              Half (50%)
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="manual" id="budget-manual" />
+                            <Label
+                              htmlFor="budget-manual"
+                              className="text-sm cursor-pointer"
+                            >
+                              Manual
+                            </Label>
+                          </div>
+                        </RadioGroup>
+
+                        {/* Total distribution summary */}
+                        <div
+                          className={`text-xs ${budgetDistribution === "manual" && Math.abs(totalBudgetDistribution - expenseAmount) >= 0.01 ? "text-red-600" : "text-muted-foreground"}`}
+                        >
+                          Total: {getCurrencySymbol()}
+                          {totalBudgetDistribution.toFixed(2)}
+                          {budgetDistribution === "manual" &&
+                            Math.abs(totalBudgetDistribution - expenseAmount) >=
+                              0.01 && (
+                              <span className="ml-1 text-red-600">
+                                (must equal {getCurrencySymbol()}
+                                {expenseAmount.toFixed(2)})
+                              </span>
+                            )}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedBudgets.length > 0 && (
+                      <p className="text-xs text-blue-600">
+                        ✓ {selectedBudgets.length} budget(s) selected
+                        {selectedBudgets.length === 1 &&
+                          ` - ${getCurrencySymbol()}${expenseAmount.toFixed(2)} (full amount)`}
+                        {selectedBudgets.length > 1 &&
+                          budgetDistribution === "equal_split" &&
+                          ` - ${getCurrencySymbol()}${expenseAmount.toFixed(2)} each (full amount)`}
+                        {selectedBudgets.length > 1 &&
+                          budgetDistribution === "half" &&
+                          ` - ${getCurrencySymbol()}${(expenseAmount / 2).toFixed(2)} each (50%)`}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -643,8 +1102,21 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
                   <div className="flex items-center gap-2">
                     <PiggyBank className="h-4 w-4 text-green-500" />
                     <Label className="text-sm font-medium">
-                      Already Linked Savings Goals
+                      Linked Savings Goals
                     </Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>
+                            Click the unlink button to remove the connection and
+                            restore the savings goal's amount.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {alreadyLinkedSavingsGoalIds.map((id) => {
@@ -653,9 +1125,20 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
                         <Badge
                           key={id}
                           variant="secondary"
-                          className="bg-green-500/20"
+                          className="bg-green-500/20 flex items-center gap-1 pr-1"
                         >
                           {goal.name}
+                          <button
+                            type="button"
+                            className="h-4 w-4 ml-1 flex items-center justify-center hover:bg-destructive/20 hover:text-destructive rounded-full text-muted-foreground"
+                            onClick={() =>
+                              handleUnlinkSavingsGoal(id, goal.name)
+                            }
+                            disabled={unlinkMutation.isPending}
+                            title="Unlink from savings goal"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
                         </Badge>
                       ) : null;
                     })}
@@ -663,7 +1146,7 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
                 </div>
               )}
 
-              {/* Add New Savings Goals */}
+              {/* Add New Savings Goals with Distribution Options */}
               <div className="space-y-3 p-3 rounded-lg bg-secondary/30 border">
                 <div className="flex items-center gap-2">
                   <PiggyBank className="h-4 w-4 text-green-500" />
@@ -672,48 +1155,184 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
                       ? "Add More Savings Goals"
                       : "Link to Savings Goals"}
                   </Label>
+                  {availableSavingsGoals.length > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      {availableSavingsGoals.length} available
+                    </Badge>
+                  )}
                 </div>
 
                 {availableSavingsGoals.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    {alreadyLinkedSavingsGoalIds.length > 0
-                      ? "All savings goals are already linked to this expense."
-                      : "No savings goals available."}
+                    No savings goals available to link.
                   </p>
                 ) : (
-                  <div className="space-y-2 max-h-[150px] overflow-y-auto">
-                    {availableSavingsGoals.map((goal: any) => (
-                      <div
-                        key={goal.id}
-                        className="flex items-center space-x-2 p-2 rounded hover:bg-secondary/50"
-                      >
-                        <Checkbox
-                          id={`goal-${goal.id}`}
-                          checked={selectedSavingsGoalIds.includes(goal.id)}
-                          onCheckedChange={() =>
-                            handleSavingsGoalToggle(goal.id)
-                          }
-                        />
-                        <label
-                          htmlFor={`goal-${goal.id}`}
-                          className="text-sm flex-1 cursor-pointer"
-                        >
-                          {goal.name}{" "}
-                          <span className="text-muted-foreground">
-                            ({parseFloat(goal.current_amount || 0).toFixed(2)} /{" "}
-                            {parseFloat(goal.target_amount).toFixed(2)})
-                          </span>
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  <>
+                    {/* Savings Goal Selection Checkboxes */}
+                    <div className="space-y-2 max-h-[180px] overflow-y-auto">
+                      {availableSavingsGoals.map((goal: any) => {
+                        const isSelected = selectedSavingsGoals.some(
+                          (item) => item.id === goal.id,
+                        );
+                        const selectedItem = selectedSavingsGoals.find(
+                          (item) => item.id === goal.id,
+                        );
+                        const calculatedAmount = getSavingsGoalAmount(goal.id);
 
-                {selectedSavingsGoalIds.length > 0 && (
-                  <p className="text-xs text-amber-600">
-                    ⚠️ {selectedSavingsGoalIds.length} savings goal(s) will have
-                    this expense deducted from their balance.
-                  </p>
+                        return (
+                          <div
+                            key={goal.id}
+                            className={`p-2 rounded border ${isSelected ? "border-green-500 bg-green-500/10" : "hover:bg-secondary/50"}`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`goal-${goal.id}`}
+                                checked={isSelected}
+                                onCheckedChange={(checked) =>
+                                  handleSavingsGoalToggle(goal.id, !!checked)
+                                }
+                              />
+                              <label
+                                htmlFor={`goal-${goal.id}`}
+                                className="text-sm flex-1 cursor-pointer"
+                              >
+                                {goal.name}{" "}
+                                <span className="text-muted-foreground">
+                                  (
+                                  {parseFloat(goal.current_amount || 0).toFixed(
+                                    2,
+                                  )}{" "}
+                                  / {parseFloat(goal.target_amount).toFixed(2)})
+                                </span>
+                              </label>
+                            </div>
+
+                            {/* Manual amount input - only show when multiple goals selected and manual distribution */}
+                            {isSelected &&
+                              selectedSavingsGoals.length > 1 &&
+                              savingsGoalDistribution === "manual" && (
+                                <div className="mt-2 ml-6 flex items-center gap-2">
+                                  <Label className="text-xs">Amount:</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    max={expenseAmount}
+                                    value={selectedItem?.amount || ""}
+                                    onChange={(e) =>
+                                      handleSavingsGoalAmountChange(
+                                        goal.id,
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="h-7 w-24 text-sm"
+                                    placeholder="0.00"
+                                  />
+                                </div>
+                              )}
+
+                            {/* Preview calculated amount */}
+                            {isSelected && (
+                              <div className="mt-1 ml-6 text-xs text-amber-600">
+                                Will withdraw: {getCurrencySymbol()}
+                                {calculatedAmount.toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Distribution Type Selection - only show when more than 1 goal is selected */}
+                    {selectedSavingsGoals.length > 1 && (
+                      <div className="space-y-2 p-2 rounded bg-green-500/5 border border-green-500/20">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">
+                            Distribution Type
+                          </Label>
+                          <span className="text-xs font-medium text-green-600">
+                            Expense: {getCurrencySymbol()}
+                            {expenseAmount.toFixed(2)}
+                          </span>
+                        </div>
+                        <RadioGroup
+                          value={savingsGoalDistribution}
+                          onValueChange={(value) => {
+                            setSavingsGoalDistribution(
+                              value as DistributionType,
+                            );
+                          }}
+                          className="flex flex-wrap gap-3"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem
+                              value="equal_split"
+                              id="savings-equal"
+                            />
+                            <Label
+                              htmlFor="savings-equal"
+                              className="text-sm cursor-pointer"
+                            >
+                              Equal Split
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="half" id="savings-half" />
+                            <Label
+                              htmlFor="savings-half"
+                              className="text-sm cursor-pointer"
+                            >
+                              Half (50%)
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem
+                              value="manual"
+                              id="savings-manual"
+                            />
+                            <Label
+                              htmlFor="savings-manual"
+                              className="text-sm cursor-pointer"
+                            >
+                              Manual
+                            </Label>
+                          </div>
+                        </RadioGroup>
+
+                        {/* Total distribution summary */}
+                        <div
+                          className={`text-xs ${savingsGoalDistribution === "manual" && Math.abs(totalSavingsGoalDistribution - expenseAmount) >= 0.01 ? "text-red-600" : "text-muted-foreground"}`}
+                        >
+                          Total: {getCurrencySymbol()}
+                          {totalSavingsGoalDistribution.toFixed(2)}
+                          {savingsGoalDistribution === "manual" &&
+                            Math.abs(
+                              totalSavingsGoalDistribution - expenseAmount,
+                            ) >= 0.01 && (
+                              <span className="ml-1 text-red-600">
+                                (must equal {getCurrencySymbol()}
+                                {expenseAmount.toFixed(2)})
+                              </span>
+                            )}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedSavingsGoals.length > 0 && (
+                      <p className="text-xs text-amber-600">
+                        ⚠️ {selectedSavingsGoals.length} savings goal(s)
+                        selected
+                        {selectedSavingsGoals.length === 1 &&
+                          ` - ${getCurrencySymbol()}${expenseAmount.toFixed(2)} (full amount)`}
+                        {selectedSavingsGoals.length > 1 &&
+                          savingsGoalDistribution === "equal_split" &&
+                          ` - ${getCurrencySymbol()}${expenseAmount.toFixed(2)} each (full amount)`}
+                        {selectedSavingsGoals.length > 1 &&
+                          savingsGoalDistribution === "half" &&
+                          ` - ${getCurrencySymbol()}${(expenseAmount / 2).toFixed(2)} each (50%)`}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -759,6 +1378,42 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unlink Confirmation Dialog */}
+      <AlertDialog
+        open={unlinkConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setUnlinkConfirmOpen(false);
+            setItemToUnlink(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Unlink{" "}
+              {itemToUnlink?.type === "budget" ? "Budget" : "Savings Goal"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unlink this expense from "
+              {itemToUnlink?.name}"?
+              {itemToUnlink?.type === "budget"
+                ? " The budget's spent amount will be restored."
+                : " The savings goal's amount will be restored."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmUnlink}
+              disabled={unlinkMutation.isPending}
+            >
+              {unlinkMutation.isPending ? "Unlinking..." : "Unlink"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

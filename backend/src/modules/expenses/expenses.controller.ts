@@ -13,6 +13,7 @@ import {
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDTO } from './dtos/createExpense.dto';
 import { UpdateExpenseDTO } from './dtos/updateExpense.dto';
+import { UnlinkExpenseDTO } from './dtos/unlinkExpense.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserInterceptor } from 'src/common/interceptors/current-user.interceptor';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -87,6 +88,20 @@ export class ExpensesController {
     @CurrentUser() user: any,
   ) {
     return this.expensesService.updateExpense(id, payload, user.id);
+  }
+
+  @Patch(':id/unlink')
+  async unlinkExpense(
+    @Param('id') id: string,
+    @Body() payload: UnlinkExpenseDTO,
+    @CurrentUser() user: any,
+  ) {
+    return this.expensesService.unlinkExpense(
+      id,
+      user.id,
+      payload.budget_ids,
+      payload.savings_goal_ids,
+    );
   }
 
   @Delete(':id')

@@ -5,7 +5,11 @@ import {
   IsOptional,
   IsDateString,
   IsArray,
+  IsEnum,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { DistributionType, LinkItemDTO } from './createExpense.dto';
 
 export class UpdateExpenseDTO {
   @IsString()
@@ -45,13 +49,37 @@ export class UpdateExpenseDTO {
   @IsOptional()
   currency?: string;
 
-  // Budget linking - array of NEW budget IDs to add (already linked ones are excluded)
+  // Budget distribution type
+  @IsEnum(DistributionType)
+  @IsOptional()
+  budget_distribution?: DistributionType;
+
+  // Budget linking - array of budget objects with optional custom amounts
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LinkItemDTO)
+  @IsOptional()
+  budget_links?: LinkItemDTO[];
+
+  // Legacy support - array of NEW budget IDs to add (already linked ones are excluded)
   @IsArray()
   @IsUUID('4', { each: true })
   @IsOptional()
   budget_ids?: string[];
 
-  // Savings goal linking - array of NEW savings goal IDs to add (already linked ones are excluded)
+  // Savings goal distribution type
+  @IsEnum(DistributionType)
+  @IsOptional()
+  savings_goal_distribution?: DistributionType;
+
+  // Savings goal linking - array of savings goal objects with optional custom amounts
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LinkItemDTO)
+  @IsOptional()
+  savings_goal_links?: LinkItemDTO[];
+
+  // Legacy support - array of NEW savings goal IDs to add (already linked ones are excluded)
   @IsArray()
   @IsUUID('4', { each: true })
   @IsOptional()
