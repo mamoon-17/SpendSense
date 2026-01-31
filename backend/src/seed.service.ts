@@ -26,37 +26,29 @@ export class SeedService implements OnModuleInit {
     console.log('Seeding categories...');
 
     const categories = [
-      // Budget categories
-      { name: 'Food & Dining', type: 'budget', icon: '🍔' },
-      { name: 'Travel', type: 'budget', icon: '✈️' },
-      { name: 'Entertainment', type: 'budget', icon: '🎬' },
-      { name: 'Shopping', type: 'budget', icon: '🛍️' },
-      { name: 'Healthcare', type: 'budget', icon: '🏥' },
-      { name: 'Education', type: 'budget', icon: '📚' },
-      { name: 'Transportation', type: 'budget', icon: '🚗' },
-      { name: 'Utilities', type: 'budget', icon: '💡' },
-      { name: 'Housing', type: 'budget', icon: '🏠' },
-      { name: 'Personal Care', type: 'budget', icon: '💅' },
+      // Budget categories (5 default)
+      { name: 'Food & Dining', type: 'budget', is_custom: false },
+      { name: 'Transportation', type: 'budget', is_custom: false },
+      { name: 'Entertainment', type: 'budget', is_custom: false },
+      { name: 'Shopping', type: 'budget', is_custom: false },
+      { name: 'Bills & Utilities', type: 'budget', is_custom: false },
 
-      // Expense categories
-      { name: 'Groceries', type: 'expenses', icon: '🛒' },
-      { name: 'Restaurants', type: 'expenses', icon: '🍽️' },
-      { name: 'Gas', type: 'expenses', icon: '⛽' },
-      { name: 'Bills', type: 'expenses', icon: '📄' },
-      { name: 'Subscription', type: 'expenses', icon: '📱' },
+      // Expense categories (same as budget for consistency)
+      { name: 'Food & Dining', type: 'expenses', is_custom: false },
+      { name: 'Transportation', type: 'expenses', is_custom: false },
+      { name: 'Entertainment', type: 'expenses', is_custom: false },
+      { name: 'Shopping', type: 'expenses', is_custom: false },
+      { name: 'Bills & Utilities', type: 'expenses', is_custom: false },
 
       // Savings categories
-      { name: 'Emergency Fund', type: 'savings', icon: '🚨' },
-      { name: 'Vacation', type: 'savings', icon: '🏖️' },
-      { name: 'Investment', type: 'savings', icon: '📈' },
-      { name: 'Retirement', type: 'savings', icon: '👴' },
+      { name: 'Emergency Fund', type: 'savings', is_custom: false },
+      { name: 'Vacation', type: 'savings', is_custom: false },
+      { name: 'Investment', type: 'savings', is_custom: false },
 
       // Bills categories
-      { name: 'Rent', type: 'bills', icon: '🏘️' },
-      { name: 'Electricity', type: 'bills', icon: '⚡' },
-      { name: 'Water', type: 'bills', icon: '💧' },
-      { name: 'Internet', type: 'bills', icon: '🌐' },
-      { name: 'Phone', type: 'bills', icon: '📞' },
+      { name: 'Rent', type: 'bills', is_custom: false },
+      { name: 'Utilities', type: 'bills', is_custom: false },
+      { name: 'Internet', type: 'bills', is_custom: false },
     ];
 
     try {
@@ -64,9 +56,9 @@ export class SeedService implements OnModuleInit {
         const category = this.categoriesRepo.create(categoryData);
         await this.categoriesRepo.save(category);
       }
-      console.log('✅ Categories seeded successfully!');
+      console.log('Categories seeded successfully!');
     } catch (error) {
-      console.error('❌ Error seeding categories:', error);
+      console.error('Error seeding categories:', error);
     }
   }
 }

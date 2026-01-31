@@ -114,13 +114,13 @@ export const Reports: React.FC = () => {
   const expenses = useMemo(() => {
     return expensesData.map((expense: any) => {
       const category = categories.find(
-        (cat: any) => cat.id === expense.category_id
+        (cat: any) => cat.id === expense.category_id,
       );
       return {
         ...expense,
         category: {
           id: expense.category_id,
-          name: category?.name || "Uncategorized",
+          name: category?.name || "",
         },
       };
     });
@@ -183,9 +183,9 @@ export const Reports: React.FC = () => {
         sum +
         convertAmount(
           parseFloat(expense.amount || 0),
-          expense.currency || "USD"
+          expense.currency || "USD",
         ),
-      0
+      0,
     );
   }, [filteredExpenses, convertAmount]);
 
@@ -196,9 +196,9 @@ export const Reports: React.FC = () => {
         sum +
         convertAmount(
           parseFloat(budget.total_amount || 0),
-          budget.currency || "USD"
+          budget.currency || "USD",
         ),
-      0
+      0,
     );
   }, [budgets, convertAmount]);
 
@@ -209,9 +209,9 @@ export const Reports: React.FC = () => {
         sum +
         convertAmount(
           parseFloat(goal.current_amount || 0),
-          goal.currency || "USD"
+          goal.currency || "USD",
         ),
-      0
+      0,
     );
   }, [savingsGoals, convertAmount]);
 
@@ -253,9 +253,9 @@ export const Reports: React.FC = () => {
           sum +
           convertAmount(
             parseFloat(expense.amount || 0),
-            expense.currency || "USD"
+            expense.currency || "USD",
           ),
-        0
+        0,
       );
 
       // Calculate actual income/budget for this month
@@ -271,9 +271,9 @@ export const Reports: React.FC = () => {
           sum +
           convertAmount(
             parseFloat(budget.total_amount || 0),
-            budget.currency || "USD"
+            budget.currency || "USD",
           ),
-        0
+        0,
       );
 
       // Calculate actual savings contributions for this month
@@ -292,12 +292,12 @@ export const Reports: React.FC = () => {
         (sum: number, goal: any) => {
           const current = convertAmount(
             parseFloat(goal.current_amount || 0),
-            goal.currency || "USD"
+            goal.currency || "USD",
           );
           // For simplicity, show the current saved amount
           return sum + current;
         },
-        0
+        0,
       );
 
       monthsData.push({
@@ -316,7 +316,7 @@ export const Reports: React.FC = () => {
     const categoryMap = new Map<string, number>();
 
     filteredExpenses.forEach((expense: any) => {
-      const categoryName = expense.category?.name || "Uncategorized";
+      const categoryName = expense.category?.name || "Other";
       // Only sum expenses in user's currency, or convert if different
       const expenseCurrency = expense.currency || "USD";
       const amount =
@@ -325,17 +325,17 @@ export const Reports: React.FC = () => {
           : convertAmount(
               parseFloat(expense.amount || 0),
               expenseCurrency,
-              settings.currency
+              settings.currency,
             );
       categoryMap.set(
         categoryName,
-        (categoryMap.get(categoryName) || 0) + amount
+        (categoryMap.get(categoryName) || 0) + amount,
       );
     });
 
     const totalCategoryExpenses = Array.from(categoryMap.values()).reduce(
       (sum, val) => sum + val,
-      0
+      0,
     );
 
     return Array.from(categoryMap.entries())
@@ -373,8 +373,8 @@ export const Reports: React.FC = () => {
       const progress = goal.progress_percentage
         ? parseFloat(goal.progress_percentage)
         : target > 0
-        ? (current / target) * 100
-        : 0;
+          ? (current / target) * 100
+          : 0;
 
       return {
         name: goal.name,
@@ -422,11 +422,11 @@ export const Reports: React.FC = () => {
             : convertAmount(
                 parseFloat(expense.amount || 0),
                 expenseCurrency,
-                settings.currency
+                settings.currency,
               );
         return sum + amount;
       },
-      0
+      0,
     );
 
     // Last month income (budgets)
@@ -442,9 +442,9 @@ export const Reports: React.FC = () => {
         convertAmount(
           parseFloat(budget.total_amount || 0),
           budget.currency || "USD",
-          settings.currency
+          settings.currency,
         ),
-      0
+      0,
     );
 
     const lastMonthSavings = lastMonthIncome - lastMonthTotal;
@@ -499,7 +499,7 @@ export const Reports: React.FC = () => {
         sum +
         convertAmount(
           parseFloat(budget.total_amount || 0),
-          budget.currency || "USD"
+          budget.currency || "USD",
         )
       );
     }, 0);
@@ -510,11 +510,11 @@ export const Reports: React.FC = () => {
           sum +
           convertAmount(
             parseFloat(expense.amount || 0),
-            expense.currency || "USD"
+            expense.currency || "USD",
           )
         );
       },
-      0
+      0,
     );
 
     const calculatedSavings = savingsGoals.reduce((sum: number, goal: any) => {
@@ -522,7 +522,7 @@ export const Reports: React.FC = () => {
         sum +
         convertAmount(
           parseFloat(goal.current_amount || 0),
-          goal.currency || "USD"
+          goal.currency || "USD",
         )
       );
     }, 0);
@@ -613,956 +613,968 @@ export const Reports: React.FC = () => {
       <div className="space-y-8 p-2">
         {/* Header with Blue/Slate Gradient */}
         <div className="bg-gradient-to-r from-slate-50 via-sky-50 to-indigo-50 dark:from-slate-900/40 dark:via-sky-950/30 dark:to-indigo-950/30 rounded-2xl p-8 shadow-sm border border-sky-100/50 dark:border-sky-900/30">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-3">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-sky-500/10 dark:bg-sky-500/20 rounded-xl">
-                <BarChart3 className="w-8 h-8 text-sky-600 dark:text-sky-400" />
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-sky-500/10 dark:bg-sky-500/20 rounded-xl">
+                  <BarChart3 className="w-8 h-8 text-sky-600 dark:text-sky-400" />
+                </div>
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-sky-700 to-indigo-600 dark:from-sky-300 dark:to-indigo-300 bg-clip-text text-transparent">
+                  Financial Reports
+                </h1>
               </div>
-              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-sky-700 to-indigo-600 dark:from-sky-300 dark:to-indigo-300 bg-clip-text text-transparent">
-                Financial Reports
-              </h1>
+              <p className="text-muted-foreground ml-20 text-base">
+                Comprehensive insights into your financial health
+              </p>
             </div>
-            <p className="text-muted-foreground ml-20 text-base">
-              Comprehensive insights into your financial health
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              className="bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 shadow-md h-11 px-6"
-              onClick={handleExportPDF}
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <>
-                  <Printer className="w-5 h-5 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Download className="w-5 h-5 mr-2" />
-                  Export PDF
-                </>
-              )}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                className="bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600 shadow-md h-11 px-6"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <>
+                    <Printer className="w-5 h-5 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-5 h-5 mr-2" />
+                    Export PDF
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Report Controls with Sky Theme */}
-      <Card className="border-sky-100/50 dark:border-sky-900/20 shadow-sm bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <Select value={reportPeriod} onValueChange={setReportPeriod}>
-              <SelectTrigger className="w-full md:w-[180px] border-sky-200 dark:border-sky-900/50">
-                <SelectValue placeholder="Time Period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="quarter">This Quarter</SelectItem>
-                <SelectItem value="year">This Year</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Report Controls with Sky Theme */}
+        <Card className="border-sky-100/50 dark:border-sky-900/20 shadow-sm bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <Select value={reportPeriod} onValueChange={setReportPeriod}>
+                <SelectTrigger className="w-full md:w-[180px] border-sky-200 dark:border-sky-900/50">
+                  <SelectValue placeholder="Time Period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="quarter">This Quarter</SelectItem>
+                  <SelectItem value="year">This Year</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={reportType} onValueChange={setReportType}>
-              <SelectTrigger className="w-full md:w-[180px] border-sky-200 dark:border-sky-900/50">
-                <SelectValue placeholder="Report Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="spending">Spending Analysis</SelectItem>
-                <SelectItem value="income">Income Analysis</SelectItem>
-                <SelectItem value="savings">Savings Analysis</SelectItem>
-                <SelectItem value="budget">Budget Performance</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+              <Select value={reportType} onValueChange={setReportType}>
+                <SelectTrigger className="w-full md:w-[180px] border-sky-200 dark:border-sky-900/50">
+                  <SelectValue placeholder="Report Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="spending">Spending Analysis</SelectItem>
+                  <SelectItem value="income">Income Analysis</SelectItem>
+                  <SelectItem value="savings">Savings Analysis</SelectItem>
+                  <SelectItem value="budget">Budget Performance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {reportType === "spending" && (
-          <>
-            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Total Expenses
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {formatAmount(Math.round(totalExpenses))}
-                    </p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-primary" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  +2.1% vs last month
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Top Category
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {categoryData.length > 0 ? categoryData[0].name : "N/A"}
-                    </p>
-                  </div>
-                  <BarChart3 className="w-8 h-8 text-primary" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {categoryData.length > 0
-                    ? formatAmount(categoryData[0].value)
-                    : "No data"}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Daily Average
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {formatAmount(Math.round(totalExpenses / 30))}
-                    </p>
-                  </div>
-                  <TrendingDown className="w-8 h-8 text-warning" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Per day spending
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Total Categories
-                    </p>
-                    <p className="text-2xl font-bold">{categoryData.length}</p>
-                  </div>
-                  <Target className="w-8 h-8 text-primary" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Active categories
-                </p>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {reportType === "income" && (
-          <>
-            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Total Income
-                    </p>
-                    <p className="text-2xl font-bold text-success">
-                      {formatAmount(Math.round(totalIncome))}
-                    </p>
-                  </div>
-                  <TrendingUp className="w-8 h-8 text-success" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  +5.2% vs last month
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Net Profit
-                    </p>
-                    <p className="text-2xl font-bold text-success">
-                      {formatAmount(Math.round(totalSavings))}
-                    </p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-success" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  After expenses
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Monthly Average
-                    </p>
-                    <p className="text-2xl font-bold text-success">
-                      {formatAmount(Math.round(totalIncome / 6))}
-                    </p>
-                  </div>
-                  <Target className="w-8 h-8 text-success" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  6-month average
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Expense Ratio
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {totalIncome > 0
-                        ? Math.round((totalExpenses / totalIncome) * 100)
-                        : 0}
-                      %
-                    </p>
-                  </div>
-                  <BarChart3 className="w-8 h-8 text-warning" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Of total income
-                </p>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {reportType === "savings" && (
-          <>
-            <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Net Savings
-                    </p>
-                    <p className="text-2xl font-bold text-success">
-                      {formatAmount(Math.round(totalSavings))}
-                    </p>
-                  </div>
-                  <Target className="w-8 h-8 text-success" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Savings rate: {savingsRate}%
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="card-financial">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Savings Goals
-                    </p>
-                    <p className="text-2xl font-bold">{savingsGoals.length}</p>
-                  </div>
-                  <PiggyBank className="w-8 h-8 text-success" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Active goals
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="card-financial">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Avg. Progress
-                    </p>
-                    <p className="text-2xl font-bold">{averageGoalProgress}%</p>
-                  </div>
-                  <TrendingUp className="w-8 h-8 text-success" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Goal completion
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="card-financial">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Monthly Target
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {formatAmount(Math.round(totalSavings / 6))}
-                    </p>
-                  </div>
-                  <Target className="w-8 h-8 text-success" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  6-month average
-                </p>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {reportType === "budget" && (
-          <>
-            <Card className="card-financial">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Budget Health
-                    </p>
-                    <p className="text-2xl font-bold text-warning">
-                      {budgetsOnTrack > budgets.length / 2
-                        ? "Good"
-                        : "Needs Attention"}
-                    </p>
-                  </div>
-                  <BarChart3 className="w-8 h-8 text-warning" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {budgetsOnTrack} budget{budgetsOnTrack !== 1 ? "s" : ""} on
-                  track
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="card-financial">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Total Budgets
-                    </p>
-                    <p className="text-2xl font-bold">{budgets.length}</p>
-                  </div>
-                  <Wallet className="w-8 h-8 text-primary" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Active budgets
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="card-financial">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Total Allocated
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {formatAmount(Math.round(totalIncome))}
-                    </p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-primary" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Budget amounts
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="card-financial">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Utilization
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {totalIncome > 0
-                        ? Math.round((totalExpenses / totalIncome) * 100)
-                        : 0}
-                      %
-                    </p>
-                  </div>
-                  <Target className="w-8 h-8 text-warning" />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Of total budget
-                </p>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Charts Area */}
-        <div className="lg:col-span-3 space-y-6">
-          <Tabs defaultValue="trends" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-sky-100/50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900/50">
-              <TabsTrigger
-                value="trends"
-                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
-              >
-                Trends
-              </TabsTrigger>
-              <TabsTrigger
-                value="categories"
-                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
-              >
-                Categories
-              </TabsTrigger>
-              <TabsTrigger
-                value="goals"
-                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
-              >
-                Goals
-              </TabsTrigger>
-              <TabsTrigger
-                value="insights"
-                className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
-              >
-                Insights
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="trends" className="mt-6">
-              <Card className="card-financial">
-                <CardHeader>
-                  <CardTitle>Income vs Expenses Trend</CardTitle>
-                  <CardDescription>6-month financial overview</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="h-80 w-full flex items-center justify-center">
-                      <p className="text-muted-foreground">Loading data...</p>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {reportType === "spending" && (
+            <>
+              <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Total Expenses
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {formatAmount(Math.round(totalExpenses))}
+                      </p>
                     </div>
-                  ) : (
-                    <div className="h-80 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={monthlySpendingData}>
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            className="opacity-30"
-                          />
-                          <XAxis dataKey="month" className="text-xs" />
-                          <YAxis
-                            className="text-xs"
-                            tickFormatter={(value) => `${formatAmount(value)}`}
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={{ stroke: "hsl(var(--border))" }}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: "hsl(var(--popover))",
-                              border: "2px solid hsl(var(--border))",
-                              borderRadius: "calc(var(--radius) - 2px)",
-                              color: "hsl(var(--popover-foreground))",
-                            }}
-                            labelStyle={{
-                              color: "hsl(var(--foreground))",
-                              fontWeight: "bold",
-                            }}
-                            formatter={(value: number, name: string) => [
-                              formatCurrency(value, "USD"),
-                              name === "income"
-                                ? "Income"
-                                : name === "expenses"
-                                ? "Expenses"
-                                : "Savings",
-                            ]}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="income"
-                            stroke="hsl(var(--success))"
-                            strokeWidth={3}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="expenses"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={3}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="savings"
-                            stroke="hsl(var(--warning))"
-                            strokeWidth={3}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
+                    <DollarSign className="w-8 h-8 text-primary" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    +2.1% vs last month
+                  </p>
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            <TabsContent value="categories" className="mt-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Spending by Category - Donut Chart */}
-                <Card className="bg-gradient-to-br from-card/95 to-card border-border/50 shadow-lg">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-2xl font-bold text-foreground">
-                      Spending by Category
-                    </CardTitle>
-                    <CardDescription className="text-muted-foreground/80">
-                      Current month breakdown
+              <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Top Category
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {categoryData.length > 0 ? categoryData[0].name : "N/A"}
+                      </p>
+                    </div>
+                    <BarChart3 className="w-8 h-8 text-primary" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {categoryData.length > 0
+                      ? formatAmount(categoryData[0].value)
+                      : "No data"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Daily Average
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {formatAmount(Math.round(totalExpenses / 30))}
+                      </p>
+                    </div>
+                    <TrendingDown className="w-8 h-8 text-warning" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Per day spending
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Total Categories
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {categoryData.length}
+                      </p>
+                    </div>
+                    <Target className="w-8 h-8 text-primary" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Active categories
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {reportType === "income" && (
+            <>
+              <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Total Income
+                      </p>
+                      <p className="text-2xl font-bold text-success">
+                        {formatAmount(Math.round(totalIncome))}
+                      </p>
+                    </div>
+                    <TrendingUp className="w-8 h-8 text-success" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    +5.2% vs last month
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Net Profit
+                      </p>
+                      <p className="text-2xl font-bold text-success">
+                        {formatAmount(Math.round(totalSavings))}
+                      </p>
+                    </div>
+                    <DollarSign className="w-8 h-8 text-success" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    After expenses
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Monthly Average
+                      </p>
+                      <p className="text-2xl font-bold text-success">
+                        {formatAmount(Math.round(totalIncome / 6))}
+                      </p>
+                    </div>
+                    <Target className="w-8 h-8 text-success" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    6-month average
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Expense Ratio
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {totalIncome > 0
+                          ? Math.round((totalExpenses / totalIncome) * 100)
+                          : 0}
+                        %
+                      </p>
+                    </div>
+                    <BarChart3 className="w-8 h-8 text-warning" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Of total income
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {reportType === "savings" && (
+            <>
+              <Card className="border-sky-100 dark:border-sky-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-sky-50/30 dark:from-slate-950 dark:to-sky-950/10">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Net Savings
+                      </p>
+                      <p className="text-2xl font-bold text-success">
+                        {formatAmount(Math.round(totalSavings))}
+                      </p>
+                    </div>
+                    <Target className="w-8 h-8 text-success" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Savings rate: {savingsRate}%
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="card-financial">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Savings Goals
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {savingsGoals.length}
+                      </p>
+                    </div>
+                    <PiggyBank className="w-8 h-8 text-success" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Active goals
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="card-financial">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Avg. Progress
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {averageGoalProgress}%
+                      </p>
+                    </div>
+                    <TrendingUp className="w-8 h-8 text-success" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Goal completion
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="card-financial">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Monthly Target
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {formatAmount(Math.round(totalSavings / 6))}
+                      </p>
+                    </div>
+                    <Target className="w-8 h-8 text-success" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    6-month average
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {reportType === "budget" && (
+            <>
+              <Card className="card-financial">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Budget Health
+                      </p>
+                      <p className="text-2xl font-bold text-warning">
+                        {budgetsOnTrack > budgets.length / 2
+                          ? "Good"
+                          : "Needs Attention"}
+                      </p>
+                    </div>
+                    <BarChart3 className="w-8 h-8 text-warning" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {budgetsOnTrack} budget{budgetsOnTrack !== 1 ? "s" : ""} on
+                    track
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="card-financial">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Total Budgets
+                      </p>
+                      <p className="text-2xl font-bold">{budgets.length}</p>
+                    </div>
+                    <Wallet className="w-8 h-8 text-primary" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Active budgets
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="card-financial">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Total Allocated
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {formatAmount(Math.round(totalIncome))}
+                      </p>
+                    </div>
+                    <DollarSign className="w-8 h-8 text-primary" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Budget amounts
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="card-financial">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Utilization
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {totalIncome > 0
+                          ? Math.round((totalExpenses / totalIncome) * 100)
+                          : 0}
+                        %
+                      </p>
+                    </div>
+                    <Target className="w-8 h-8 text-warning" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Of total budget
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Charts Area */}
+          <div className="lg:col-span-3 space-y-6">
+            <Tabs defaultValue="trends" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 bg-sky-100/50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900/50">
+                <TabsTrigger
+                  value="trends"
+                  className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+                >
+                  Trends
+                </TabsTrigger>
+                <TabsTrigger
+                  value="categories"
+                  className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+                >
+                  Categories
+                </TabsTrigger>
+                <TabsTrigger
+                  value="goals"
+                  className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+                >
+                  Goals
+                </TabsTrigger>
+                <TabsTrigger
+                  value="insights"
+                  className="data-[state=active]:bg-sky-600 data-[state=active]:text-white"
+                >
+                  Insights
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="trends" className="mt-6">
+                <Card className="card-financial">
+                  <CardHeader>
+                    <CardTitle>Income vs Expenses Trend</CardTitle>
+                    <CardDescription>
+                      6-month financial overview
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-6">
+                  <CardContent>
                     {isLoading ? (
-                      <div className="h-[400px] w-full flex items-center justify-center">
+                      <div className="h-80 w-full flex items-center justify-center">
                         <p className="text-muted-foreground">Loading data...</p>
                       </div>
-                    ) : categoryData.length === 0 ? (
-                      <div className="h-[400px] w-full flex items-center justify-center">
+                    ) : (
+                      <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={monthlySpendingData}>
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              className="opacity-30"
+                            />
+                            <XAxis dataKey="month" className="text-xs" />
+                            <YAxis
+                              className="text-xs"
+                              tickFormatter={(value) =>
+                                `${formatAmount(value)}`
+                              }
+                              stroke="hsl(var(--muted-foreground))"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={{ stroke: "hsl(var(--border))" }}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "hsl(var(--popover))",
+                                border: "2px solid hsl(var(--border))",
+                                borderRadius: "calc(var(--radius) - 2px)",
+                                color: "hsl(var(--popover-foreground))",
+                              }}
+                              labelStyle={{
+                                color: "hsl(var(--foreground))",
+                                fontWeight: "bold",
+                              }}
+                              formatter={(value: number, name: string) => [
+                                formatCurrency(value, "USD"),
+                                name === "income"
+                                  ? "Income"
+                                  : name === "expenses"
+                                    ? "Expenses"
+                                    : "Savings",
+                              ]}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="income"
+                              stroke="hsl(var(--success))"
+                              strokeWidth={3}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="expenses"
+                              stroke="hsl(var(--primary))"
+                              strokeWidth={3}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="savings"
+                              stroke="hsl(var(--warning))"
+                              strokeWidth={3}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="categories" className="mt-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Spending by Category - Donut Chart */}
+                  <Card className="bg-gradient-to-br from-card/95 to-card border-border/50 shadow-lg">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-2xl font-bold text-foreground">
+                        Spending by Category
+                      </CardTitle>
+                      <CardDescription className="text-muted-foreground/80">
+                        Current month breakdown
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      {isLoading ? (
+                        <div className="h-[400px] w-full flex items-center justify-center">
+                          <p className="text-muted-foreground">
+                            Loading data...
+                          </p>
+                        </div>
+                      ) : categoryData.length === 0 ? (
+                        <div className="h-[400px] w-full flex items-center justify-center">
+                          <p className="text-muted-foreground">
+                            No category data available
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="h-[400px] w-full relative">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <RechartsPieChart
+                              margin={{
+                                top: 20,
+                                right: 20,
+                                bottom: 20,
+                                left: 20,
+                              }}
+                            >
+                              <Pie
+                                data={categoryData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={85}
+                                outerRadius={145}
+                                paddingAngle={3}
+                                dataKey="value"
+                                nameKey="name"
+                                strokeWidth={2}
+                                stroke="hsl(var(--background))"
+                              >
+                                {categoryData.map((entry, index) => (
+                                  <Cell
+                                    key={`cell-${index}`}
+                                    fill={COLORS[index % COLORS.length]}
+                                  />
+                                ))}
+                              </Pie>
+                              <Tooltip
+                                content={({ active, payload }: any) => {
+                                  if (active && payload && payload.length) {
+                                    return (
+                                      <div
+                                        className="bg-gray-900 border-2 border-gray-700 rounded-lg p-4 shadow-2xl"
+                                        style={{
+                                          zIndex: 9999,
+                                          position: "relative",
+                                        }}
+                                      >
+                                        <p className="text-sm font-bold text-white">
+                                          {payload[0].name}
+                                        </p>
+                                        <p className="text-2xl font-bold text-white mt-1">
+                                          {formatAmount(payload[0].value)}
+                                        </p>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                          {payload[0].payload.percentage}% of
+                                          total
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                }}
+                                cursor={{ fill: "transparent" }}
+                                wrapperStyle={{ zIndex: 9999, outline: "none" }}
+                                allowEscapeViewBox={{ x: true, y: true }}
+                              />
+                            </RechartsPieChart>
+                          </ResponsiveContainer>
+
+                          {/* Center Label */}
+                          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <p className="text-sm text-muted-foreground font-medium">
+                              Total Expenses
+                            </p>
+                            <p className="text-3xl font-bold text-foreground mt-2">
+                              {formatAmount(
+                                categoryData.reduce(
+                                  (sum, cat) => sum + cat.value,
+                                  0,
+                                ),
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              of {formatAmount(totalExpenses)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Category Details - List */}
+                  <Card className="bg-gradient-to-br from-card/95 to-card border-border/50 shadow-lg">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-2xl font-bold text-foreground">
+                        Category Details
+                      </CardTitle>
+                      <CardDescription className="text-muted-foreground/80">
+                        Spending breakdown with trends
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      {isLoading ? (
+                        <p className="text-muted-foreground text-center py-8">
+                          Loading...
+                        </p>
+                      ) : categoryData.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-8">
+                          No data available
+                        </p>
+                      ) : (
+                        <div className="space-y-1">
+                          {categoryData.map((category, index) => (
+                            <div
+                              key={category.name}
+                              className="flex items-center justify-between py-4 px-2 rounded-lg hover:bg-muted/30 transition-colors"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className="w-4 h-4 rounded-full shadow-md"
+                                  style={{
+                                    backgroundColor:
+                                      COLORS[index % COLORS.length],
+                                  }}
+                                />
+                                <span className="font-semibold text-foreground text-base">
+                                  {category.name}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-xl text-foreground mb-0.5">
+                                  {formatAmount(category.value)}
+                                </p>
+                                <p className="text-xs text-muted-foreground/70 font-medium">
+                                  {category.percentage}%
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="goals" className="mt-6">
+                <Card className="card-financial">
+                  <CardHeader>
+                    <CardTitle>Savings Goals Progress</CardTitle>
+                    <CardDescription>
+                      Track your progress toward financial goals
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <div className="h-64 w-full flex items-center justify-center">
+                        <p className="text-muted-foreground">Loading data...</p>
+                      </div>
+                    ) : savingsGoalsData.length === 0 ? (
+                      <div className="h-64 w-full flex items-center justify-center">
                         <p className="text-muted-foreground">
-                          No category data available
+                          No savings goals yet. Create one to track progress!
                         </p>
                       </div>
                     ) : (
-                      <div className="h-[400px] w-full relative">
+                      <div className="h-80 w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                          <RechartsPieChart
-                            margin={{
-                              top: 20,
-                              right: 20,
-                              bottom: 20,
-                              left: 20,
-                            }}
+                          <BarChart
+                            data={savingsGoalsData}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                            barCategoryGap="25%"
                           >
-                            <Pie
-                              data={categoryData}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={85}
-                              outerRadius={145}
-                              paddingAngle={3}
-                              dataKey="value"
-                              nameKey="name"
-                              strokeWidth={2}
-                              stroke="hsl(var(--background))"
-                            >
-                              {categoryData.map((entry, index) => (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={COLORS[index % COLORS.length]}
-                                />
-                              ))}
-                            </Pie>
-                            <Tooltip
-                              content={({ active, payload }: any) => {
-                                if (active && payload && payload.length) {
-                                  return (
-                                    <div
-                                      className="bg-gray-900 border-2 border-gray-700 rounded-lg p-4 shadow-2xl"
-                                      style={{
-                                        zIndex: 9999,
-                                        position: "relative",
-                                      }}
-                                    >
-                                      <p className="text-sm font-bold text-white">
-                                        {payload[0].name}
-                                      </p>
-                                      <p className="text-2xl font-bold text-white mt-1">
-                                        {formatAmount(payload[0].value)}
-                                      </p>
-                                      <p className="text-xs text-gray-400 mt-1">
-                                        {payload[0].payload.percentage}% of
-                                        total
-                                      </p>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              }}
-                              cursor={{ fill: "transparent" }}
-                              wrapperStyle={{ zIndex: 9999, outline: "none" }}
-                              allowEscapeViewBox={{ x: true, y: true }}
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="hsl(var(--border))"
+                              className="opacity-30"
                             />
-                          </RechartsPieChart>
+                            <XAxis
+                              dataKey="name"
+                              stroke="hsl(var(--muted-foreground))"
+                              fontSize={12}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              stroke="hsl(var(--muted-foreground))"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={{ stroke: "hsl(var(--border))" }}
+                              tickFormatter={(value) => formatAmount(value)}
+                              domain={savingsGoalsYAxisDomain}
+                              tickCount={6}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "hsl(var(--popover))",
+                                border: "2px solid hsl(var(--border))",
+                                borderRadius: "8px",
+                                color: "hsl(var(--popover-foreground))",
+                              }}
+                              formatter={(value: number, name: string) => [
+                                formatAmount(value),
+                                name === "current"
+                                  ? "Current Amount"
+                                  : "Target Amount",
+                              ]}
+                            />
+                            <Bar
+                              dataKey="target"
+                              fill="#4b5563"
+                              radius={[8, 8, 0, 0]}
+                              barSize={100}
+                            />
+                            <Bar
+                              dataKey="current"
+                              fill="#10b981"
+                              radius={[8, 8, 0, 0]}
+                              barSize={100}
+                            />
+                          </BarChart>
                         </ResponsiveContainer>
-
-                        {/* Center Label */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                          <p className="text-sm text-muted-foreground font-medium">
-                            Total Expenses
-                          </p>
-                          <p className="text-3xl font-bold text-foreground mt-2">
-                            {formatAmount(
-                              categoryData.reduce(
-                                (sum, cat) => sum + cat.value,
-                                0
-                              )
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            of {formatAmount(totalExpenses)}
-                          </p>
-                        </div>
                       </div>
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
 
-                {/* Category Details - List */}
-                <Card className="bg-gradient-to-br from-card/95 to-card border-border/50 shadow-lg">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-2xl font-bold text-foreground">
-                      Category Details
-                    </CardTitle>
-                    <CardDescription className="text-muted-foreground/80">
-                      Spending breakdown with trends
+              <TabsContent value="insights" className="mt-6">
+                <Card className="card-financial">
+                  <CardHeader>
+                    <CardTitle>Monthly Comparison</CardTitle>
+                    <CardDescription>
+                      Compare your monthly progress
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-6">
-                    {isLoading ? (
-                      <p className="text-muted-foreground text-center py-8">
-                        Loading...
-                      </p>
-                    ) : categoryData.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">
-                        No data available
-                      </p>
-                    ) : (
-                      <div className="space-y-1">
-                        {categoryData.map((category, index) => (
-                          <div
-                            key={category.name}
-                            className="flex items-center justify-between py-4 px-2 rounded-lg hover:bg-muted/30 transition-colors"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="w-4 h-4 rounded-full shadow-md"
-                                style={{
-                                  backgroundColor:
-                                    COLORS[index % COLORS.length],
-                                }}
-                              />
-                              <span className="font-semibold text-foreground text-base">
-                                {category.name}
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-xl text-foreground mb-0.5">
-                                {formatAmount(category.value)}
-                              </p>
-                              <p className="text-xs text-muted-foreground/70 font-medium">
-                                {category.percentage}%
-                              </p>
-                            </div>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* vs Last Month */}
+                      <Card className="bg-gradient-to-br from-card/95 to-card border-border/50">
+                        <CardContent className="p-6">
+                          <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                              vs Last Month
+                            </p>
+                            <p
+                              className={`text-3xl font-bold ${
+                                monthOverMonthChange.savings >= 0
+                                  ? "text-success"
+                                  : "text-destructive"
+                              }`}
+                            >
+                              {monthOverMonthChange.savings >= 0 ? "+" : ""}
+                              {formatAmount(
+                                Math.abs(monthOverMonthChange.savings),
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {monthOverMonthChange.savings >= 0
+                                ? "More saved"
+                                : "Less saved"}
+                            </p>
                           </div>
-                        ))}
+                        </CardContent>
+                      </Card>
+
+                      {/* Budget Adherence */}
+                      <Card className="bg-gradient-to-br from-card/95 to-card border-border/50">
+                        <CardContent className="p-6">
+                          <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                              Budget Adherence
+                            </p>
+                            <p className="text-3xl font-bold text-foreground">
+                              {budgets.length > 0
+                                ? Math.round(
+                                    (budgetsOnTrack / budgets.length) * 100,
+                                  )
+                                : 0}
+                              %
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Avg across categories
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Goal Progress */}
+                      <Card className="bg-gradient-to-br from-card/95 to-card border-border/50">
+                        <CardContent className="p-6">
+                          <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                              Goal Progress
+                            </p>
+                            <p className="text-3xl font-bold text-warning">
+                              {averageGoalProgress}%
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Average completion
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Additional Insights */}
+                    <div className="mt-6 space-y-4">
+                      <h3 className="text-lg font-semibold">Key Insights</h3>
+
+                      <div className="grid gap-3">
+                        {/* Spending Trend */}
+                        <Card className="bg-muted/30">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="font-medium text-foreground">
+                                  Spending Trend
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Your expenses have{" "}
+                                  {monthOverMonthChange.expenses > 0
+                                    ? `increased by ${Math.abs(
+                                        monthOverMonthChange.expenses,
+                                      ).toFixed(1)}%`
+                                    : monthOverMonthChange.expenses < 0
+                                      ? `decreased by ${Math.abs(
+                                          monthOverMonthChange.expenses,
+                                        ).toFixed(1)}%`
+                                      : "stayed the same"}{" "}
+                                  compared to last month
+                                </p>
+                              </div>
+                              <TrendingUp
+                                className={`w-5 h-5 ${
+                                  monthOverMonthChange.expenses > 5
+                                    ? "text-destructive"
+                                    : monthOverMonthChange.expenses < -5
+                                      ? "text-success"
+                                      : "text-warning"
+                                }`}
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Budget Status */}
+                        <Card className="bg-muted/30">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="font-medium text-foreground">
+                                  Budget Status
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {budgetsOnTrack} of {budgets.length} budgets
+                                  are on track this month
+                                </p>
+                              </div>
+                              <Target className="w-5 h-5 text-primary" />
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Savings Rate */}
+                        <Card className="bg-muted/30">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="font-medium text-foreground">
+                                  Savings Rate
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  You're saving {savingsRate}% of your income -{" "}
+                                  {savingsRateNum >= 20
+                                    ? "Great job!"
+                                    : "Try to save more"}
+                                </p>
+                              </div>
+                              <DollarSign
+                                className={`w-5 h-5 ${
+                                  savingsRateNum >= 20
+                                    ? "text-success"
+                                    : "text-warning"
+                                }`}
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
-                    )}
+                    </div>
                   </CardContent>
                 </Card>
-              </div>
-            </TabsContent>
+              </TabsContent>
+            </Tabs>
+          </div>
 
-            <TabsContent value="goals" className="mt-6">
-              <Card className="card-financial">
-                <CardHeader>
-                  <CardTitle>Savings Goals Progress</CardTitle>
-                  <CardDescription>
-                    Track your progress toward financial goals
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="h-64 w-full flex items-center justify-center">
-                      <p className="text-muted-foreground">Loading data...</p>
-                    </div>
-                  ) : savingsGoalsData.length === 0 ? (
-                    <div className="h-64 w-full flex items-center justify-center">
-                      <p className="text-muted-foreground">
-                        No savings goals yet. Create one to track progress!
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="h-80 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={savingsGoalsData}
-                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                          barCategoryGap="25%"
-                        >
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            stroke="hsl(var(--border))"
-                            className="opacity-30"
-                          />
-                          <XAxis
-                            dataKey="name"
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
-                            tickLine={false}
-                          />
-                          <YAxis
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={{ stroke: "hsl(var(--border))" }}
-                            tickFormatter={(value) => formatAmount(value)}
-                            domain={savingsGoalsYAxisDomain}
-                            tickCount={6}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: "hsl(var(--popover))",
-                              border: "2px solid hsl(var(--border))",
-                              borderRadius: "8px",
-                              color: "hsl(var(--popover-foreground))",
-                            }}
-                            formatter={(value: number, name: string) => [
-                              formatAmount(value),
-                              name === "current"
-                                ? "Current Amount"
-                                : "Target Amount",
-                            ]}
-                          />
-                          <Bar
-                            dataKey="target"
-                            fill="#4b5563"
-                            radius={[8, 8, 0, 0]}
-                            barSize={100}
-                          />
-                          <Bar
-                            dataKey="current"
-                            fill="#10b981"
-                            radius={[8, 8, 0, 0]}
-                            barSize={100}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="insights" className="mt-6">
-              <Card className="card-financial">
-                <CardHeader>
-                  <CardTitle>Monthly Comparison</CardTitle>
-                  <CardDescription>
-                    Compare your monthly progress
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* vs Last Month */}
-                    <Card className="bg-gradient-to-br from-card/95 to-card border-border/50">
-                      <CardContent className="p-6">
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            vs Last Month
-                          </p>
-                          <p
-                            className={`text-3xl font-bold ${
-                              monthOverMonthChange.savings >= 0
-                                ? "text-success"
-                                : "text-destructive"
-                            }`}
-                          >
-                            {monthOverMonthChange.savings >= 0 ? "+" : ""}
-                            {formatAmount(
-                              Math.abs(monthOverMonthChange.savings)
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {monthOverMonthChange.savings >= 0
-                              ? "More saved"
-                              : "Less saved"}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Budget Adherence */}
-                    <Card className="bg-gradient-to-br from-card/95 to-card border-border/50">
-                      <CardContent className="p-6">
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            Budget Adherence
-                          </p>
-                          <p className="text-3xl font-bold text-foreground">
-                            {budgets.length > 0
-                              ? Math.round(
-                                  (budgetsOnTrack / budgets.length) * 100
-                                )
-                              : 0}
-                            %
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Avg across categories
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Goal Progress */}
-                    <Card className="bg-gradient-to-br from-card/95 to-card border-border/50">
-                      <CardContent className="p-6">
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            Goal Progress
-                          </p>
-                          <p className="text-3xl font-bold text-warning">
-                            {averageGoalProgress}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Average completion
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Additional Insights */}
-                  <div className="mt-6 space-y-4">
-                    <h3 className="text-lg font-semibold">Key Insights</h3>
-
-                    <div className="grid gap-3">
-                      {/* Spending Trend */}
-                      <Card className="bg-muted/30">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-medium text-foreground">
-                                Spending Trend
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                Your expenses have{" "}
-                                {monthOverMonthChange.expenses > 0
-                                  ? `increased by ${Math.abs(
-                                      monthOverMonthChange.expenses
-                                    ).toFixed(1)}%`
-                                  : monthOverMonthChange.expenses < 0
-                                  ? `decreased by ${Math.abs(
-                                      monthOverMonthChange.expenses
-                                    ).toFixed(1)}%`
-                                  : "stayed the same"}{" "}
-                                compared to last month
-                              </p>
-                            </div>
-                            <TrendingUp
-                              className={`w-5 h-5 ${
-                                monthOverMonthChange.expenses > 5
-                                  ? "text-destructive"
-                                  : monthOverMonthChange.expenses < -5
-                                  ? "text-success"
-                                  : "text-warning"
-                              }`}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Budget Status */}
-                      <Card className="bg-muted/30">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-medium text-foreground">
-                                Budget Status
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {budgetsOnTrack} of {budgets.length} budgets are
-                                on track this month
-                              </p>
-                            </div>
-                            <Target className="w-5 h-5 text-primary" />
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Savings Rate */}
-                      <Card className="bg-muted/30">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-medium text-foreground">
-                                Savings Rate
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                You're saving {savingsRate}% of your income -{" "}
-                                {savingsRateNum >= 20
-                                  ? "Great job!"
-                                  : "Try to save more"}
-                              </p>
-                            </div>
-                            <DollarSign
-                              className={`w-5 h-5 ${
-                                savingsRateNum >= 20
-                                  ? "text-success"
-                                  : "text-warning"
-                              }`}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          {/* Right Sidebar removed (Quick Actions) — layout now uses 3-column grid */}
         </div>
 
-        {/* Right Sidebar removed (Quick Actions) — layout now uses 3-column grid */}
-      </div>
-
-      {/* Preview Dialog */}
-      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Eye className="w-5 h-5" />
-              Report Preview
-            </DialogTitle>
-          </DialogHeader>
-          <div className="overflow-y-auto h-[70vh] border rounded-lg">
-            <iframe
-              srcDoc={previewContent}
-              className="w-full h-full border-0"
-              title="Report Preview"
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
-              Close
-            </Button>
-            <Button onClick={handleExportPDF} disabled={isExporting}>
-              {isExporting ? (
-                <>
-                  <Printer className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export PDF
-                </>
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        {/* Preview Dialog */}
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="w-5 h-5" />
+                Report Preview
+              </DialogTitle>
+            </DialogHeader>
+            <div className="overflow-y-auto h-[70vh] border rounded-lg">
+              <iframe
+                srcDoc={previewContent}
+                className="w-full h-full border-0"
+                title="Report Preview"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
+                Close
+              </Button>
+              <Button onClick={handleExportPDF} disabled={isExporting}>
+                {isExporting ? (
+                  <>
+                    <Printer className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export PDF
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </PageTransition>
   );

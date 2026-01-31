@@ -18,8 +18,8 @@ export class Expense {
   @Column('numeric', { precision: 12, scale: 2, nullable: false })
   amount: string;
 
-  @Column('uuid', { name: 'category_id', nullable: false })
-  category_id: string;
+  @Column('uuid', { name: 'category_id', nullable: true })
+  category_id: string | null;
 
   @Column({ type: 'datetime', nullable: false })
   date: Date;

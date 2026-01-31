@@ -88,6 +88,9 @@ export const categoriesAPI = {
   getCategoriesByType: (type: string) => api.get(`/categories/type/${type}`),
   createCategory: (data: { name: string; type: string; icon?: string }) =>
     api.post("/categories", data),
+  createCustomCategory: (data: { name: string; type: string }) =>
+    api.post("/categories/custom", data),
+  deleteCategory: (id: string) => api.delete(`/categories/${id}`),
 };
 
 export const budgetAPI = {
