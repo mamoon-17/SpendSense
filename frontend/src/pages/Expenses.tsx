@@ -112,7 +112,7 @@ const transformExpense = (
     id: backendExpense.id,
     description: backendExpense.description,
     amount: parseFloat(backendExpense.amount) || 0,
-    category: category?.name || "Uncategorized",
+    category: category?.name || "",
     categoryId: backendExpense.category_id,
     date: backendExpense.date,
     payment_method: backendExpense.payment_method,
@@ -845,12 +845,14 @@ export const Expenses: React.FC = () => {
                                   <Calendar className="w-3 h-3 mr-1" />
                                   {formatDate(expense.date)}
                                 </span>
-                                <Badge
-                                  variant="outline"
-                                  className="border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300"
-                                >
-                                  {expense.category}
-                                </Badge>
+                                {expense.category && (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300"
+                                  >
+                                    {expense.category}
+                                  </Badge>
+                                )}
                                 {expense.location && (
                                   <span className="truncate">
                                     {expense.location}

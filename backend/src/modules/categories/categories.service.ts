@@ -108,6 +108,18 @@ export class CategoriesService {
   }
 
   async deleteCategory(id: string): Promise<{ deleted: boolean }> {
+    // Check if it's a custom category - only custom categories can be deleted
+    const category = await this.categoriesRepo.findOne({ where: { id } });
+
+    if (!category) {
+      return { deleted: false };
+    }
+
+    // Prevent deletion of default (non-custom) categories
+    if (!category.is_custom) {
+      throw new ConflictException('Default categories cannot be deleted');
+    }
+
     // First unlink all expenses that use this category
     await this.dataSource
       .createQueryBuilder()

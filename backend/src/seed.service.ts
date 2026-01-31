@@ -25,27 +25,21 @@ export class SeedService implements OnModuleInit {
 
     console.log('Seeding categories...');
 
+    // 5 default categories shared for both budgets and expenses
     const categories = [
-      // Budget categories (5 default)
+      // Shared categories for budget and expenses (5 default - not deletable)
       { name: 'Food & Dining', type: 'budget', is_custom: false },
       { name: 'Transportation', type: 'budget', is_custom: false },
       { name: 'Entertainment', type: 'budget', is_custom: false },
       { name: 'Shopping', type: 'budget', is_custom: false },
       { name: 'Bills & Utilities', type: 'budget', is_custom: false },
 
-      // Expense categories (same as budget for consistency)
-      { name: 'Food & Dining', type: 'expenses', is_custom: false },
-      { name: 'Transportation', type: 'expenses', is_custom: false },
-      { name: 'Entertainment', type: 'expenses', is_custom: false },
-      { name: 'Shopping', type: 'expenses', is_custom: false },
-      { name: 'Bills & Utilities', type: 'expenses', is_custom: false },
-
-      // Savings categories
+      // Savings categories (3 default)
       { name: 'Emergency Fund', type: 'savings', is_custom: false },
       { name: 'Vacation', type: 'savings', is_custom: false },
       { name: 'Investment', type: 'savings', is_custom: false },
 
-      // Bills categories
+      // Bills categories (3 default)
       { name: 'Rent', type: 'bills', is_custom: false },
       { name: 'Utilities', type: 'bills', is_custom: false },
       { name: 'Internet', type: 'bills', is_custom: false },
