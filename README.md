@@ -6,7 +6,6 @@ SpendSense is a comprehensive full-stack personal finance management application
 
 Built using **React.js with Vite** for the frontend, **NestJS** for the backend, and featuring real-time communication via **WebSockets**, the system provides a modern, responsive, and intelligent approach to personal finance.
 
----
 
 ## Key Features
 
@@ -69,7 +68,6 @@ Built using **React.js with Vite** for the frontend, **NestJS** for the backend,
 - Category-wise expense breakdown
 - Exportable PDF reports
 
----
 
 ## Tech Stack
 
@@ -88,7 +86,6 @@ Built using **React.js with Vite** for the frontend, **NestJS** for the backend,
 - **In-memory RAG** for context-aware AI responses
 - **JWT Authentication** for secure access
 
----
 
 ## Project Structure
 
@@ -122,7 +119,6 @@ SpendSense/
 └── README.md
 ```
 
----
 
 ## Getting Started
 
@@ -157,7 +153,6 @@ SpendSense/
    - Frontend: `http://localhost:5173`
    - Backend API: `http://localhost:3000`
 
----
 
 ## Core Modules
 
@@ -175,7 +170,6 @@ SpendSense/
 | **Notifications** | Stay updated with smart alerts |
 | **Reports** | Generate comprehensive financial reports |
 
----
 
 ## Security Features
 - JWT-based authentication
@@ -183,14 +177,11 @@ SpendSense/
 - Protected API endpoints
 - Input validation and sanitization
 
----
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
 
----
 
 ## License
 This project is developed for educational purposes.
 
----
