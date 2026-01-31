@@ -18,8 +18,8 @@ export class CreateExpenseDTO {
   amount: number;
 
   @IsUUID()
-  @IsNotEmpty()
-  category_id: string;
+  @IsOptional()
+  category_id?: string;
 
   @IsDateString()
   @IsNotEmpty()

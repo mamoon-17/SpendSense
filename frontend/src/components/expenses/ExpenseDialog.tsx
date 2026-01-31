@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { expenseAPI, categoriesAPI } from "@/lib/api";
 import { useUserSettings } from "@/hooks/useUserSettings";
+import { Minus } from "lucide-react";
 
 interface ExpenseDialogProps {
   open: boolean;
@@ -46,7 +57,14 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
   onSuccess,
 }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState("");
+  const [categoryToDelete, setCategoryToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const { getCurrencySymbol, settings } = useUserSettings();
   const [formData, setFormData] = useState({
     description: "",
@@ -71,6 +89,9 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
   // Initialize form data when dialog opens or expense changes
   useEffect(() => {
     if (open) {
+      setShowCustomInput(false);
+      setCustomCategoryName("");
+      setCategoryToDelete(null);
       if (expense) {
         setFormData({
           description: expense.description,
@@ -100,12 +121,7 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      !formData.description ||
-      !formData.amount ||
-      !formData.category_id ||
-      !formData.date
-    ) {
+    if (!formData.description || !formData.amount || !formData.date) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields.",
@@ -130,10 +146,26 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
 
     setIsSubmitting(true);
     try {
+      let categoryId = formData.category_id;
+
+      // If "other" is selected, create a custom category first
+      if (formData.category_id === "other" && customCategoryName.trim()) {
+        const response = await categoriesAPI.createCustomCategory({
+          name: customCategoryName.trim(),
+          type: "budget", // Expenses use budget categories
+        });
+        categoryId = response.data.id;
+        // Invalidate categories cache to show the new category next time
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
+      }
+
       const payload = {
         description: formData.description,
         amount: parseFloat(formData.amount),
-        category_id: formData.category_id,
+        category_id:
+          categoryId && categoryId !== "none" && categoryId !== "other"
+            ? categoryId
+            : undefined,
         date: new Date(formData.date).toISOString(),
         payment_method: formData.payment_method || undefined,
         notes: formData.notes || undefined,
@@ -165,6 +197,33 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+
+    try {
+      await categoriesAPI.deleteCategory(categoryToDelete.id);
+      toast({
+        title: "Success",
+        description: `Category "${categoryToDelete.name}" deleted successfully.`,
+      });
+      // Reset selection if deleted category was selected
+      if (formData.category_id === categoryToDelete.id) {
+        setFormData({ ...formData, category_id: "" });
+      }
+      // Refresh categories
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to delete category.",
+        variant: "destructive",
+      });
+    } finally {
+      setCategoryToDelete(null);
     }
   };
 
@@ -264,27 +323,60 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category_id">
-                Category <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="category_id">Category (Optional)</Label>
               <Select
                 value={formData.category_id}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, category_id: value })
-                }
+                onValueChange={(value) => {
+                  setFormData({ ...formData, category_id: value });
+                  setShowCustomInput(value === "other");
+                  if (value !== "other") {
+                    setCustomCategoryName("");
+                  }
+                }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder="Select category (optional)" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px] overflow-y-auto">
+                  <SelectItem value="none">None</SelectItem>
                   {categories.map((cat: any) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.icon && <span className="mr-2">{cat.icon}</span>}
-                      {cat.name}
-                    </SelectItem>
+                    <div key={cat.id} className="flex items-center">
+                      <SelectItem value={cat.id} className="flex-1">
+                        {cat.name}
+                        {cat.is_custom && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            (Custom)
+                          </span>
+                        )}
+                      </SelectItem>
+                      {cat.is_custom && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 mr-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setCategoryToDelete({ id: cat.id, name: cat.name });
+                          }}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   ))}
+                  <SelectItem value="other">Other (Create New)</SelectItem>
                 </SelectContent>
               </Select>
+              {showCustomInput && (
+                <Input
+                  value={customCategoryName}
+                  onChange={(e) => setCustomCategoryName(e.target.value)}
+                  placeholder="Enter custom category name"
+                  className="mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -348,12 +440,44 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
               {isSubmitting
                 ? "Saving..."
                 : expense
-                ? "Update Expense"
-                : "Add Expense"}
+                  ? "Update Expense"
+                  : "Add Expense"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Delete Category Confirmation Dialog */}
+      <AlertDialog
+        open={!!categoryToDelete}
+        onOpenChange={() => setCategoryToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                Are you sure you want to delete the category "
+                {categoryToDelete?.name}"?
+              </span>
+              <span className="block text-amber-500 font-medium">
+                ⚠️ Warning: All expenses and budgets using this category will be
+                unlinked.
+              </span>
+              <span className="block">This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCategory}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

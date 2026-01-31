@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { budgetAPI, categoriesAPI } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { useUserSettings } from "@/hooks/useUserSettings";
+import { Minus } from "lucide-react";
 
 interface BudgetDialogProps {
   open: boolean;
@@ -49,7 +60,14 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
   const { toast } = useToast();
   const { user } = useAuthStore();
   const { getCurrencySymbol, settings } = useUserSettings();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState("");
+  const [categoryToDelete, setCategoryToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     total_amount: "",
@@ -62,9 +80,9 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
 
   // Fetch categories
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
+    queryKey: ["categories", "budget"],
     queryFn: async () => {
-      const response = await categoriesAPI.getCategories();
+      const response = await categoriesAPI.getCategoriesByType("budget");
       return response.data;
     },
     enabled: open,
@@ -72,29 +90,21 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
     refetchOnWindowFocus: false,
   });
 
-  // Default categories if API returns empty
-  const defaultCategories = [
-    { id: "food-dining", name: "Food & Dining" },
-    { id: "travel", name: "Travel" },
-    { id: "entertainment", name: "Entertainment" },
-    { id: "shopping", name: "Shopping" },
-  ];
-
-  const displayCategories =
-    categories.length > 0 ? categories : defaultCategories;
-
   // Initialize form data when dialog opens or budget changes
   useEffect(() => {
     if (open) {
+      setShowCustomInput(false);
+      setCustomCategoryName("");
+      setCategoryToDelete(null);
       if (budget) {
         setFormData({
           name: budget.name,
-          total_amount: budget.total_amount,
-          spent_amount: budget.spent_amount || "0",
+          total_amount: String(budget.total_amount || "0"),
+          spent_amount: String(budget.spent_amount || "0"),
           period: budget.period as "daily" | "weekly" | "monthly" | "yearly",
           category: budget.category?.id || "",
-          start_date: budget.start_date,
-          end_date: budget.end_date,
+          start_date: budget.start_date?.split("T")[0] || "",
+          end_date: budget.end_date?.split("T")[0] || "",
         });
       } else {
         // Reset form for new budget
@@ -156,24 +166,28 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
 
     setIsSubmitting(true);
     try {
-      // Check if selected category is from default list (doesn't exist in DB)
-      const defaultCategoryIds = [
-        "food-dining",
-        "travel",
-        "entertainment",
-        "shopping",
-      ];
-      const isDefaultCategory = defaultCategoryIds.includes(formData.category);
+      let categoryId = formData.category;
+
+      // If "other" is selected, create a custom category first
+      if (formData.category === "other" && customCategoryName.trim()) {
+        const response = await categoriesAPI.createCustomCategory({
+          name: customCategoryName.trim(),
+          type: "budget",
+        });
+        categoryId = response.data.id;
+        // Invalidate categories cache to show the new category next time
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
+      }
 
       const payload = {
         name: formData.name,
-        total_amount: formData.total_amount,
-        spent_amount: formData.spent_amount || "0",
+        total_amount: String(formData.total_amount || "0"),
+        spent_amount: String(formData.spent_amount || "0"),
         period: formData.period,
         category:
-          formData.category === "none" || isDefaultCategory
+          categoryId === "none" || categoryId === "other" || !categoryId
             ? ""
-            : formData.category,
+            : categoryId,
         start_date: formData.start_date,
         end_date: formData.end_date,
         created_by: user.id,
@@ -204,6 +218,33 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+
+    try {
+      await categoriesAPI.deleteCategory(categoryToDelete.id);
+      toast({
+        title: "Success",
+        description: `Category "${categoryToDelete.name}" deleted successfully.`,
+      });
+      // Reset selection if deleted category was selected
+      if (formData.category === categoryToDelete.id) {
+        setFormData({ ...formData, category: "" });
+      }
+      // Refresh categories
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to delete category.",
+        variant: "destructive",
+      });
+    } finally {
+      setCategoryToDelete(null);
     }
   };
 
@@ -347,7 +388,7 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
               <Select
                 value={formData.period}
                 onValueChange={(
-                  value: "daily" | "weekly" | "monthly" | "yearly"
+                  value: "daily" | "weekly" | "monthly" | "yearly",
                 ) => setFormData({ ...formData, period: value })}
               >
                 <SelectTrigger>
@@ -366,23 +407,57 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
               <Label htmlFor="category">Category (Optional)</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, category: value })
-                }
+                onValueChange={(value) => {
+                  setFormData({ ...formData, category: value });
+                  setShowCustomInput(value === "other");
+                  if (value !== "other") {
+                    setCustomCategoryName("");
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category (optional)" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px] overflow-y-auto">
                   <SelectItem value="none">None</SelectItem>
-                  {displayCategories.map((cat: any) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.icon && <span className="mr-2">{cat.icon}</span>}
-                      {cat.name}
-                    </SelectItem>
+                  {categories.map((cat: any) => (
+                    <div key={cat.id} className="flex items-center">
+                      <SelectItem value={cat.id} className="flex-1">
+                        {cat.name}
+                        {cat.is_custom && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            (Custom)
+                          </span>
+                        )}
+                      </SelectItem>
+                      {cat.is_custom && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 mr-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setCategoryToDelete({ id: cat.id, name: cat.name });
+                          }}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   ))}
+                  <SelectItem value="other">Other (Create New)</SelectItem>
                 </SelectContent>
               </Select>
+              {showCustomInput && (
+                <Input
+                  value={customCategoryName}
+                  onChange={(e) => setCustomCategoryName(e.target.value)}
+                  placeholder="Enter custom category name"
+                  className="mt-2"
+                />
+              )}
             </div>
           </div>
 
@@ -433,12 +508,44 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
               {isSubmitting
                 ? "Saving..."
                 : budget
-                ? "Update Budget"
-                : "Create Budget"}
+                  ? "Update Budget"
+                  : "Create Budget"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Delete Category Confirmation Dialog */}
+      <AlertDialog
+        open={!!categoryToDelete}
+        onOpenChange={() => setCategoryToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                Are you sure you want to delete the category "
+                {categoryToDelete?.name}"?
+              </span>
+              <span className="block text-amber-500 font-medium">
+                ⚠️ Warning: All budgets and expenses using this category will be
+                unlinked.
+              </span>
+              <span className="block">This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCategory}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };

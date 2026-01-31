@@ -59,8 +59,9 @@ export class ExpenseAnalyticsService {
   ): Array<{ category_id: string; amount: string }> {
     const categoryMap = new Map<string, number>();
     expenses.forEach((exp) => {
-      const current = categoryMap.get(exp.category_id) || 0;
-      categoryMap.set(exp.category_id, current + parseFloat(exp.amount));
+      const catId = exp.category_id || 'uncategorized';
+      const current = categoryMap.get(catId) || 0;
+      categoryMap.set(catId, current + parseFloat(exp.amount));
     });
 
     return Array.from(categoryMap.entries()).map(([categoryId, amount]) => ({

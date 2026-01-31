@@ -99,17 +99,17 @@ interface Expense {
 // Helper function to transform backend expense to frontend format
 const transformExpense = (
   backendExpense: BackendExpense,
-  categories: any[]
+  categories: any[],
 ): Expense => {
   const category = categories.find(
-    (cat) => cat.id === backendExpense.category_id
+    (cat) => cat.id === backendExpense.category_id,
   );
 
   return {
     id: backendExpense.id,
     description: backendExpense.description,
     amount: parseFloat(backendExpense.amount) || 0,
-    category: category?.name || "Uncategorized",
+    category: category?.name || "",
     categoryId: backendExpense.category_id,
     date: backendExpense.date,
     payment_method: backendExpense.payment_method,
@@ -164,7 +164,7 @@ export const Expenses: React.FC = () => {
   const expenses: Expense[] = useMemo(() => {
     if (!Array.isArray(expensesData)) return [];
     return expensesData.map((exp: BackendExpense) =>
-      transformExpense(exp, categories)
+      transformExpense(exp, categories),
     );
   }, [expensesData, categories]);
 
@@ -198,7 +198,7 @@ export const Expenses: React.FC = () => {
   const handleEditClick = (expense: Expense) => {
     // Find the original backend expense
     const backendExpense = expensesData.find(
-      (e: BackendExpense) => e.id === expense.id
+      (e: BackendExpense) => e.id === expense.id,
     );
     setEditingExpense(backendExpense);
     setDialogOpen(true);
@@ -236,7 +236,7 @@ export const Expenses: React.FC = () => {
       `Generated on ${format(new Date(), "MMMM dd, yyyy")}`,
       pageWidth / 2,
       30,
-      { align: "center" }
+      { align: "center" },
     );
 
     // Summary Section
@@ -253,36 +253,36 @@ export const Expenses: React.FC = () => {
         filterPeriod === "month"
           ? "This Month"
           : filterPeriod === "week"
-          ? "This Week"
-          : filterPeriod === "year"
-          ? "This Year"
-          : "All Time"
+            ? "This Week"
+            : filterPeriod === "year"
+              ? "This Year"
+              : "All Time"
       }`,
       14,
-      summaryY
+      summaryY,
     );
     doc.text(
       `Total Expenses: ${formatAmount(totalExpenses)}`,
       14,
-      summaryY + 7
+      summaryY + 7,
     );
     doc.text(
       `Total Transactions: ${filteredExpenses.length}`,
       14,
-      summaryY + 14
+      summaryY + 14,
     );
     doc.text(
       `Average per Transaction: ${formatAmount(avgExpense)}`,
       14,
-      summaryY + 21
+      summaryY + 21,
     );
     if (topCategory) {
       doc.text(
         `Top Category: ${topCategory[0]} (${formatAmount(
-          topCategory[1] as number
+          topCategory[1] as number,
         )})`,
         14,
-        summaryY + 28
+        summaryY + 28,
       );
     }
 
@@ -353,7 +353,7 @@ export const Expenses: React.FC = () => {
     const matchesSearch =
       expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       expense.tags.some((tag) =>
-        tag.toLowerCase().includes(searchTerm.toLowerCase())
+        tag.toLowerCase().includes(searchTerm.toLowerCase()),
       ) ||
       (expense.location &&
         expense.location.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -393,7 +393,7 @@ export const Expenses: React.FC = () => {
       case "date":
       default:
         return sorted.sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
     }
   }, [filteredExpenses, sortBy]);
@@ -401,22 +401,25 @@ export const Expenses: React.FC = () => {
   const totalExpenses = filteredExpenses.reduce(
     (sum, expense) =>
       sum + convertAmount(expense.amount, expense.currency || "USD"),
-    0
+    0,
   );
   const avgExpense =
     filteredExpenses.length > 0 ? totalExpenses / filteredExpenses.length : 0;
 
-  const categoryTotals = filteredExpenses.reduce((acc, expense) => {
-    const convertedAmount = convertAmount(
-      expense.amount,
-      expense.currency || "USD"
-    );
-    acc[expense.category] = (acc[expense.category] || 0) + convertedAmount;
-    return acc;
-  }, {} as Record<string, number>);
+  const categoryTotals = filteredExpenses.reduce(
+    (acc, expense) => {
+      const convertedAmount = convertAmount(
+        expense.amount,
+        expense.currency || "USD",
+      );
+      acc[expense.category] = (acc[expense.category] || 0) + convertedAmount;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const topCategory = Object.entries(categoryTotals).sort(
-    ([, a], [, b]) => b - a
+    ([, a], [, b]) => b - a,
   )[0];
 
   // Analytics calculations
@@ -477,7 +480,7 @@ export const Expenses: React.FC = () => {
     const categoryBreakdown = Object.entries(categoryTotals)
       .map(([category, amount]) => {
         const count = filteredExpenses.filter(
-          (e) => e.category === category
+          (e) => e.category === category,
         ).length;
         return {
           category,
@@ -490,11 +493,14 @@ export const Expenses: React.FC = () => {
       .sort((a, b) => b.amount - a.amount);
 
     // Top spending days
-    const dailyTotals = expenses.reduce((acc, expense) => {
-      const dateKey = format(new Date(expense.date), "yyyy-MM-dd");
-      acc[dateKey] = (acc[dateKey] || 0) + expense.amount;
-      return acc;
-    }, {} as Record<string, number>);
+    const dailyTotals = expenses.reduce(
+      (acc, expense) => {
+        const dateKey = format(new Date(expense.date), "yyyy-MM-dd");
+        acc[dateKey] = (acc[dateKey] || 0) + expense.amount;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     const topDays = Object.entries(dailyTotals)
       .map(([date, amount]) => ({
@@ -530,690 +536,704 @@ export const Expenses: React.FC = () => {
         <div className="space-y-8 p-2">
           {/* Header with Orange/Amber Gradient */}
           <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 rounded-2xl p-8 shadow-sm border border-orange-100/50 dark:border-orange-900/30">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-orange-500/10 dark:bg-orange-500/20 rounded-xl">
-                  <Receipt className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-                </div>
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-orange-700 to-amber-600 dark:from-orange-300 dark:to-amber-300 bg-clip-text text-transparent">
-                  Expense Tracking
-                </h1>
-              </div>
-              <p className="text-muted-foreground ml-20 text-base">
-                Monitor spending, analyze patterns, and optimize your financial
-                health
-              </p>
-            </div>
-            <Button
-              className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 shadow-md h-11 px-6"
-              onClick={handleCreateClick}
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add Expense
-            </Button>
-          </div>
-        </div>
-
-        {/* Quick Stats with Orange/Amber Theme */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-orange-100 dark:border-orange-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-orange-50/30 dark:from-slate-950 dark:to-orange-950/10">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                    Total Spent
-                  </p>
-                  <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
-                    {formatAmount(totalExpenses)}
-                  </p>
-                </div>
-                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">This Month</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-amber-100 dark:border-amber-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-amber-50/30 dark:from-slate-950 dark:to-amber-950/10">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    Average
-                  </p>
-                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
-                    {formatAmount(avgExpense)}
-                  </p>
-                </div>
-                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                  <Receipt className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">This Month</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-yellow-100 dark:border-yellow-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-yellow-50/30 dark:from-slate-950 dark:to-yellow-950/10">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
-                    Transactions
-                  </p>
-                  <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
-                    {filteredExpenses.length}
-                  </p>
-                </div>
-                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                  <Tag className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">This Month</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-amber-100 dark:border-amber-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-amber-50/30 dark:from-slate-950 dark:to-amber-950/10">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    Top Category
-                  </p>
-                  <p className="text-lg font-bold truncate text-amber-700 dark:text-amber-300">
-                    {topCategory?.[0] || "N/A"}
-                  </p>
-                </div>
-                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                  <Filter className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {formatAmount((topCategory?.[1] as number) || 0)} spent
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
-            <Tabs defaultValue="list" className="w-full">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
-                <TabsList className="grid w-full sm:w-fit grid-cols-3 bg-orange-100/50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50">
-                  <TabsTrigger
-                    value="list"
-                    className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
-                  >
-                    List View
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="categories"
-                    className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
-                  >
-                    Categories
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="analytics"
-                    className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
-                  >
-                    Analytics
-                  </TabsTrigger>
-                </TabsList>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportPDF}
-                    className="border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30 shadow-sm hover:shadow-md bg-white/60 dark:bg-slate-950/40 backdrop-blur"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Export
-                  </Button>
-                </div>
-              </div>
-
-              {/* Filters */}
-              <Card className="border-orange-100/50 dark:border-orange-900/20 shadow-sm bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col lg:flex-row gap-4">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 w-4 h-4" />
-                        <Input
-                          placeholder="Search expenses, tags, or locations..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10 pr-10 border-orange-200 focus-visible:ring-orange-400 dark:border-orange-900/50"
-                        />
-                        {searchTerm && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-                            onClick={() => setSearchTerm("")}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    <Select
-                      value={filterCategory}
-                      onValueChange={setFilterCategory}
-                    >
-                      <SelectTrigger className="w-full lg:w-[180px] border-orange-200 dark:border-orange-900/50">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px] overflow-y-auto">
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categories.map((cat: any) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.icon && (
-                              <span className="mr-2">{cat.icon}</span>
-                            )}
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={filterPeriod}
-                      onValueChange={setFilterPeriod}
-                    >
-                      <SelectTrigger className="w-full lg:w-[150px] border-orange-200 dark:border-orange-900/50">
-                        <SelectValue placeholder="Period" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="week">This Week</SelectItem>
-                        <SelectItem value="month">This Month</SelectItem>
-                        <SelectItem value="year">This Year</SelectItem>
-                        <SelectItem value="all">All Time</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="w-full lg:w-[120px]">
-                        <SelectValue placeholder="Sort" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="date">Date</SelectItem>
-                        <SelectItem value="amount">Amount</SelectItem>
-                        <SelectItem value="category">Category</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {hasActiveFilters && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearFilters}
-                        className="w-full lg:w-auto"
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Clear
-                      </Button>
-                    )}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-orange-500/10 dark:bg-orange-500/20 rounded-xl">
+                    <Receipt className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                   </div>
-                  {hasActiveFilters && (
-                    <div className="mt-3 text-xs text-muted-foreground">
-                      Showing {filteredExpenses.length} of {expenses.length}{" "}
-                      expenses
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <TabsContent value="list" className="space-y-4 mt-6">
-                {sortedExpenses.length === 0 ? (
-                  <Card className="border-orange-100 dark:border-orange-900/30 bg-gradient-to-br from-white to-orange-50/20 dark:from-slate-950 dark:to-orange-950/10">
-                    <CardContent className="py-16 text-center">
-                      {expenses.length === 0 ? (
-                        <div className="space-y-6">
-                          <div className="mx-auto w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                            <Receipt className="w-10 h-10 text-orange-600 dark:text-orange-400" />
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-semibold mb-2 text-orange-900 dark:text-orange-100">
-                              No expenses yet
-                            </h3>
-                            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                              Start tracking your spending by adding your first
-                              expense
-                            </p>
-                            <Button 
-                              onClick={handleCreateClick}
-                              className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 shadow-md"
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add Your First Expense
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-6">
-                          <div className="mx-auto w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                            <Search className="w-10 h-10 text-orange-600 dark:text-orange-400" />
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-semibold mb-2 text-orange-900 dark:text-orange-100">
-                              No expenses match your filters
-                            </h3>
-                            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                              Try adjusting your search or filters
-                            </p>
-                            <Button 
-                              variant="outline" 
-                              onClick={clearFilters}
-                              className="border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30"
-                            >
-                              <X className="w-4 h-4 mr-2" />
-                              Clear Filters
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ) : (
-                  sortedExpenses.map((expense) => (
-                    <Card
-                      key={expense.id}
-                      className="card-financial hover:shadow-elevated transition-shadow border-orange-100 dark:border-orange-900/30 bg-gradient-to-br from-white to-orange-50/20 dark:from-slate-950 dark:to-orange-950/10"
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <h3 className="font-semibold text-foreground truncate">
-                                {expense.description}
-                              </h3>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                              <span className="flex items-center">
-                                <Calendar className="w-3 h-3 mr-1" />
-                                {formatDate(expense.date)}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className="border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300"
-                              >
-                                {expense.category}
-                              </Badge>
-                              {expense.location && (
-                                <span className="truncate">
-                                  {expense.location}
-                                </span>
-                              )}
-                              {expense.payment_method && (
-                                <span className="text-xs">
-                                  {expense.payment_method
-                                    .split("_")
-                                    .map(
-                                      (word) =>
-                                        word.charAt(0).toUpperCase() +
-                                        word.slice(1)
-                                    )
-                                    .join(" ")}
-                                </span>
-                              )}
-                            </div>
-
-                            {expense.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {expense.tags.map((tag) => (
-                                  <Badge
-                                    key={tag}
-                                    variant="secondary"
-                                    className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
-                                  >
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                            {expense.notes && (
-                              <div className="mt-2 text-sm text-muted-foreground">
-                                <p className="italic">{expense.notes}</p>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex items-center space-x-3 ml-4">
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-foreground">
-                                {formatCurrency(
-                                  expense.amount,
-                                  expense.currency || "USD"
-                                )}
-                              </p>
-                            </div>
-
-                            <div className="flex items-center space-x-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditClick(expense)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Edit expense</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() =>
-                                      handleDeleteClick(expense.id)
-                                    }
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Delete expense</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </TabsContent>
-
-              <TabsContent value="categories" className="mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(categoryTotals).map(([category, amount]) => (
-                    <Card key={category} className="card-financial">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <h3 className="font-semibold">{category}</h3>
-                          <p className="text-lg font-bold">
-                            {formatAmount(amount as number)}
-                          </p>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {
-                            filteredExpenses.filter(
-                              (e) => e.category === category
-                            ).length
-                          }{" "}
-                          transactions
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-orange-700 to-amber-600 dark:from-orange-300 dark:to-amber-300 bg-clip-text text-transparent">
+                    Expense Tracking
+                  </h1>
                 </div>
-              </TabsContent>
-
-              <TabsContent value="analytics" className="mt-6 space-y-6">
-                {/* Spending Trend */}
-                <Card className="card-financial border-orange-100 dark:border-orange-900/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <TrendingUp className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
-                      Spending Trend
-                    </CardTitle>
-                    <CardDescription>
-                      Compare current period with previous period
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 border border-border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-muted-foreground">
-                            Current Period
-                          </span>
-                          {analytics.change > 0 ? (
-                            <ArrowUpRight className="w-4 h-4 text-destructive" />
-                          ) : analytics.change < 0 ? (
-                            <ArrowDownRight className="w-4 h-4 text-success" />
-                          ) : null}
-                        </div>
-                        <p className="text-2xl font-bold">
-                          {formatAmount(analytics.currentPeriodTotal)}
-                        </p>
-                        {analytics.previousPeriodTotal > 0 && (
-                          <p
-                            className={`text-sm mt-1 ${
-                              analytics.change > 0
-                                ? "text-destructive"
-                                : analytics.change < 0
-                                ? "text-success"
-                                : "text-muted-foreground"
-                            }`}
-                          >
-                            {analytics.change > 0 ? "+" : ""}
-                            {analytics.change.toFixed(1)}% vs previous period
-                          </p>
-                        )}
-                      </div>
-                      <div className="p-4 border border-border rounded-lg">
-                        <span className="text-sm text-muted-foreground">
-                          Previous Period
-                        </span>
-                        <p className="text-2xl font-bold mt-2">
-                          {formatAmount(analytics.previousPeriodTotal)}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Category Breakdown */}
-                <Card className="card-financial border-orange-100 dark:border-orange-900/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <BarChart3 className="w-5 h-5 mr-2" />
-                      Category Breakdown
-                    </CardTitle>
-                    <CardDescription>
-                      Spending distribution across categories
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {analytics.categoryBreakdown.map((cat) => (
-                        <div key={cat.category}>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium">{cat.category}</span>
-                            <div className="text-right">
-                              <span className="font-bold">
-                                {formatAmount(cat.amount)}
-                              </span>
-                              <span className="text-sm text-muted-foreground ml-2">
-                                ({cat.percentage.toFixed(1)}%)
-                              </span>
-                            </div>
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-2">
-                            <div
-                              className="bg-orange-500 dark:bg-orange-400 h-2 rounded-full transition-all"
-                              style={{ width: `${cat.percentage}%` }}
-                            />
-                          </div>
-                          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                            <span>{cat.count} transactions</span>
-                            <span>Avg: {formatAmount(cat.average)}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Top Spending Days */}
-                {analytics.topDays.length > 0 && (
-                  <Card className="card-financial border-orange-100 dark:border-orange-900/30">
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <Calendar className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
-                        Top Spending Days
-                      </CardTitle>
-                      <CardDescription>
-                        Your highest spending days
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {analytics.topDays.map((day, index) => (
-                          <div
-                            key={day.date}
-                            className="flex items-center justify-between p-3 border border-border rounded-lg"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                                <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
-                                  {index + 1}
-                                </span>
-                              </div>
-                              <div>
-                                <p className="font-medium">
-                                  {day.formattedDate}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {
-                                    expenses.filter(
-                                      (e) =>
-                                        format(
-                                          new Date(e.date),
-                                          "yyyy-MM-dd"
-                                        ) === day.date
-                                    ).length
-                                  }{" "}
-                                  transactions
-                                </p>
-                              </div>
-                            </div>
-                            <p className="text-lg font-bold">
-                              {formatAmount(day.amount)}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Summary Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="card-financial">
-                    <CardContent className="p-4">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">
-                        Total Transactions
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {filteredExpenses.length}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        This {filterPeriod}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="card-financial">
-                    <CardContent className="p-4">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">
-                        Average Transaction
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {formatAmount(avgExpense)}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Per expense
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="card-financial">
-                    <CardContent className="p-4">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">
-                        Categories Used
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {Object.keys(categoryTotals).length}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Active categories
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-            </Tabs>
+                <p className="text-muted-foreground ml-20 text-base">
+                  Monitor spending, analyze patterns, and optimize your
+                  financial health
+                </p>
+              </div>
+              <Button
+                className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 shadow-md h-11 px-6"
+                onClick={handleCreateClick}
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add Expense
+              </Button>
+            </div>
           </div>
-          {/* Right Sidebar: Top Categories */}
-          <div className="space-y-6">
-            <Card className="card-financial border-orange-100 dark:border-orange-900/30">
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-purple-600" />
-                  Top Categories
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {analytics.categoryBreakdown.length > 0 ? (
-                  analytics.categoryBreakdown.slice(0, 5).map((cat) => (
-                    <div key={cat.category} className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-orange-500" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{cat.category}</p>
-                      </div>
-                      <p className="text-sm font-semibold">{formatAmount(cat.amount)}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No categories yet
-                  </p>
-                )}
+
+          {/* Quick Stats with Orange/Amber Theme */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="border-orange-100 dark:border-orange-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-orange-50/30 dark:from-slate-950 dark:to-orange-950/10">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                      Total Spent
+                    </p>
+                    <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                      {formatAmount(totalExpenses)}
+                    </p>
+                  </div>
+                  <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                    <TrendingUp className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">This Month</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-amber-100 dark:border-amber-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-amber-50/30 dark:from-slate-950 dark:to-amber-950/10">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                      Average
+                    </p>
+                    <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                      {formatAmount(avgExpense)}
+                    </p>
+                  </div>
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                    <Receipt className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">This Month</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-yellow-100 dark:border-yellow-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-yellow-50/30 dark:from-slate-950 dark:to-yellow-950/10">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
+                      Transactions
+                    </p>
+                    <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
+                      {filteredExpenses.length}
+                    </p>
+                  </div>
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                    <Tag className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">This Month</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-amber-100 dark:border-amber-900/30 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-amber-50/30 dark:from-slate-950 dark:to-amber-950/10">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                      Top Category
+                    </p>
+                    <p className="text-lg font-bold truncate text-amber-700 dark:text-amber-300">
+                      {topCategory?.[0] || "N/A"}
+                    </p>
+                  </div>
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                    <Filter className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {formatAmount((topCategory?.[1] as number) || 0)} spent
+                </p>
               </CardContent>
             </Card>
           </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Main Content */}
+            <div className="lg:col-span-3 space-y-6">
+              <Tabs defaultValue="list" className="w-full">
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
+                  <TabsList className="grid w-full sm:w-fit grid-cols-3 bg-orange-100/50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50">
+                    <TabsTrigger
+                      value="list"
+                      className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+                    >
+                      List View
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="categories"
+                      className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+                    >
+                      Categories
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="analytics"
+                      className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"
+                    >
+                      Analytics
+                    </TabsTrigger>
+                  </TabsList>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportPDF}
+                      className="border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30 shadow-sm hover:shadow-md bg-white/60 dark:bg-slate-950/40 backdrop-blur"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Filters */}
+                <Card className="border-orange-100/50 dark:border-orange-900/20 shadow-sm bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col lg:flex-row gap-4">
+                      <div className="flex-1">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 w-4 h-4" />
+                          <Input
+                            placeholder="Search expenses, tags, or locations..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 pr-10 border-orange-200 focus-visible:ring-orange-400 dark:border-orange-900/50"
+                          />
+                          {searchTerm && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                              onClick={() => setSearchTerm("")}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <Select
+                        value={filterCategory}
+                        onValueChange={setFilterCategory}
+                      >
+                        <SelectTrigger className="w-full lg:w-[180px] border-orange-200 dark:border-orange-900/50">
+                          <SelectValue placeholder="Category" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px] overflow-y-auto">
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {categories.map((cat: any) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.icon && (
+                                <span className="mr-2">{cat.icon}</span>
+                              )}
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={filterPeriod}
+                        onValueChange={setFilterPeriod}
+                      >
+                        <SelectTrigger className="w-full lg:w-[150px] border-orange-200 dark:border-orange-900/50">
+                          <SelectValue placeholder="Period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="week">This Week</SelectItem>
+                          <SelectItem value="month">This Month</SelectItem>
+                          <SelectItem value="year">This Year</SelectItem>
+                          <SelectItem value="all">All Time</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger className="w-full lg:w-[120px]">
+                          <SelectValue placeholder="Sort" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="date">Date</SelectItem>
+                          <SelectItem value="amount">Amount</SelectItem>
+                          <SelectItem value="category">Category</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {hasActiveFilters && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={clearFilters}
+                          className="w-full lg:w-auto"
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                    {hasActiveFilters && (
+                      <div className="mt-3 text-xs text-muted-foreground">
+                        Showing {filteredExpenses.length} of {expenses.length}{" "}
+                        expenses
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <TabsContent value="list" className="space-y-4 mt-6">
+                  {sortedExpenses.length === 0 ? (
+                    <Card className="border-orange-100 dark:border-orange-900/30 bg-gradient-to-br from-white to-orange-50/20 dark:from-slate-950 dark:to-orange-950/10">
+                      <CardContent className="py-16 text-center">
+                        {expenses.length === 0 ? (
+                          <div className="space-y-6">
+                            <div className="mx-auto w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                              <Receipt className="w-10 h-10 text-orange-600 dark:text-orange-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-semibold mb-2 text-orange-900 dark:text-orange-100">
+                                No expenses yet
+                              </h3>
+                              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                                Start tracking your spending by adding your
+                                first expense
+                              </p>
+                              <Button
+                                onClick={handleCreateClick}
+                                className="bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 shadow-md"
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Your First Expense
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            <div className="mx-auto w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                              <Search className="w-10 h-10 text-orange-600 dark:text-orange-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-semibold mb-2 text-orange-900 dark:text-orange-100">
+                                No expenses match your filters
+                              </h3>
+                              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                                Try adjusting your search or filters
+                              </p>
+                              <Button
+                                variant="outline"
+                                onClick={clearFilters}
+                                className="border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                              >
+                                <X className="w-4 h-4 mr-2" />
+                                Clear Filters
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    sortedExpenses.map((expense) => (
+                      <Card
+                        key={expense.id}
+                        className="card-financial hover:shadow-elevated transition-shadow border-orange-100 dark:border-orange-900/30 bg-gradient-to-br from-white to-orange-50/20 dark:from-slate-950 dark:to-orange-950/10"
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <h3 className="font-semibold text-foreground truncate">
+                                  {expense.description}
+                                </h3>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                                <span className="flex items-center">
+                                  <Calendar className="w-3 h-3 mr-1" />
+                                  {formatDate(expense.date)}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className="border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300"
+                                >
+                                  {expense.category}
+                                </Badge>
+                                {expense.location && (
+                                  <span className="truncate">
+                                    {expense.location}
+                                  </span>
+                                )}
+                                {expense.payment_method && (
+                                  <span className="text-xs">
+                                    {expense.payment_method
+                                      .split("_")
+                                      .map(
+                                        (word) =>
+                                          word.charAt(0).toUpperCase() +
+                                          word.slice(1),
+                                      )
+                                      .join(" ")}
+                                  </span>
+                                )}
+                              </div>
+
+                              {expense.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {expense.tags.map((tag) => (
+                                    <Badge
+                                      key={tag}
+                                      variant="secondary"
+                                      className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                                    >
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                              {expense.notes && (
+                                <div className="mt-2 text-sm text-muted-foreground">
+                                  <p className="italic">{expense.notes}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center space-x-3 ml-4">
+                              <div className="text-right">
+                                <p className="text-lg font-bold text-foreground">
+                                  {formatCurrency(
+                                    expense.amount,
+                                    expense.currency || "USD",
+                                  )}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center space-x-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditClick(expense)}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Edit expense</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive"
+                                      onClick={() =>
+                                        handleDeleteClick(expense.id)
+                                      }
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Delete expense</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </TabsContent>
+
+                <TabsContent value="categories" className="mt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(categoryTotals).map(
+                      ([category, amount]) => (
+                        <Card key={category} className="card-financial">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <h3 className="font-semibold">{category}</h3>
+                              <p className="text-lg font-bold">
+                                {formatAmount(amount as number)}
+                              </p>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {
+                                filteredExpenses.filter(
+                                  (e) => e.category === category,
+                                ).length
+                              }{" "}
+                              transactions
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ),
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="analytics" className="mt-6 space-y-6">
+                  {/* Spending Trend */}
+                  <Card className="card-financial border-orange-100 dark:border-orange-900/30">
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <TrendingUp className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
+                        Spending Trend
+                      </CardTitle>
+                      <CardDescription>
+                        Compare current period with previous period
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 border border-border rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-muted-foreground">
+                              Current Period
+                            </span>
+                            {analytics.change > 0 ? (
+                              <ArrowUpRight className="w-4 h-4 text-destructive" />
+                            ) : analytics.change < 0 ? (
+                              <ArrowDownRight className="w-4 h-4 text-success" />
+                            ) : null}
+                          </div>
+                          <p className="text-2xl font-bold">
+                            {formatAmount(analytics.currentPeriodTotal)}
+                          </p>
+                          {analytics.previousPeriodTotal > 0 && (
+                            <p
+                              className={`text-sm mt-1 ${
+                                analytics.change > 0
+                                  ? "text-destructive"
+                                  : analytics.change < 0
+                                    ? "text-success"
+                                    : "text-muted-foreground"
+                              }`}
+                            >
+                              {analytics.change > 0 ? "+" : ""}
+                              {analytics.change.toFixed(1)}% vs previous period
+                            </p>
+                          )}
+                        </div>
+                        <div className="p-4 border border-border rounded-lg">
+                          <span className="text-sm text-muted-foreground">
+                            Previous Period
+                          </span>
+                          <p className="text-2xl font-bold mt-2">
+                            {formatAmount(analytics.previousPeriodTotal)}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Category Breakdown */}
+                  <Card className="card-financial border-orange-100 dark:border-orange-900/30">
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <BarChart3 className="w-5 h-5 mr-2" />
+                        Category Breakdown
+                      </CardTitle>
+                      <CardDescription>
+                        Spending distribution across categories
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {analytics.categoryBreakdown.map((cat) => (
+                          <div key={cat.category}>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-medium">
+                                {cat.category}
+                              </span>
+                              <div className="text-right">
+                                <span className="font-bold">
+                                  {formatAmount(cat.amount)}
+                                </span>
+                                <span className="text-sm text-muted-foreground ml-2">
+                                  ({cat.percentage.toFixed(1)}%)
+                                </span>
+                              </div>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2">
+                              <div
+                                className="bg-orange-500 dark:bg-orange-400 h-2 rounded-full transition-all"
+                                style={{ width: `${cat.percentage}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                              <span>{cat.count} transactions</span>
+                              <span>Avg: {formatAmount(cat.average)}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Top Spending Days */}
+                  {analytics.topDays.length > 0 && (
+                    <Card className="card-financial border-orange-100 dark:border-orange-900/30">
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Calendar className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
+                          Top Spending Days
+                        </CardTitle>
+                        <CardDescription>
+                          Your highest spending days
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {analytics.topDays.map((day, index) => (
+                            <div
+                              key={day.date}
+                              className="flex items-center justify-between p-3 border border-border rounded-lg"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                  <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                                    {index + 1}
+                                  </span>
+                                </div>
+                                <div>
+                                  <p className="font-medium">
+                                    {day.formattedDate}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {
+                                      expenses.filter(
+                                        (e) =>
+                                          format(
+                                            new Date(e.date),
+                                            "yyyy-MM-dd",
+                                          ) === day.date,
+                                      ).length
+                                    }{" "}
+                                    transactions
+                                  </p>
+                                </div>
+                              </div>
+                              <p className="text-lg font-bold">
+                                {formatAmount(day.amount)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="card-financial">
+                      <CardContent className="p-4">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">
+                          Total Transactions
+                        </p>
+                        <p className="text-2xl font-bold">
+                          {filteredExpenses.length}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          This {filterPeriod}
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="card-financial">
+                      <CardContent className="p-4">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">
+                          Average Transaction
+                        </p>
+                        <p className="text-2xl font-bold">
+                          {formatAmount(avgExpense)}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Per expense
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="card-financial">
+                      <CardContent className="p-4">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">
+                          Categories Used
+                        </p>
+                        <p className="text-2xl font-bold">
+                          {Object.keys(categoryTotals).length}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Active categories
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+            {/* Right Sidebar: Top Categories */}
+            <div className="space-y-6">
+              <Card className="card-financial border-orange-100 dark:border-orange-900/30">
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <PieChart className="w-5 h-5 text-purple-600" />
+                    Top Categories
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {analytics.categoryBreakdown.length > 0 ? (
+                    analytics.categoryBreakdown.slice(0, 5).map((cat) => (
+                      <div
+                        key={cat.category}
+                        className="flex items-center gap-3"
+                      >
+                        <div className="w-2 h-2 rounded-full bg-orange-500" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {cat.category}
+                          </p>
+                        </div>
+                        <p className="text-sm font-semibold">
+                          {formatAmount(cat.amount)}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No categories yet
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Expense Dialog */}
+          <ExpenseDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            expense={editingExpense}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ["expenses"] });
+            }}
+          />
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the
+                  expense.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteConfirm}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
-
-        {/* Expense Dialog */}
-        <ExpenseDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          expense={editingExpense}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["expenses"] });
-          }}
-        />
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the
-                expense.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteConfirm}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {deleteMutation.isPending ? "Deleting..." : "Delete"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
       </TooltipProvider>
     </PageTransition>
   );
