@@ -46,15 +46,15 @@ export class Invitation {
   status: InvitationStatus;
 
   // Timestamp when invitation was sent
-  @Column({ type: 'datetime', nullable: false })
+  @Column({ type: 'timestamp', nullable: false })
   sent_at: Date;
 
   // Expiration timestamp
-  @Column({ type: 'datetime', nullable: false })
+  @Column({ type: 'timestamp', nullable: false })
   expires_at: Date;
 
   // Timestamp when the invitation was accepted
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   accepted_at: Date | null;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })

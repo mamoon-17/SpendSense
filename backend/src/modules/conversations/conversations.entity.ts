@@ -52,15 +52,15 @@ export class Conversation {
   @JoinColumn({ name: 'last_message_id' })
   last_message: Message | null;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   last_message_at: Date | null;
 
   @Column({ type: 'int', default: 0 })
   unread_count: number;
 
-  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;
 }

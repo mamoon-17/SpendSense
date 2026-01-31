@@ -42,6 +42,6 @@ export class Notification {
   @Column({ type: 'boolean', default: false })
   read: boolean;
 
-  @CreateDateColumn({ name: 'created_at', type: 'datetime' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   created_at: Date;
 }

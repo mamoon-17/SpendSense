@@ -32,9 +32,9 @@ export class Connection {
   @Column({ type: 'text', default: ConnectionStatus.Pending })
   status: ConnectionStatus;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   accepted_at: Date | null;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   last_active: Date | null;
 }

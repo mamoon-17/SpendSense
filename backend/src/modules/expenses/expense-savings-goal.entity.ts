@@ -24,7 +24,7 @@ export class ExpenseSavingsGoal {
   @Column('numeric', { precision: 12, scale: 2 })
   amount: string; // Amount withdrawn from this savings goal
 
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
   @ManyToOne(() => Expense, (expense) => expense.savingsGoalLinks, {

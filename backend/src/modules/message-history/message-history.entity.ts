@@ -53,12 +53,12 @@ export class Message {
   @Column({ type: 'boolean', default: false })
   is_read: boolean;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   delivered_at: Date | null;
 
-  @CreateDateColumn({ type: 'datetime', name: 'sent_at' })
+  @CreateDateColumn({ type: 'timestamp', name: 'sent_at' })
   sent_at: Date;
 
-  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updated_at: Date;
 }
