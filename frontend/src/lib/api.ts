@@ -92,6 +92,7 @@ export const categoriesAPI = {
 
 export const budgetAPI = {
   getBudgets: () => api.get("/budgets"),
+  getBudgetsEnhanced: () => api.get("/budgets/enhanced/analytics"),
   getBudget: (id: string) => api.get(`/budgets/${id}`),
   createBudget: (data: any) => api.post("/budgets", data),
   updateBudget: (id: string, data: any) => api.patch(`/budgets/${id}`, data),

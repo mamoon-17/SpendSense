@@ -40,4 +40,20 @@ export class UpdateExpenseDTO {
   @IsString()
   @IsOptional()
   location?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  // Budget linking - array of NEW budget IDs to add (already linked ones are excluded)
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  budget_ids?: string[];
+
+  // Savings goal linking - array of NEW savings goal IDs to add (already linked ones are excluded)
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  savings_goal_ids?: string[];
 }

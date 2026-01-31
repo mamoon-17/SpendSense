@@ -45,4 +45,16 @@ export class CreateExpenseDTO {
   @IsString()
   @IsOptional()
   currency?: string;
+
+  // Budget linking - array of budget IDs to link
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  budget_ids?: string[];
+
+  // Savings goal linking - array of savings goal IDs to link
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  savings_goal_ids?: string[];
 }

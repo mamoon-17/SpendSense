@@ -3,9 +3,12 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../users/users.entity';
+import { ExpenseBudget } from './expense-budget.entity';
+import { ExpenseSavingsGoal } from './expense-savings-goal.entity';
 
 @Entity('expenses')
 export class Expense {
@@ -36,9 +39,6 @@ export class Expense {
   @Column({ type: 'boolean', default: false })
   ai_categorized: boolean;
 
-  @Column('uuid', { name: 'budget_id', nullable: true })
-  budget_id: string | null;
-
   @Column('uuid', { name: 'user_id', nullable: false })
   user_id: string;
 
@@ -51,4 +51,12 @@ export class Expense {
   @ManyToOne(() => User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  // Many-to-many with budgets (one expense can link to multiple budgets, but not same budget twice)
+  @OneToMany(() => ExpenseBudget, (link) => link.expense)
+  budgetLinks: ExpenseBudget[];
+
+  // Many-to-many with savings goals (one expense can link to multiple goals, but not same goal twice)
+  @OneToMany(() => ExpenseSavingsGoal, (link) => link.expense)
+  savingsGoalLinks: ExpenseSavingsGoal[];
 }

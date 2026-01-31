@@ -1,7 +1,8 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
@@ -10,9 +11,12 @@ import { Category } from '../categories/categories.entity';
 import { CreateExpenseDTO } from './dtos/createExpense.dto';
 import { UpdateExpenseDTO } from './dtos/updateExpense.dto';
 import { Budget } from '../budgets/budgets.entity';
+import { SavingsGoal } from '../savings_goals/savings_goals.entity';
+import { ExpenseBudget } from './expense-budget.entity';
+import { ExpenseSavingsGoal } from './expense-savings-goal.entity';
 import { ExpenseAnalyticsService } from './expense-analytics.service';
-import { PeriodStrategyFactory } from 'src/common/strategies/period.strategy';
 import { BudgetsService } from '../budgets/budgets.service';
+import { SavingsGoalsService } from '../savings_goals/savings_goals.service';
 
 @Injectable()
 export class ExpensesService {
@@ -23,8 +27,17 @@ export class ExpensesService {
     private readonly categoriesRepo: Repository<Category>,
     @InjectRepository(Budget)
     private readonly budgetsRepo: Repository<Budget>,
+    @InjectRepository(SavingsGoal)
+    private readonly savingsGoalRepo: Repository<SavingsGoal>,
+    @InjectRepository(ExpenseBudget)
+    private readonly expenseBudgetRepo: Repository<ExpenseBudget>,
+    @InjectRepository(ExpenseSavingsGoal)
+    private readonly expenseSavingsGoalRepo: Repository<ExpenseSavingsGoal>,
     private readonly expenseAnalyticsService: ExpenseAnalyticsService,
+    @Inject(forwardRef(() => BudgetsService))
     private readonly budgetsService: BudgetsService,
+    @Inject(forwardRef(() => SavingsGoalsService))
+    private readonly savingsGoalsService: SavingsGoalsService,
   ) {}
 
   // Create a new expense
@@ -41,23 +54,80 @@ export class ExpensesService {
       throw new NotFoundException('Category not found');
     }
 
+    // Create the expense first
     const expense = this.expensesRepo.create({
-      ...payload,
+      description: payload.description,
       amount: payload.amount.toString(),
+      category_id: payload.category_id,
+      date: payload.date,
+      payment_method: payload.payment_method,
+      notes: payload.notes,
+      tags: payload.tags,
+      location: payload.location,
+      currency: payload.currency,
       user_id: userId,
     });
 
     await this.expensesRepo.save(expense);
 
-    // Check if there's a budget for this category and trigger notifications if needed
+    // Link to budgets if provided
+    if (payload.budget_ids && payload.budget_ids.length > 0) {
+      for (const budgetId of payload.budget_ids) {
+        const budget = await this.budgetsRepo.findOne({
+          where: { id: budgetId },
+        });
+        if (!budget) {
+          throw new NotFoundException(`Budget ${budgetId} not found`);
+        }
+
+        // Create link
+        const link = this.expenseBudgetRepo.create({
+          expense_id: expense.id,
+          budget_id: budgetId,
+          amount: payload.amount.toString(),
+        });
+        await this.expenseBudgetRepo.save(link);
+
+        // Update budget spent amount
+        await this.updateBudgetSpentAmount(budgetId, payload.amount, 'add');
+        await this.budgetsService.checkBudgetAndNotify(budgetId, userId);
+      }
+    }
+
+    // Link to savings goals if provided
+    if (payload.savings_goal_ids && payload.savings_goal_ids.length > 0) {
+      for (const goalId of payload.savings_goal_ids) {
+        const goal = await this.savingsGoalRepo.findOne({
+          where: { id: goalId, user_id: userId },
+        });
+        if (!goal) {
+          throw new NotFoundException(`Savings goal ${goalId} not found`);
+        }
+
+        // Create link
+        const link = this.expenseSavingsGoalRepo.create({
+          expense_id: expense.id,
+          savings_goal_id: goalId,
+          amount: payload.amount.toString(),
+        });
+        await this.expenseSavingsGoalRepo.save(link);
+
+        // Withdraw from savings goal
+        await this.savingsGoalsService.withdrawFromSavingsGoal(
+          userId,
+          goalId,
+          payload.amount,
+        );
+      }
+    }
+
+    // Check if there's a budget for this category and trigger notifications
     const budgets = await this.budgetsRepo.find({
       where: { category: { id: payload.category_id } },
       relations: ['participants'],
     });
 
-    // Check each budget that matches this category
     for (const budget of budgets) {
-      // Only check if the user is a participant in this budget
       const isParticipant = budget.participants?.some((p) => p.id === userId);
       if (isParticipant) {
         await this.budgetsService.checkBudgetAndNotify(budget.id, userId);
@@ -67,16 +137,57 @@ export class ExpensesService {
     return { msg: 'Expense created successfully', expense };
   }
 
+  // Helper method to update budget spent_amount
+  private async updateBudgetSpentAmount(
+    budgetId: string,
+    amount: number,
+    operation: 'add' | 'subtract',
+  ): Promise<void> {
+    const budget = await this.budgetsRepo.findOne({ where: { id: budgetId } });
+    if (!budget) return;
+
+    const currentSpent = parseFloat(budget.spent_amount) || 0;
+    const newSpent =
+      operation === 'add'
+        ? currentSpent + amount
+        : Math.max(0, currentSpent - amount);
+
+    budget.spent_amount = newSpent.toFixed(2);
+    await this.budgetsRepo.save(budget);
+  }
+
   // Get all expenses for a user
-  async getAllExpenses(userId: string): Promise<Expense[]> {
-    return this.expensesRepo.find({
+  async getAllExpenses(userId: string): Promise<any[]> {
+    const expenses = await this.expensesRepo.find({
       where: { user_id: userId },
       order: { date: 'DESC' },
     });
+
+    // Get linked budget and savings goal IDs for each expense
+    const result = await Promise.all(
+      expenses.map(async (expense) => {
+        const budgetLinks = await this.expenseBudgetRepo.find({
+          where: { expense_id: expense.id },
+        });
+        const savingsGoalLinks = await this.expenseSavingsGoalRepo.find({
+          where: { expense_id: expense.id },
+        });
+
+        return {
+          ...expense,
+          linkedBudgetIds: budgetLinks.map((link) => link.budget_id),
+          linkedSavingsGoalIds: savingsGoalLinks.map(
+            (link) => link.savings_goal_id,
+          ),
+        };
+      }),
+    );
+
+    return result;
   }
 
   // Get expense by ID
-  async getExpenseById(id: string, userId: string): Promise<Expense> {
+  async getExpenseById(id: string, userId: string): Promise<any> {
     const expense = await this.expensesRepo.findOne({
       where: { id, user_id: userId },
     });
@@ -85,7 +196,21 @@ export class ExpensesService {
       throw new NotFoundException('Expense not found');
     }
 
-    return expense;
+    // Get linked IDs
+    const budgetLinks = await this.expenseBudgetRepo.find({
+      where: { expense_id: expense.id },
+    });
+    const savingsGoalLinks = await this.expenseSavingsGoalRepo.find({
+      where: { expense_id: expense.id },
+    });
+
+    return {
+      ...expense,
+      linkedBudgetIds: budgetLinks.map((link) => link.budget_id),
+      linkedSavingsGoalIds: savingsGoalLinks.map(
+        (link) => link.savings_goal_id,
+      ),
+    };
   }
 
   // Update expense
@@ -94,7 +219,15 @@ export class ExpensesService {
     payload: UpdateExpenseDTO,
     userId: string,
   ): Promise<object> {
-    const expense = await this.getExpenseById(id, userId);
+    const expense = await this.expensesRepo.findOne({
+      where: { id, user_id: userId },
+    });
+
+    if (!expense) {
+      throw new NotFoundException('Expense not found');
+    }
+
+    const expenseAmount = payload.amount ?? parseFloat(expense.amount);
 
     if (payload.category_id) {
       const category = await this.categoriesRepo.findOne({
@@ -105,95 +238,256 @@ export class ExpensesService {
       }
     }
 
-    const updateData: any = { ...payload };
-    if (payload.amount !== undefined) {
-      updateData.amount = payload.amount.toString();
+    // Get existing links
+    const existingBudgetLinks = await this.expenseBudgetRepo.find({
+      where: { expense_id: id },
+    });
+    const existingBudgetIds = existingBudgetLinks.map((link) => link.budget_id);
+
+    const existingSavingsLinks = await this.expenseSavingsGoalRepo.find({
+      where: { expense_id: id },
+    });
+    const existingSavingsIds = existingSavingsLinks.map(
+      (link) => link.savings_goal_id,
+    );
+
+    // Link NEW budgets (only ones not already linked)
+    if (payload.budget_ids && payload.budget_ids.length > 0) {
+      for (const budgetId of payload.budget_ids) {
+        // Skip if already linked
+        if (existingBudgetIds.includes(budgetId)) {
+          continue;
+        }
+
+        const budget = await this.budgetsRepo.findOne({
+          where: { id: budgetId },
+        });
+        if (!budget) {
+          throw new NotFoundException(`Budget ${budgetId} not found`);
+        }
+
+        // Create link
+        const link = this.expenseBudgetRepo.create({
+          expense_id: id,
+          budget_id: budgetId,
+          amount: expenseAmount.toString(),
+        });
+        await this.expenseBudgetRepo.save(link);
+
+        // Update budget spent amount
+        await this.updateBudgetSpentAmount(budgetId, expenseAmount, 'add');
+        await this.budgetsService.checkBudgetAndNotify(budgetId, userId);
+      }
     }
 
-    await this.expensesRepo.update(id, updateData);
+    // Link NEW savings goals (only ones not already linked)
+    if (payload.savings_goal_ids && payload.savings_goal_ids.length > 0) {
+      for (const goalId of payload.savings_goal_ids) {
+        // Skip if already linked
+        if (existingSavingsIds.includes(goalId)) {
+          continue;
+        }
+
+        const goal = await this.savingsGoalRepo.findOne({
+          where: { id: goalId, user_id: userId },
+        });
+        if (!goal) {
+          throw new NotFoundException(`Savings goal ${goalId} not found`);
+        }
+
+        // Create link
+        const link = this.expenseSavingsGoalRepo.create({
+          expense_id: id,
+          savings_goal_id: goalId,
+          amount: expenseAmount.toString(),
+        });
+        await this.expenseSavingsGoalRepo.save(link);
+
+        // Withdraw from savings goal
+        await this.savingsGoalsService.withdrawFromSavingsGoal(
+          userId,
+          goalId,
+          expenseAmount,
+        );
+      }
+    }
+
+    // Update basic expense fields
+    const updateData: any = {};
+    if (payload.description !== undefined)
+      updateData.description = payload.description;
+    if (payload.amount !== undefined)
+      updateData.amount = payload.amount.toString();
+    if (payload.category_id !== undefined)
+      updateData.category_id = payload.category_id;
+    if (payload.date !== undefined) updateData.date = payload.date;
+    if (payload.payment_method !== undefined)
+      updateData.payment_method = payload.payment_method;
+    if (payload.notes !== undefined) updateData.notes = payload.notes;
+    if (payload.tags !== undefined) updateData.tags = payload.tags;
+    if (payload.location !== undefined) updateData.location = payload.location;
+    if (payload.currency !== undefined) updateData.currency = payload.currency;
+
+    if (Object.keys(updateData).length > 0) {
+      await this.expensesRepo.update(id, updateData);
+    }
 
     return { msg: 'Expense updated successfully' };
   }
 
   // Delete expense
   async deleteExpense(id: string, userId: string): Promise<object> {
-    const expense = await this.getExpenseById(id, userId);
+    const expense = await this.expensesRepo.findOne({
+      where: { id, user_id: userId },
+    });
+
+    if (!expense) {
+      throw new NotFoundException('Expense not found');
+    }
+
+    const amount = parseFloat(expense.amount) || 0;
+
+    // Revert all budget links
+    const budgetLinks = await this.expenseBudgetRepo.find({
+      where: { expense_id: id },
+    });
+    for (const link of budgetLinks) {
+      await this.updateBudgetSpentAmount(link.budget_id, amount, 'subtract');
+    }
+
+    // Revert all savings goal links
+    const savingsLinks = await this.expenseSavingsGoalRepo.find({
+      where: { expense_id: id },
+    });
+    for (const link of savingsLinks) {
+      await this.savingsGoalsService.addToSavingsGoal(
+        userId,
+        link.savings_goal_id,
+        amount,
+      );
+    }
+
+    // Delete the expense (cascade will delete links)
     await this.expensesRepo.delete(id);
 
     return { msg: 'Expense deleted successfully' };
   }
 
-  // Get expenses summary/analytics
-  async getExpensesSummary(userId: string, period?: string): Promise<object> {
-    const now = new Date();
-    const strategy = PeriodStrategyFactory.getStrategy(period);
-    const { startDate, endDate } = strategy.calculateDateRange(now);
-
-    return this.expenseAnalyticsService.getExpensesSummary(
-      userId,
-      startDate,
-      endDate,
-      period || 'month',
-    );
-  }
-
-  // Filter expenses by category
+  // Get expenses by category
   async getExpensesByCategory(
-    userId: string,
     categoryId: string,
+    userId: string,
   ): Promise<Expense[]> {
-    if (categoryId === 'all') {
-      return this.getAllExpenses(userId);
-    }
-
     return this.expensesRepo.find({
-      where: { user_id: userId, category_id: categoryId },
+      where: { category_id: categoryId, user_id: userId },
       order: { date: 'DESC' },
     });
   }
 
-  // Filter expenses by date range
+  // Get expenses by date range
   async getExpensesByDateRange(
+    startDate: Date,
+    endDate: Date,
     userId: string,
-    startDate: string,
-    endDate: string,
   ): Promise<Expense[]> {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
     return this.expensesRepo.find({
       where: {
         user_id: userId,
-        date: Between(start, end),
+        date: Between(startDate, endDate),
       },
       order: { date: 'DESC' },
     });
   }
 
-  // Search expenses by description, location, tags
-  async searchExpenses(userId: string, query: string): Promise<Expense[]> {
-    const expenses = await this.expensesRepo
+  // Search expenses
+  async searchExpenses(query: string, userId: string): Promise<Expense[]> {
+    return this.expensesRepo
       .createQueryBuilder('expense')
       .where('expense.user_id = :userId', { userId })
       .andWhere(
-        '(LOWER(expense.description) LIKE LOWER(:query) OR LOWER(expense.location) LIKE LOWER(:query) OR LOWER(expense.notes) LIKE LOWER(:query))',
+        '(LOWER(expense.description) LIKE LOWER(:query) OR LOWER(expense.notes) LIKE LOWER(:query))',
         { query: `%${query}%` },
       )
       .orderBy('expense.date', 'DESC')
       .getMany();
-
-    return expenses;
   }
 
-  // Get expenses by tags
-  async getExpensesByTags(userId: string, tags: string[]): Promise<Expense[]> {
-    const expenses = await this.expensesRepo
-      .createQueryBuilder('expense')
-      .where('expense.user_id = :userId', { userId })
-      .andWhere('expense.tags && :tags', { tags })
-      .orderBy('expense.date', 'DESC')
-      .getMany();
+  // Get expense summary
+  async getExpenseSummary(userId: string, period?: string): Promise<object> {
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date;
+    const periodType = period || 'monthly';
 
-    return expenses;
+    switch (periodType) {
+      case 'weekly':
+        const dayOfWeek = now.getDay();
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - dayOfWeek);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'yearly':
+        startDate = new Date(now.getFullYear(), 0, 1);
+        endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+        break;
+      case 'monthly':
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+        );
+        break;
+    }
+
+    return this.expenseAnalyticsService.getExpensesSummary(
+      userId,
+      startDate,
+      endDate,
+      periodType,
+    );
+  }
+
+  // Get all tags for a user
+  async getAllTags(userId: string): Promise<string[]> {
+    const expenses = await this.expensesRepo.find({
+      where: { user_id: userId },
+      select: ['tags'],
+    });
+
+    const allTags = expenses
+      .filter((e) => e.tags && e.tags.length > 0)
+      .flatMap((e) => e.tags as string[]);
+
+    return [...new Set(allTags)];
+  }
+
+  // Get total expenses for a budget's category within its period
+  async getTotalExpensesForBudget(
+    categoryId: string,
+    userId: string,
+    periodType: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<number> {
+    const expenses = await this.expensesRepo.find({
+      where: {
+        category_id: categoryId,
+        user_id: userId,
+        date: Between(startDate, endDate),
+      },
+    });
+
+    return expenses.reduce(
+      (total, expense) => total + parseFloat(expense.amount),
+      0,
+    );
   }
 }

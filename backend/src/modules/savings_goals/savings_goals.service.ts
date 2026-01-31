@@ -174,7 +174,7 @@ export class SavingsGoalsService {
     }
 
     const currentAmount = parseFloat(goal.current_amount);
-    const newAmount = Math.max(0, currentAmount - amount);
+    const newAmount = currentAmount - amount; // Allow negative values
 
     goal.current_amount = newAmount.toString();
 
