@@ -41,12 +41,12 @@ export class ExpensesController {
     @CurrentUser() user: any,
     @Query('period') period?: string,
   ) {
-    return this.expensesService.getExpensesSummary(user.id, period);
+    return this.expensesService.getExpenseSummary(user.id, period);
   }
 
   @Get('search')
   async searchExpenses(@CurrentUser() user: any, @Query('q') query: string) {
-    return this.expensesService.searchExpenses(user.id, query);
+    return this.expensesService.searchExpenses(query, user.id);
   }
 
   @Get('category/:categoryId')
@@ -54,7 +54,7 @@ export class ExpensesController {
     @CurrentUser() user: any,
     @Param('categoryId') categoryId: string,
   ) {
-    return this.expensesService.getExpensesByCategory(user.id, categoryId);
+    return this.expensesService.getExpensesByCategory(categoryId, user.id);
   }
 
   @Get('date-range')
@@ -64,19 +64,15 @@ export class ExpensesController {
     @Query('end') endDate: string,
   ) {
     return this.expensesService.getExpensesByDateRange(
+      new Date(startDate),
+      new Date(endDate),
       user.id,
-      startDate,
-      endDate,
     );
   }
 
   @Get('tags')
-  async getExpensesByTags(
-    @CurrentUser() user: any,
-    @Query('tags') tags: string,
-  ) {
-    const tagsArray = tags.split(',');
-    return this.expensesService.getExpensesByTags(user.id, tagsArray);
+  async getAllTags(@CurrentUser() user: any) {
+    return this.expensesService.getAllTags(user.id);
   }
 
   @Get(':id')

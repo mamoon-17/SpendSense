@@ -134,8 +134,8 @@ export function Budgets(): JSX.Element {
         currency: budget.currency ?? settings.currency,
       }));
     },
-    staleTime: 30000, // Cache for 30 seconds
-    refetchOnWindowFocus: false,
+    staleTime: 0, // No stale time - always refetch when invalidated
+    refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     retry: 3,
     refetchOnMount: "always", // Always refetch when component mounts

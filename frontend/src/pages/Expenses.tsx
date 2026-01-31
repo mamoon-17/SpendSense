@@ -76,7 +76,10 @@ interface BackendExpense {
   tags?: string[] | null;
   location?: string;
   ai_categorized?: boolean;
-  budget_id?: string;
+  budget_id?: string | null;
+  savings_goal_id?: string | null;
+  affects_budget?: boolean;
+  affects_savings_goal?: boolean;
   user_id: string;
   currency?: string;
 }
@@ -109,7 +112,7 @@ const transformExpense = (
     id: backendExpense.id,
     description: backendExpense.description,
     amount: parseFloat(backendExpense.amount) || 0,
-    category: category?.name || "",
+    category: category?.name || "Uncategorized",
     categoryId: backendExpense.category_id,
     date: backendExpense.date,
     payment_method: backendExpense.payment_method,
@@ -173,6 +176,8 @@ export const Expenses: React.FC = () => {
     mutationFn: (id: string) => expenseAPI.deleteExpense(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["savings-goals"] });
       toast({
         title: "Success",
         description: "Expense deleted successfully.",
@@ -1206,6 +1211,8 @@ export const Expenses: React.FC = () => {
             expense={editingExpense}
             onSuccess={() => {
               queryClient.invalidateQueries({ queryKey: ["expenses"] });
+              queryClient.invalidateQueries({ queryKey: ["budgets"] });
+              queryClient.invalidateQueries({ queryKey: ["savings-goals"] });
             }}
           />
 
