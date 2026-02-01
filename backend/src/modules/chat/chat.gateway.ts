@@ -25,11 +25,13 @@ interface JoinConversationData {
 
 @WebSocketGateway({
   cors: {
-    origin: [
-      'http://localhost:8080',
-      'http://localhost:8081',
-      'http://localhost:3000',
-    ],
+    origin: process.env.FRONTEND_URL
+      ? process.env.FRONTEND_URL.split(',')
+      : [
+          'http://localhost:8080',
+          'http://localhost:8081',
+          'http://localhost:3000',
+        ],
     credentials: true,
   },
 })
