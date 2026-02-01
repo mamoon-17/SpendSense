@@ -11,12 +11,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS
+  const allowedOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',')
+    : [
+        'http://localhost:8080',
+        'http://localhost:8081',
+        'http://localhost:3000',
+      ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:8080',
-      'http://localhost:8081',
-      'http://localhost:3000',
-    ],
+    origin: allowedOrigins,
     credentials: true,
   });
 
@@ -33,7 +37,9 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 Server running on port ${port}`);
 }
 
 void bootstrap();
