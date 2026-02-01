@@ -28,8 +28,16 @@ export class AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<RequestWithSession>();
 
-    // Extract JWT token from cookies
-    const token = request.cookies?.JWTtoken;
+    // Extract JWT token from cookies OR Authorization header
+    let token = request.cookies?.JWTtoken;
+    
+    // Fallback to Bearer token from Authorization header
+    if (!token) {
+      const authHeader = request.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
 
     if (!token) {
       throw new UnauthorizedException('No authentication token found');

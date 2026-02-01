@@ -45,10 +45,11 @@ export class AuthService {
 
     // If Express response is provided, set cookie
     if (res) {
+      const isProduction = process.env.NODE_ENV === 'production';
       res.cookie('JWTtoken', token, {
         httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin
+        secure: isProduction, // must be true when sameSite is 'none'
         maxAge: 60 * 60 * 1000, // 1 hour
       });
     }
