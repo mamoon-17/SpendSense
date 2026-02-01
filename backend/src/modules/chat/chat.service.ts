@@ -178,21 +178,16 @@ export class ChatService {
         userId,
       );
 
-      // Get the recently marked messages to notify senders
-      // We'll get the latest messages that belong to other users and are now read
       const messageResult = await this.messageHistoryService.getMessageHistory(
         conversationId,
         userId,
         { page: 1, limit: 50 },
       );
 
-      // Emit status updates to all participants in the conversation
-      // This notifies senders that their messages have been read
       const readMessages = messageResult.messages.filter(
         (msg) => msg.sender?.id !== userId && msg.status === MessageStatus.READ,
       );
 
-      // Emit status update for each read message to notify the sender
       readMessages.forEach((msg) => {
         server.to(conversationId).emit('message_status_update', {
           conversationId,

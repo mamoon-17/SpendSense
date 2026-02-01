@@ -119,7 +119,7 @@ export const AIInsights: React.FC = () => {
       const response = await api.get("/ai/insights");
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 

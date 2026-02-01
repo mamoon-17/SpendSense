@@ -24,9 +24,8 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.use(cookieParser()); // <-- Add cookie-parser middleware
+  app.use(cookieParser());
 
-  // Set global prefix for all routes
   app.setGlobalPrefix('api');
 
   app.useGlobalPipes(

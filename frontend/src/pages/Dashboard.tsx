@@ -28,6 +28,7 @@ import { SavingsGoals } from "@/components/dashboard/SavingsGoals";
 import { userAPI, budgetAPI, expenseAPI, savingsAPI } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { useUserSettings } from "@/hooks/useUserSettings";
+import { LoadingCard } from "@/components/ui/loading";
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuthStore();
@@ -39,31 +40,34 @@ export const Dashboard: React.FC = () => {
   }, []);
 
   // Fetch dashboard data
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: () => userAPI.getProfile().then((res) => res.data),
   });
 
-  const { data: budgets } = useQuery({
+  const { data: budgets, isLoading: budgetsLoading } = useQuery({
     queryKey: ["budgets"],
     queryFn: async () => {
       const response = await budgetAPI.getBudgets();
       return response.data;
     },
-    staleTime: 30000, // Cache for 30 seconds
+    staleTime: 30000,
     refetchOnWindowFocus: false,
     refetchOnMount: true, // Always refetch when component mounts
   });
 
-  const { data: expenses } = useQuery({
+  const { data: expenses, isLoading: expensesLoading } = useQuery({
     queryKey: ["expenses", "recent"],
     queryFn: () => expenseAPI.getExpenses().then((res) => res.data),
   });
 
-  const { data: savingsGoals } = useQuery({
+  const { data: savingsGoals, isLoading: savingsLoading } = useQuery({
     queryKey: ["savings-goals"],
     queryFn: () => savingsAPI.getGoals().then((res) => res.data),
   });
+
+  // Show loading state when initial data is loading
+  const isInitialLoading = budgetsLoading && !budgets;
 
   // Calculate summary stats
   const totalBudget =
@@ -90,6 +94,24 @@ export const Dashboard: React.FC = () => {
   const spendingProgress =
     totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
+  if (isInitialLoading) {
+    return (
+      <PageTransition>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Welcome back, {user?.name?.split(" ")[0]}!
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Loading your financial overview...
+            </p>
+          </div>
+          <LoadingCard message="Fetching your dashboard data..." />
+        </div>
+      </PageTransition>
+    );
+  }
+
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -97,7 +119,7 @@ export const Dashboard: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">
-              Welcome back, {user?.name?.split(" ")[0]}! 👋
+              Welcome back, {user?.name?.split(" ")[0]}!
             </h1>
             <p className="text-muted-foreground mt-1">
               Here's your financial overview for this month

@@ -107,7 +107,7 @@ export const Reports: React.FC = () => {
       const response = await categoriesAPI.getCategories();
       return response.data;
     },
-    staleTime: 300000, // Cache for 5 minutes
+    staleTime: 300000,
   });
 
   // Transform expenses with category names
@@ -1055,6 +1055,27 @@ export const Reports: React.FC = () => {
                     {isLoading ? (
                       <div className="h-80 w-full flex items-center justify-center">
                         <p className="text-muted-foreground">Loading data...</p>
+                      </div>
+                    ) : totalIncome === 0 ? (
+                      <div className="h-80 w-full flex flex-col items-center justify-center text-center px-4">
+                        <div className="p-4 bg-amber-100 dark:bg-amber-900/30 rounded-full mb-4">
+                          <DollarSign className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-foreground mb-2">
+                          No Income Data Available
+                        </h3>
+                        <p className="text-muted-foreground max-w-md mb-4">
+                          To see your income vs expenses trend, please create
+                          budgets first. Your budget totals are used to
+                          calculate your income for this report.
+                        </p>
+                        <a
+                          href="/app/budgets"
+                          className="inline-flex items-center gap-2 text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 font-medium"
+                        >
+                          <Wallet className="w-4 h-4" />
+                          Go to Budgets
+                        </a>
                       </div>
                     ) : (
                       <div className="h-80 w-full">

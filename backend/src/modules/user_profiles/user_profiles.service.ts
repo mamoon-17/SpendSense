@@ -32,22 +32,22 @@ export class UserProfilesService {
     });
   }
 
-  async createUserProfile(payload: CreateUserProfileDTO): Promise<object> {
+  async createUserProfile(payload: CreateUserProfileDTO): Promise<UserProfile> {
     const { user_id, ...rest } = payload;
     const profile = this.profilesRepo.create({
       ...rest,
       user_id,
       user: user_id ? ({ id: user_id } as any) : undefined,
-    } as any);
+    });
 
-    await this.profilesRepo.save(profile);
-    return { msg: 'User profile created successfully' };
+    const savedProfile = await this.profilesRepo.save(profile as UserProfile);
+    return savedProfile as UserProfile;
   }
 
   async updateUserProfile(
     id: string,
     payload: UpdateUserProfileDTO,
-  ): Promise<object> {
+  ): Promise<UserProfile> {
     const profile = await this.profilesRepo.findOne({ where: { id } });
     if (!profile) throw new NotFoundException('User profile not found');
 
@@ -60,8 +60,8 @@ export class UserProfilesService {
       (profile as any).user = { id: user_id } as any;
     }
 
-    await this.profilesRepo.save(profile);
-    return { msg: 'User profile updated successfully' };
+    const savedProfile = await this.profilesRepo.save(profile);
+    return savedProfile;
   }
 
   async deleteUserProfile(id: string): Promise<object> {

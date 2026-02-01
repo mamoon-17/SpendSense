@@ -255,11 +255,24 @@ export const ExpenseDialog: React.FC<ExpenseDialogProps> = ({
     return budgets.filter((b: any) => !alreadyLinkedBudgetIds.includes(b.id));
   }, [budgets, alreadyLinkedBudgetIds]);
 
-  // Get all available savings goals (not already linked)
+  // Get all available savings goals (not already linked and not expired)
   const availableSavingsGoals = useMemo(() => {
-    return savingsGoals.filter(
-      (g: any) => !alreadyLinkedSavingsGoalIds.includes(g.id),
-    );
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+
+    return savingsGoals.filter((g: any) => {
+      // Filter out already linked goals
+      if (alreadyLinkedSavingsGoalIds.includes(g.id)) return false;
+
+      // Filter out expired goals (target_date has passed)
+      if (g.target_date) {
+        const targetDate = new Date(g.target_date);
+        targetDate.setHours(0, 0, 0, 0);
+        if (targetDate < today) return false;
+      }
+
+      return true;
+    });
   }, [savingsGoals, alreadyLinkedSavingsGoalIds]);
 
   // Calculate preview amounts based on distribution type

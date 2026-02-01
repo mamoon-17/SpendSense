@@ -58,4 +58,9 @@ export class BudgetsController {
   async deleteBudget(@Param('id') id: string, @CurrentUser() user: any) {
     return this.budgetsService.deleteBudget(id, user.id);
   }
+
+  @Patch(':id/reset-spending')
+  async resetBudgetSpending(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.budgetsService.resetBudgetSpending(id, user.id);
+  }
 }

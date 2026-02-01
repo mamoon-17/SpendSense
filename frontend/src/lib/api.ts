@@ -1,15 +1,21 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useAuthStore } from "@/stores/authStore";
 
-// Configure base API instance
+// Configure base API instance with longer timeout for Render cold starts
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
-  timeout: 10000,
+  timeout: 60000, // 60 seconds timeout for Render cold starts
   headers: {
     "Content-Type": "application/json",
   },
   withCredentials: true,
 });
+
+// Retry configuration for handling cold starts
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 seconds between retries
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Add Authorization header with token from auth store
 api.interceptors.request.use(
@@ -18,6 +24,8 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Add retry count to config
+    config.headers["x-retry-count"] = config.headers["x-retry-count"] || 0;
     return config;
   },
   (error) => Promise.reject(error),
@@ -25,13 +33,30 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error: AxiosError) => {
     const authStore = useAuthStore.getState();
+    const config = error.config;
 
     // Only log out if the user is already logged in
     if (error.response?.status === 401 && authStore.isAuthenticated) {
       authStore.logout();
       window.location.href = "/login";
+      return Promise.reject(error);
+    }
+
+    // Retry logic for network errors and timeouts (common during cold starts)
+    const retryCount = Number(config?.headers?.["x-retry-count"]) || 0;
+    const isRetryableError =
+      !error.response || // Network error
+      error.code === "ECONNABORTED" || // Timeout
+      error.response?.status === 502 || // Bad Gateway
+      error.response?.status === 503 || // Service Unavailable
+      error.response?.status === 504; // Gateway Timeout
+
+    if (config && isRetryableError && retryCount < MAX_RETRIES) {
+      config.headers["x-retry-count"] = retryCount + 1;
+      await sleep(RETRY_DELAY * (retryCount + 1));
+      return api(config);
     }
 
     return Promise.reject(error);
@@ -100,6 +125,7 @@ export const budgetAPI = {
   createBudget: (data: any) => api.post("/budgets", data),
   updateBudget: (id: string, data: any) => api.patch(`/budgets/${id}`, data),
   deleteBudget: (id: string) => api.delete(`/budgets/${id}`),
+  resetSpending: (id: string) => api.patch(`/budgets/${id}/reset-spending`),
   inviteUser: (budgetId: string, email: string) =>
     api.post(`/budgets/${budgetId}/invite`, { email }),
 };

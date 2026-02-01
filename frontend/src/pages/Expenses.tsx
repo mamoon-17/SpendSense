@@ -20,6 +20,8 @@ import {
   Download,
   FileUp,
   Tags,
+  Wallet,
+  PiggyBank,
 } from "lucide-react";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { Button } from "@/components/ui/button";
@@ -57,7 +59,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
-import { expenseAPI, categoriesAPI } from "@/lib/api";
+import { expenseAPI, categoriesAPI, budgetAPI, savingsAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { useUserSettings } from "@/hooks/useUserSettings";
@@ -82,6 +84,8 @@ interface BackendExpense {
   affects_savings_goal?: boolean;
   user_id: string;
   currency?: string;
+  linkedBudgetIds?: string[];
+  linkedSavingsGoalIds?: string[];
 }
 
 // Frontend Expense interface
@@ -97,6 +101,8 @@ interface Expense {
   tags: string[];
   location?: string;
   currency: string;
+  linkedBudgetIds: string[];
+  linkedSavingsGoalIds: string[];
 }
 
 // Helper function to transform backend expense to frontend format
@@ -120,6 +126,8 @@ const transformExpense = (
     tags: backendExpense.tags || [],
     location: backendExpense.location,
     currency: backendExpense.currency || "USD",
+    linkedBudgetIds: backendExpense.linkedBudgetIds || [],
+    linkedSavingsGoalIds: backendExpense.linkedSavingsGoalIds || [],
   };
 };
 
@@ -131,6 +139,8 @@ export const Expenses: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("month");
+  const [filterBudget, setFilterBudget] = useState("all");
+  const [filterSavingsGoal, setFilterSavingsGoal] = useState("all");
   const [sortBy, setSortBy] = useState("date");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<
@@ -159,7 +169,29 @@ export const Expenses: React.FC = () => {
       const response = await categoriesAPI.getCategories();
       return response.data;
     },
-    staleTime: 300000, // Cache for 5 minutes (categories rarely change)
+    staleTime: 300000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Fetch budgets for filtering
+  const { data: budgets = [] } = useQuery({
+    queryKey: ["budgets"],
+    queryFn: async () => {
+      const response = await budgetAPI.getBudgets();
+      return response.data;
+    },
+    staleTime: 300000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Fetch savings goals for filtering
+  const { data: savingsGoals = [] } = useQuery({
+    queryKey: ["savings-goals"],
+    queryFn: async () => {
+      const response = await savingsAPI.getGoals();
+      return response.data;
+    },
+    staleTime: 300000,
     refetchOnWindowFocus: false,
   });
 
@@ -346,12 +378,18 @@ export const Expenses: React.FC = () => {
 
   // Check if filters are active
   const hasActiveFilters =
-    searchTerm !== "" || filterCategory !== "all" || filterPeriod !== "all";
+    searchTerm !== "" ||
+    filterCategory !== "all" ||
+    filterPeriod !== "all" ||
+    filterBudget !== "all" ||
+    filterSavingsGoal !== "all";
 
   const clearFilters = () => {
     setSearchTerm("");
     setFilterCategory("all");
     setFilterPeriod("month");
+    setFilterBudget("all");
+    setFilterSavingsGoal("all");
   };
 
   const filteredExpenses = expenses.filter((expense) => {
@@ -365,6 +403,15 @@ export const Expenses: React.FC = () => {
 
     const matchesCategory =
       filterCategory === "all" || expense.categoryId === filterCategory;
+
+    // Filter by budget
+    const matchesBudget =
+      filterBudget === "all" || expense.linkedBudgetIds.includes(filterBudget);
+
+    // Filter by savings goal
+    const matchesSavingsGoal =
+      filterSavingsGoal === "all" ||
+      expense.linkedSavingsGoalIds.includes(filterSavingsGoal);
 
     // Filter by period
     const expenseDate = new Date(expense.date);
@@ -384,7 +431,13 @@ export const Expenses: React.FC = () => {
         break;
     }
 
-    return matchesSearch && matchesCategory && matchesPeriod;
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesBudget &&
+      matchesSavingsGoal &&
+      matchesPeriod
+    );
   });
 
   // Sort expenses
@@ -528,9 +581,39 @@ export const Expenses: React.FC = () => {
   if (isLoading) {
     return (
       <PageTransition>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Loading expenses...</div>
-        </div>
+        <TooltipProvider>
+          <div className="space-y-8 p-2">
+            {/* Header with Orange/Amber Gradient */}
+            <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/30 dark:via-amber-950/30 dark:to-yellow-950/30 rounded-2xl p-8 shadow-sm border border-orange-100/50 dark:border-orange-900/30">
+              <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-orange-500/10 dark:bg-orange-500/20 rounded-xl">
+                    <Receipt className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-orange-700 to-amber-600 dark:from-orange-300 dark:to-amber-300 bg-clip-text text-transparent">
+                    Expense Tracking
+                  </h1>
+                </div>
+                <p className="text-muted-foreground ml-20 text-base">
+                  Loading your expenses...
+                </p>
+              </div>
+            </div>
+            <Card className="border-orange-100/50 dark:border-orange-900/20">
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <div className="w-8 h-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+                  <p className="text-muted-foreground">
+                    Fetching your expense data...
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    This may take a moment on first load
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TooltipProvider>
       </PageTransition>
     );
   }
@@ -753,15 +836,56 @@ export const Expenses: React.FC = () => {
                           <SelectItem value="category">Category</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    {/* Budget and Savings Goal Filters */}
+                    <div className="flex flex-col lg:flex-row gap-4 mt-4">
+                      <Select
+                        value={filterBudget}
+                        onValueChange={setFilterBudget}
+                      >
+                        <SelectTrigger className="w-full lg:w-[200px] border-orange-200 dark:border-orange-900/50">
+                          <div className="flex items-center gap-2">
+                            <Wallet className="w-4 h-4 text-orange-500" />
+                            <SelectValue placeholder="Filter by Budget" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px] overflow-y-auto">
+                          <SelectItem value="all">All Budgets</SelectItem>
+                          {budgets.map((budget: any) => (
+                            <SelectItem key={budget.id} value={budget.id}>
+                              {budget.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={filterSavingsGoal}
+                        onValueChange={setFilterSavingsGoal}
+                      >
+                        <SelectTrigger className="w-full lg:w-[200px] border-orange-200 dark:border-orange-900/50">
+                          <div className="flex items-center gap-2">
+                            <PiggyBank className="w-4 h-4 text-orange-500" />
+                            <SelectValue placeholder="Filter by Savings Goal" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px] overflow-y-auto">
+                          <SelectItem value="all">All Savings Goals</SelectItem>
+                          {savingsGoals.map((goal: any) => (
+                            <SelectItem key={goal.id} value={goal.id}>
+                              {goal.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       {hasActiveFilters && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={clearFilters}
-                          className="w-full lg:w-auto"
+                          className="w-full lg:w-auto border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30"
                         >
                           <X className="w-4 h-4 mr-2" />
-                          Clear
+                          Clear Filters
                         </Button>
                       )}
                     </div>

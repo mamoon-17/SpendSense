@@ -11,6 +11,7 @@ import {
   User,
   TrendingUp,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,7 @@ const registerSchema = z
       .min(8, "Password must be at least 8 characters")
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
-        "Password must contain at least 8 characters, including uppercase, lowercase, and a number"
+        "Password must contain at least 8 characters, including uppercase, lowercase, and a number",
       ),
     confirmPassword: z.string(),
   })
@@ -44,9 +45,23 @@ export const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingTime, setLoadingTime] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAuthenticated } = useAuthStore();
+
+  // Track loading time for cold start messaging
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoading) {
+      interval = setInterval(() => {
+        setLoadingTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setLoadingTime(0);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   // Force light mode for auth pages
   useEffect(() => {
@@ -260,22 +275,39 @@ export const Register: React.FC = () => {
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full h-12 bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-500 hover:to-purple-600 text-white font-semibold rounded-lg transition-all duration-300"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    "CREATE ACCOUNT"
+                <div className="space-y-2">
+                  <Button
+                    type="submit"
+                    className="w-full h-12 bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-500 hover:to-purple-600 text-white font-semibold rounded-lg transition-all duration-300"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Creating account...</span>
+                      </div>
+                    ) : (
+                      "CREATE ACCOUNT"
+                    )}
+                  </Button>
+                  {isLoading && loadingTime >= 5 && (
+                    <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>
+                        Server is waking up (free tier). This may take up to 30
+                        seconds on first request...
+                      </span>
+                    </div>
                   )}
-                </Button>
+                </div>
 
                 <div className="text-center">
                   <p className="text-sm text-gray-600">
                     Already have an account?{" "}
-                    <Link to="/login" className="text-primary hover:opacity-80 font-medium transition-colors uppercase">
+                    <Link
+                      to="/login"
+                      className="text-primary hover:opacity-80 font-medium transition-colors uppercase"
+                    >
                       SIGN IN
                     </Link>
                   </p>

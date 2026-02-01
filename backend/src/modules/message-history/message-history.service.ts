@@ -39,7 +39,6 @@ export class MessageHistoryService {
 
     const isAiSender = senderId === 'ai-assistant';
 
-    // Create the message
     const message = this.messageRepository.create({
       content: content,
       sender: isAiSender ? null : { id: senderId },
@@ -52,13 +51,11 @@ export class MessageHistoryService {
 
     const savedMessage = await this.messageRepository.save(message);
 
-    // Update conversation's last message
     await this.conversationsService.updateLastMessage(
       conversationId,
       savedMessage.id,
     );
 
-    // Return message with relations
     const messageWithRelations = await this.messageRepository.findOne({
       where: { id: savedMessage.id },
       relations: ['conversation', 'sender'],
@@ -71,7 +68,6 @@ export class MessageHistoryService {
     return messageWithRelations;
   }
 
-  // Get messages for AI conversation (bypasses participant check)
   async getAiConversationMessages(
     conversationId: string,
     options: { page?: number; limit?: number } = {},
@@ -104,7 +100,7 @@ export class MessageHistoryService {
     });
 
     return {
-      messages: messages.reverse(), // Return in chronological order
+      messages: messages.reverse(),
       total,
       page,
       limit,
@@ -114,7 +110,6 @@ export class MessageHistoryService {
     senderId: string,
     createMessageDto: CreateMessageDto,
   ): Promise<Message> {
-    // Validate that the conversation exists and sender is a participant
     const conversation = await this.conversationsService.findById(
       createMessageDto.conversation_id,
     );
@@ -123,7 +118,6 @@ export class MessageHistoryService {
       throw new NotFoundException('Conversation not found');
     }
 
-    // Check if sender is a participant in the conversation
     const isParticipant = conversation.participants.some(
       (participant) => participant.id === senderId,
     );
@@ -134,7 +128,6 @@ export class MessageHistoryService {
       );
     }
 
-    // Create the message
     const message = this.messageRepository.create({
       content: createMessageDto.content,
       sender: { id: senderId },
@@ -146,13 +139,11 @@ export class MessageHistoryService {
 
     const savedMessage = await this.messageRepository.save(message);
 
-    // Update conversation's last message and unread count
     await this.conversationsService.updateLastMessage(
       createMessageDto.conversation_id,
       savedMessage.id,
     );
 
-    // Return message with relations
     const messageWithRelations = await this.messageRepository.findOne({
       where: { id: savedMessage.id },
       relations: ['sender', 'conversation'],
@@ -175,7 +166,6 @@ export class MessageHistoryService {
     page: number;
     limit: number;
   }> {
-    // Validate that user is a participant in the conversation
     const conversation =
       await this.conversationsService.findById(conversationId);
 
@@ -205,7 +195,7 @@ export class MessageHistoryService {
     });
 
     return {
-      messages: messages.reverse(), // Return in chronological order
+      messages: messages.reverse(),
       total,
       page,
       limit,
@@ -244,12 +234,10 @@ export class MessageHistoryService {
 
     message.status = status;
 
-    // Update delivered_at when status changes to DELIVERED
     if (status === MessageStatus.DELIVERED && !message.delivered_at) {
       message.delivered_at = new Date();
     }
 
-    // Update is_read when status changes to READ
     if (status === MessageStatus.READ) {
       message.is_read = true;
     }
@@ -261,7 +249,6 @@ export class MessageHistoryService {
     conversationId: string,
     userId: string,
   ): Promise<void> {
-    // Validate user is participant
     const conversation =
       await this.conversationsService.findById(conversationId);
 
@@ -279,7 +266,6 @@ export class MessageHistoryService {
       );
     }
 
-    // Mark all unread messages as read (except user's own messages)
     await this.messageRepository
       .createQueryBuilder()
       .update(Message)
@@ -292,7 +278,6 @@ export class MessageHistoryService {
       .andWhere('is_read = false')
       .execute();
 
-    // Reset unread count for this conversation
     await this.conversationsService.resetUnreadCount(conversationId);
   }
 }

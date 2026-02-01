@@ -23,24 +23,44 @@ export class BudgetsService {
   ) {}
 
   async getAllBudgets(userId: string): Promise<Budget[]> {
-    return this.budgetsRepo.find({
-      where: { created_by: { id: userId } },
-      relations: ['category', 'created_by', 'participants'],
-    });
+    return this.budgetsRepo
+      .createQueryBuilder('budget')
+      .leftJoinAndSelect('budget.category', 'category')
+      .leftJoin('budget.created_by', 'created_by')
+      .addSelect(['created_by.id', 'created_by.name', 'created_by.username'])
+      .leftJoin('budget.participants', 'participants')
+      .addSelect([
+        'participants.id',
+        'participants.name',
+        'participants.username',
+      ])
+      .where('created_by.id = :userId', { userId })
+      .orderBy('budget.start_date', 'DESC')
+      .getMany();
   }
 
   async getAllBudgetsEnhanced(userId: string): Promise<any> {
-    const budgets = await this.budgetsRepo.find({
-      where: { created_by: { id: userId } },
-      relations: ['category', 'created_by', 'participants'],
-    });
+    const budgets = await this.budgetsRepo
+      .createQueryBuilder('budget')
+      .leftJoinAndSelect('budget.category', 'category')
+      .leftJoin('budget.created_by', 'created_by')
+      .addSelect(['created_by.id', 'created_by.name', 'created_by.username'])
+      .leftJoin('budget.participants', 'participants')
+      .addSelect([
+        'participants.id',
+        'participants.name',
+        'participants.username',
+      ])
+      .where('created_by.id = :userId', { userId })
+      .orderBy('budget.start_date', 'DESC')
+      .getMany();
 
-    // Calculate enhanced data for each budget
     const enhancedBudgets = budgets.map((budget) => {
       const totalAmount = parseFloat(budget.total_amount as any);
       const spentAmount = parseFloat(budget.spent_amount as any);
       const remaining = totalAmount - spentAmount;
-      const percentage = totalAmount > 0 ? (spentAmount / totalAmount) * 100 : 0;
+      const percentage =
+        totalAmount > 0 ? (spentAmount / totalAmount) * 100 : 0;
 
       let status = 'on-track';
       if (percentage >= 100) status = 'over-budget';
@@ -57,7 +77,6 @@ export class BudgetsService {
       };
     });
 
-    // Calculate budget health summary
     const healthSummary = {
       onTrack: enhancedBudgets.filter((b) => b.status === 'on-track').length,
       warning: enhancedBudgets.filter((b) => b.status === 'warning').length,
@@ -65,7 +84,6 @@ export class BudgetsService {
         .length,
     };
 
-    // Calculate category breakdown
     const categoryMap = new Map<string, { name: string; amount: number }>();
     enhancedBudgets.forEach((budget) => {
       const categoryName = budget.category?.name || 'Uncategorized';
@@ -213,5 +231,25 @@ export class BudgetsService {
         );
       }
     }
+  }
+
+  // Reset budget spending to 0
+  async resetBudgetSpending(id: string, userId: string): Promise<object> {
+    const budget = await this.budgetsRepo.findOne({
+      where: { id },
+      relations: ['created_by'],
+    });
+    if (!budget) {
+      throw new NotFoundException('Budget not found');
+    }
+    // Check if user owns this budget
+    if (budget.created_by.id !== userId) {
+      throw new ForbiddenException('Only the creator can reset this budget');
+    }
+
+    budget.spent_amount = '0.00';
+    await this.budgetsRepo.save(budget);
+
+    return { msg: 'Budget spending reset successfully' };
   }
 }

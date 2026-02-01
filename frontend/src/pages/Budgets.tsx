@@ -17,6 +17,7 @@ import {
   Wallet,
   ArrowUpRight,
   MoreHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { Button } from "@/components/ui/button";
@@ -98,7 +99,7 @@ export function Budgets(): JSX.Element {
       const response = await categoriesAPI.getCategories();
       return response.data;
     },
-    staleTime: 300000, // Cache for 5 minutes
+    staleTime: 300000,
     refetchOnWindowFocus: false,
   });
 
@@ -107,13 +108,13 @@ export function Budgets(): JSX.Element {
     data: budgets = [],
     refetch,
     isLoading,
+    isFetching,
     error,
   } = useQuery({
     queryKey: ["budgets"],
     queryFn: async () => {
       const response = await budgetAPI.getBudgets();
 
-      // Transform snake_case API response to camelCase
       return response.data.map((budget: any) => ({
         ...budget,
         totalAmount:
@@ -130,21 +131,16 @@ export function Budgets(): JSX.Element {
         endDate: budget.endDate ?? budget.end_date,
         category: budget.category?.name ?? budget.category ?? null,
         participants: budget.participants ?? [],
-        // Use current user currency as fallback for old budgets without currency
         currency: budget.currency ?? settings.currency,
       }));
     },
-    staleTime: 0, // No stale time - always refetch when invalidated
-    refetchOnWindowFocus: true,
+    staleTime: 30000,
+    gcTime: 300000,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
     retry: 3,
-    refetchOnMount: "always", // Always refetch when component mounts
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
-
-  // Ensure fresh data when returning to this route under persistent layouts
-  React.useEffect(() => {
-    refetch();
-  }, [location.pathname, refetch]);
 
   // Delete budget mutation
   const deleteMutation = useMutation({
@@ -166,9 +162,34 @@ export function Budgets(): JSX.Element {
     },
   });
 
+  // Reset budget spending mutation
+  const resetSpendingMutation = useMutation({
+    mutationFn: (budgetId: string) => budgetAPI.resetSpending(budgetId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      toast({
+        title: "Success",
+        description: "Budget spending has been reset to zero.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to reset budget spending.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDeleteBudget = (budgetId: string, budgetName: string) => {
     setBudgetToDelete({ id: budgetId, name: budgetName });
     setDeleteDialogOpen(true);
+  };
+
+  const handleResetSpending = (budgetId: string) => {
+    resetSpendingMutation.mutate(budgetId);
   };
 
   const confirmDeleteBudget = () => {
@@ -240,48 +261,78 @@ export function Budgets(): JSX.Element {
     }
   };
 
-  // Add loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Budget Management
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Create, track, and manage your budgets effectively
-            </p>
+      <PageTransition>
+        <div className="space-y-6 p-6">
+          <div className="bg-gradient-to-r from-emerald-50 via-green-50 to-lime-50 dark:from-emerald-950/30 dark:via-green-950/30 dark:to-lime-950/30 rounded-2xl p-8 shadow-sm border border-emerald-100/50 dark:border-emerald-900/30">
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl">
+                  <Wallet className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-emerald-700 to-green-600 dark:from-emerald-300 dark:to-green-300 bg-clip-text text-transparent">
+                  Budget Tracking
+                </h1>
+              </div>
+              <p className="text-muted-foreground ml-20 text-base">
+                Loading your budgets...
+              </p>
+            </div>
           </div>
+          <Card>
+            <CardContent className="py-12">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="w-8 h-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+                <p className="text-muted-foreground">
+                  Fetching your budget data...
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  This may take a moment on first load
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <div className="flex justify-center items-center h-64">
-          <p className="text-muted-foreground">Loading budgets...</p>
-        </div>
-      </div>
+      </PageTransition>
     );
   }
 
-  // Add error state
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Budget Management
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Create, track, and manage your budgets effectively
-            </p>
+      <PageTransition>
+        <div className="space-y-6 p-6">
+          <div className="bg-gradient-to-r from-emerald-50 via-green-50 to-lime-50 dark:from-emerald-950/30 dark:via-green-950/30 dark:to-lime-950/30 rounded-2xl p-8 shadow-sm border border-emerald-100/50 dark:border-emerald-900/30">
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl">
+                  <Wallet className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-emerald-700 to-green-600 dark:from-emerald-300 dark:to-green-300 bg-clip-text text-transparent">
+                  Budget Tracking
+                </h1>
+              </div>
+            </div>
           </div>
+          <Card>
+            <CardContent className="py-12">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <AlertCircle className="w-12 h-12 text-destructive" />
+                <p className="text-destructive font-medium">
+                  Unable to load budgets
+                </p>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  {error.message ||
+                    "The server may be starting up. Please try again."}
+                </p>
+                <Button onClick={() => refetch()} className="mt-2">
+                  Try Again
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <div className="flex justify-center items-center h-64 flex-col gap-4">
-          <p className="text-destructive">
-            Error loading budgets: {error.message}
-          </p>
-          <Button onClick={() => refetch()}>Try Again</Button>
-        </div>
-      </div>
+      </PageTransition>
     );
   }
 
@@ -299,18 +350,34 @@ export function Budgets(): JSX.Element {
                 <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-emerald-700 to-green-600 dark:from-emerald-300 dark:to-green-300 bg-clip-text text-transparent">
                   Budget Tracking
                 </h1>
+                {isFetching && !isLoading && (
+                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                )}
               </div>
               <p className="text-muted-foreground ml-20 text-base">
                 Monitor budgets, stay on track, and optimize your goals
               </p>
             </div>
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 shadow-md h-11 px-6"
-              onClick={() => setIsCreateDialogOpen(true)}
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              New Budget
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="h-11 px-4"
+              >
+                <RotateCcw
+                  className={cn("w-4 h-4 mr-2", isFetching && "animate-spin")}
+                />
+                Refresh
+              </Button>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 shadow-md h-11 px-6"
+                onClick={() => setIsCreateDialogOpen(true)}
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                New Budget
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -530,6 +597,15 @@ export function Budgets(): JSX.Element {
                                   >
                                     <Edit className="w-4 h-4 mr-2" />
                                     Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleResetSpending(budget.id)
+                                    }
+                                    disabled={resetSpendingMutation.isPending}
+                                  >
+                                    <RotateCcw className="w-4 h-4 mr-2" />
+                                    Reset Spending
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     className="text-destructive"

@@ -30,8 +30,7 @@ export class AuthGuard implements CanActivate {
 
     // Extract JWT token from cookies OR Authorization header
     let token = request.cookies?.JWTtoken;
-    
-    // Fallback to Bearer token from Authorization header
+
     if (!token) {
       const authHeader = request.headers.authorization;
       if (authHeader?.startsWith('Bearer ')) {

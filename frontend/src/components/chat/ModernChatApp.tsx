@@ -617,11 +617,11 @@ const ModernChatApp: React.FC = observer(() => {
               {isOwn && (
                 <div className="ml-1">
                   {message.status === "read" ? (
-                    <CheckCheck className="w-3 h-3 text-white opacity-90" />
+                    <CheckCheck className="w-3 h-3 text-blue-200 dark:text-blue-300" />
                   ) : message.status === "delivered" ? (
-                    <CheckCheck className="w-3 h-3 text-white opacity-90" />
+                    <CheckCheck className="w-3 h-3 text-gray-200 dark:text-gray-300" />
                   ) : (
-                    <Check className="w-3 h-3 text-white opacity-90" />
+                    <Check className="w-3 h-3 text-gray-200 dark:text-gray-300" />
                   )}
                 </div>
               )}

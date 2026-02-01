@@ -100,7 +100,7 @@ export const Settings: React.FC = () => {
             JSON.stringify({
               currency: userProfile.currency || "USD",
               dateFormat: userProfile.date_format || "MM/DD/YYYY",
-            })
+            }),
           );
         }
       } catch (error) {
@@ -143,7 +143,7 @@ export const Settings: React.FC = () => {
         setUserProfileId(createResponse.data.id);
         return userProfilesAPI.updateUserPreferences(
           createResponse.data.id,
-          prefs
+          prefs,
         );
       }
       return userProfilesAPI.updateUserPreferences(userProfileId, prefs);
@@ -173,8 +173,6 @@ export const Settings: React.FC = () => {
     confirmPassword: "",
   });
 
-  // Removed AI Assistant settings
-
   const handleSaveProfile = async () => {
     setIsLoading(true);
     try {
@@ -200,7 +198,7 @@ export const Settings: React.FC = () => {
         JSON.stringify({
           currency: profile.currency,
           dateFormat: profile.dateFormat,
-        })
+        }),
       );
 
       // Dispatch custom event to notify other components
@@ -210,7 +208,7 @@ export const Settings: React.FC = () => {
             currency: profile.currency,
             dateFormat: profile.dateFormat,
           },
-        })
+        }),
       );
 
       toast({
@@ -318,218 +316,225 @@ export const Settings: React.FC = () => {
           </p>
         </div>
 
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <User className="w-4 h-4" />
-            Profile
-          </TabsTrigger>
-          <TabsTrigger
-            value="notifications"
-            className="flex items-center gap-2"
-          >
-            <Bell className="w-4 h-4" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="w-4 h-4" />
-            Security
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger
+              value="notifications"
+              className="flex items-center gap-2"
+            >
+              <Bell className="w-4 h-4" />
+              Notifications
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Security
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Profile Settings */}
-        <TabsContent value="profile" className="space-y-6">
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
-                Update your account details and preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={profile.name}
-                    onChange={(e) =>
-                      setProfile({ ...profile, name: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Default Currency</Label>
-                  <Select
-                    value={profile.currency}
-                    onValueChange={(value) =>
-                      setProfile({ ...profile, currency: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="GBP">GBP (£)</SelectItem>
-                      <SelectItem value="CAD">CAD ($)</SelectItem>
-                      <SelectItem value="PKR">PKR (Rs)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dateFormat">Date Format</Label>
-                  <Select
-                    value={profile.dateFormat}
-                    onValueChange={(value) =>
-                      setProfile({ ...profile, dateFormat: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Button onClick={handleSaveProfile} disabled={isLoading}>
-                {isLoading ? "Saving..." : "Save Changes"}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Notifications Settings */}
-        <TabsContent value="notifications" className="space-y-6">
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>
-                Configure how and when you receive notifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                {([
-                  "budgetAlerts",
-                  "expenseReminders",
-                  "weeklyReports",
-                  "monthlyReports",
-                  "collaboratorActivity",
-                ] as (keyof NotificationPrefs)[]).map((key) => {
-                  const value = notifications[key];
-                  return (
-                    <div key={key} className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label className="text-sm font-medium capitalize">
-                          {key.replace(/([A-Z])/g, " $1").toLowerCase()}
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          {getNotificationDescription(key)}
-                        </p>
-                      </div>
-                      <Switch
-                        checked={value}
-                        onCheckedChange={(checked) => {
-                          const next: NotificationPrefs = {
-                            ...notifications,
-                            [key]: checked,
-                          } as NotificationPrefs;
-                          setNotifications(next);
-                          updatePreferencesMutation.mutate(next);
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Security Settings */}
-        <TabsContent value="security" className="space-y-6">
-          <Card className="card-financial">
-            <CardHeader>
-              <CardTitle>Security & Privacy</CardTitle>
-              <CardDescription>
-                Manage your account security settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <h4 className="text-sm font-medium mb-4">Change Password</h4>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Current Password</Label>
-                  <div className="relative">
+          {/* Profile Settings */}
+          <TabsContent value="profile" className="space-y-6">
+            <Card className="card-financial">
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+                <CardDescription>
+                  Update your account details and preferences
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
                     <Input
-                      id="currentPassword"
-                      type={showPassword ? "text" : "password"}
-                      value={passwordData.currentPassword}
+                      id="name"
+                      value={profile.name}
+                      onChange={(e) =>
+                        setProfile({ ...profile, name: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Default Currency</Label>
+                    <Select
+                      value={profile.currency}
+                      onValueChange={(value) =>
+                        setProfile({ ...profile, currency: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                        <SelectItem value="CAD">CAD ($)</SelectItem>
+                        <SelectItem value="PKR">PKR (Rs)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateFormat">Date Format</Label>
+                    <Select
+                      value={profile.dateFormat}
+                      onValueChange={(value) =>
+                        setProfile({ ...profile, dateFormat: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                        <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Button onClick={handleSaveProfile} disabled={isLoading}>
+                  {isLoading ? "Saving..." : "Save Changes"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Notifications Settings */}
+          <TabsContent value="notifications" className="space-y-6">
+            <Card className="card-financial">
+              <CardHeader>
+                <CardTitle>Notification Preferences</CardTitle>
+                <CardDescription>
+                  Configure how and when you receive notifications
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  {(
+                    [
+                      "budgetAlerts",
+                      "expenseReminders",
+                      "weeklyReports",
+                      "monthlyReports",
+                      "collaboratorActivity",
+                    ] as (keyof NotificationPrefs)[]
+                  ).map((key) => {
+                    const value = notifications[key];
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="space-y-0.5">
+                          <Label className="text-sm font-medium capitalize">
+                            {key.replace(/([A-Z])/g, " $1").toLowerCase()}
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            {getNotificationDescription(key)}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={value}
+                          onCheckedChange={(checked) => {
+                            const next: NotificationPrefs = {
+                              ...notifications,
+                              [key]: checked,
+                            } as NotificationPrefs;
+                            setNotifications(next);
+                            updatePreferencesMutation.mutate(next);
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Security Settings */}
+          <TabsContent value="security" className="space-y-6">
+            <Card className="card-financial">
+              <CardHeader>
+                <CardTitle>Security & Privacy</CardTitle>
+                <CardDescription>
+                  Manage your account security settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <h4 className="text-sm font-medium mb-4">Change Password</h4>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="currentPassword"
+                        type={showPassword ? "text" : "password"}
+                        value={passwordData.currentPassword}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            currentPassword: e.target.value,
+                          })
+                        }
+                        placeholder="Enter current password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={passwordData.newPassword}
                       onChange={(e) =>
                         setPasswordData({
                           ...passwordData,
-                          currentPassword: e.target.value,
+                          newPassword: e.target.value,
                         })
                       }
-                      placeholder="Enter current password"
+                      placeholder="Enter new password"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">
+                      Confirm New Password
+                    </Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                  <Button onClick={handlePasswordChange} disabled={isLoading}>
+                    {isLoading ? "Updating..." : "Update Password"}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={passwordData.newPassword}
-                    onChange={(e) =>
-                      setPasswordData({
-                        ...passwordData,
-                        newPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Enter new password"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) =>
-                      setPasswordData({
-                        ...passwordData,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Confirm new password"
-                  />
-                </div>
-                <Button onClick={handlePasswordChange} disabled={isLoading}>
-                  {isLoading ? "Updating..." : "Update Password"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </PageTransition>
   );

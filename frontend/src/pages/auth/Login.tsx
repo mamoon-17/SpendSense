@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Loader2,
   User,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +31,23 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingTime, setLoadingTime] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login, isAuthenticated } = useAuthStore();
+
+  // Track loading time for cold start messaging
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoading) {
+      interval = setInterval(() => {
+        setLoadingTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setLoadingTime(0);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   // Force light mode for auth pages
   useEffect(() => {
@@ -185,17 +200,31 @@ export const Login: React.FC = () => {
                 </div>
 
                 {/* Login Button */}
-                <Button
-                  type="submit"
-                  className="w-full h-12 bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-500 hover:to-purple-600 text-white font-semibold rounded-lg transition-all duration-300"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    "LOGIN"
+                <div className="space-y-2">
+                  <Button
+                    type="submit"
+                    className="w-full h-12 bg-gradient-to-r from-cyan-400 to-purple-500 hover:from-cyan-500 hover:to-purple-600 text-white font-semibold rounded-lg transition-all duration-300"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Logging in...</span>
+                      </div>
+                    ) : (
+                      "LOGIN"
+                    )}
+                  </Button>
+                  {isLoading && loadingTime >= 5 && (
+                    <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>
+                        Server is waking up (free tier). This may take up to 30
+                        seconds on first request...
+                      </span>
+                    </div>
                   )}
-                </Button>
+                </div>
 
                 {/* Sign Up Link */}
                 <div className="text-center">

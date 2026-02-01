@@ -30,11 +30,9 @@ export class UserProfile {
   @Column({ type: 'varchar', length: 3, default: 'USD' })
   currency: string;
 
-  // 🕓 Timezone selection (example: UTC-8, UTC-7, etc.)
   @Column({ type: 'varchar', length: 10, default: 'UTC-5' })
   timezone: string;
 
-  // 📅 Strict date format selection
   @Column({ type: 'text', default: DateFormat.MM_DD_YYYY })
   date_format: DateFormat;
 

@@ -225,7 +225,7 @@ export const SavingsGoals: React.FC = () => {
       const response = await categoriesAPI.getCategories();
       return response.data;
     },
-    staleTime: 300000, // Cache for 5 minutes (categories rarely change)
+    staleTime: 300000,
     refetchOnWindowFocus: false,
   });
 

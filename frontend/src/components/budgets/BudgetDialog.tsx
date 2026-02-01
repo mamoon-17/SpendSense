@@ -86,7 +86,7 @@ export const BudgetDialog: React.FC<BudgetDialogProps> = ({
       return response.data;
     },
     enabled: open,
-    staleTime: 300000, // Cache for 5 minutes (categories rarely change)
+    staleTime: 300000,
     refetchOnWindowFocus: false,
   });
 
